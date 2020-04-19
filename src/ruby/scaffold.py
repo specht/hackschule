@@ -11,28 +11,28 @@ USE_TASK_CLASS = #{USE_TASK_CLASS}
 random.seed(0)
 
 class TestException(Exception):
-    def __init__(self, received, data, expected):
+    def __init__(self, received, expected, *input):
         self.received = received
-        self.data = data
         self.expected = expected
+        self.input = input
     
     def report(self):
         sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')
         sys.stderr.flush()
         sys.stderr.write("Dein Programm ist leider noch nicht korrekt, da es ein falsches Ergebnis berechnet hat.\n")
-        sys.stderr.write(f'Eingabe : {self.data}\n')
+        sys.stderr.write(f'Eingabe : {self.input}\n')
         sys.stderr.write(f'Erwartet: {self.expected}\n')
         sys.stderr.write(f'Bekommen: {self.received}\n')
         #sys.exit(1)                                
 
-def assert_equal(received, data, expected):
+def assert_equal(received, expected, *input):
     if received != expected:
-        raise TestException(received, data, expected)
+        raise TestException(received, expected, *input)
         
 _test_cases = []
         
-def add_input(input, expected_result):
-    _test_cases.append([input, expected_result])
+def add_input(expected_result, *input):
+    _test_cases.append([expected_result, input])
     
 def DISABLE_FUNCTION(*argv):
     pass
@@ -49,7 +49,7 @@ def run_tests():
         for i, data in enumerate(_test_cases):
             sys.stderr.write("\r\u001b[44;1m[ Test ]\u001b[0m ")
             sys.stderr.write(f"Durchlauf {i + 1} von {len(_test_cases)}...")
-            assert_equal(task.#{THE_FUNCTION_NAME}(data[0]), data[0], data[1])
+            assert_equal(task.#{THE_FUNCTION_NAME}(*data[1]), data[0], *data[1])
         sys.stderr.write(" ok.\r\n")
     except TestException as e:
         sys.stderr.write(" fehlgeschlagen.\r\n\r\n")

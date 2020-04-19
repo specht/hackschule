@@ -1,0 +1,80 @@
+title: Pythagoreische Tripel
+enabled: true
+difficulty: medium
+--------
+Gegeben sind drei Zahlen a, b, c. Schreibe eine Funktion, die ermittelt, ob diese drei Zahlen ein pythagoreisches Tripel bilden, also ob sie als Seitenlängen eines rechtwinkligen Dreiecks infrage kommen.
+
+---
+
+**1. Beispiel**
+
+Eingabe:
+
+    a = 3
+    b = 4
+    c = 5
+    
+Ausgabe:
+
+    True
+
+*Erklärung: Die Zahlen bilden ein pythagoreisches Tripel, da gilt: 3² + 4² = 5².*
+
+---
+
+**2. Beispiel**
+
+Eingabe:
+
+    a = 13
+    b = 5
+    c = 12
+    
+Ausgabe:
+
+    True
+
+*Erklärung: Die Zahlen bilden ein pythagoreisches Tripel, da gilt: 5² + 12² = 13². In diesem Fall ist a die Hypothenuse.*
+
+---
+
+**3. Beispiel**
+
+Eingabe:
+
+    a = 7
+    b = 10
+    c = 9
+    
+Ausgabe:
+
+    False
+
+*Erklärung: Die Zahlen bilden kein pythagoreisches Tripel, da gilt: 7² + 9² ≠ 10². In diesem Fall war b die längste Seite, aber nicht die Hypothenuse. *
+--------
+[hint]
+Die größte Zahl muss nicht unbedingt c sein. Finde zunächst heraus, welche der drei Zahlen die größte ist.
+--------
+[template]
+class Task:
+    def pytha_tripel(self, a, b, c):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(True, 3, 4, 5)
+add_input(True, 4, 3, 5)
+add_input(True, 5, 3, 4)
+add_input(True, 3, 5, 4)
+add_input(True, 4, 5, 3)
+add_input(True, 5, 4, 3)
+
+add_input(False, 3, 4, 6)
+add_input(False, 4, 3, 6)
+add_input(False, 6, 3, 4)
+add_input(False, 3, 6, 4)
+add_input(False, 4, 6, 3)
+add_input(False, 6, 4, 3)
+
+add_input(True, 68, 285, 293)
+add_input(False, 68, 285, 294)

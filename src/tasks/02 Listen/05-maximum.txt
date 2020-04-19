@@ -25,10 +25,9 @@ class Task:
         pass
 --------
 [input]
-add_input([3, 6, 9, 7, 5], 9)
+add_input(9, [3, 6, 9, 7, 5])
 for i in range(1, 11):
     l = [random.randint(1, 1000) for j in range(i * 10)]
-    add_input(l, max(l))
+    add_input(max(l), l)
     
-DISABLE_FUNCTION('builtins.min', 'min')
 DISABLE_FUNCTION('builtins.max', 'max')

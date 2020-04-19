@@ -25,9 +25,9 @@ class Task:
         pass
 --------
 [input]
-add_input([3, 6, 9, 7, 5], 30)
+add_input(30, [3, 6, 9, 7, 5])
 for i in range(1, 10):
     l = [random.randint(1, 1000) for j in range(i * 10)]
-    add_input(l, sum(l))
+    add_input(sum(l), l)
 
 DISABLE_FUNCTION('builtins.sum', 'sum')

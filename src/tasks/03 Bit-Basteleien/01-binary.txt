@@ -23,10 +23,10 @@ class Task:
         pass
 --------
 [input]
-add_input(123, '1111011')
-add_input(1, '1')
+add_input('1111011', 123)
+add_input('1', 1)
 for i in range(18):
     n = random.randint(1, pow(10, i))
-    add_input(n, bin(n)[2:])
+    add_input(bin(n)[2:], n)
 
 DISABLE_FUNCTION('builtins.bin', 'bin')

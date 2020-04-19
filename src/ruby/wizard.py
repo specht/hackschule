@@ -83,12 +83,10 @@ class Wizard:
         if self.map_is(nx, ny, 'z'):
             raise WizardException("Autsch, du bist gegen eine Truhe gerannt!")
 
-        self.pipe.write(json.dumps({'command': 'forward'}) + "\n")
+        self.pipe.write(json.dumps({'command': 'forward', 'sleep': self.delay}) + "\n")
         self.pipe.flush()
         self.hero.x = nx
         self.hero.y = ny
-        self.pipe.write(json.dumps({'command': 'sleep', 'sleep': self.delay}) + "\n")
-        self.pipe.flush()
         time.sleep(self.delay)
         
     def turn_left(self):

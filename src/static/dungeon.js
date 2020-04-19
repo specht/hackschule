@@ -131,6 +131,13 @@ function enqueue_dungeon_command(data) {
             dungeon_queue.push({command: 'say', message: data.message.substr(0, i) + "<span class='invisible'>" + hidden + "</span>", sleep: 0.1});
         }
     }
+    else if (data.command === 'forward')
+    {
+        data.command = 'forward_4';
+        data.sleep /= 4;
+        for (let i = 0; i < 4; i++)
+            dungeon_queue.push(data);
+    }
     else
         dungeon_queue.push(data);
     if (dungeon_queue_timeout === null)
@@ -154,7 +161,7 @@ function update_hero_sprite() {
         hero.tile.css('left', (hero.x * 16 + hero.tile.data('dx'))  * dungeon_scale);
         hero.tile.css('top', (hero.y * 16 + hero.tile.data('dy')) * dungeon_scale);
         hero.tile.css('z-index', ((hero.y * 16 + hero.tile.data('dy')) + 16) * dungeon_scale);
-        hero.tile.attr('src', '/sprites/0x72/wizard_' + dirs[hero.dir] + '.png');
+        hero.tile.attr('src', '/sprites/0x72/wiz_' +dirs[hero.dir] + hero.phase + '.png');
     }
 }
 
@@ -169,6 +176,18 @@ function handle_dungeon_command(data) {
             hero.x -= 1;
         else if (hero.dir === 3)
             hero.y -= 1;
+        update_hero_sprite();
+    }
+    else if (data.command === 'forward_4')
+    {
+        if (hero.dir === 0)
+            hero.x += 1.0 / 4;
+        else if (hero.dir === 1)
+            hero.y += 1.0 / 4;
+        else if (hero.dir === 2)
+            hero.x -= 1.0 / 4;
+        else if (hero.dir === 3)
+            hero.y -= 1.0 / 4;
         update_hero_sprite();
     }
     else if (data.command === 'turn_left')

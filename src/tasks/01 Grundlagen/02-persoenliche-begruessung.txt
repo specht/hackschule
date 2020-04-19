@@ -1,0 +1,41 @@
+title: Persönliche Begrüßung
+enabled: true
+difficulty: easy
+--------
+Schreibe ein Programm, das einen Namen einliest und anschließend eine Begrüßung ausgibt.
+--------
+[verify]
+checks = {}
+input = 'd0943j243-95d8j23-845jf0-4'
+checks[input] = Proc.new do |result|
+    result.include?(input)
+end
+checks
+--------
+[hint]
+Du kannst die Funktion `input()` verwenden, um Nutzereingaben einzulesen:
+
+    eingabe = input()
+
+Das, was der Nutzer eingegeben hat, wird so in der Variablen `eingabe` gespeichert.
+
+Du kannst deine Eingabeaufforderung noch verbessern, indem du der Funktion `input()` einen kleinen Text übergibst, der auf den Bildschirm geschrieben werden soll:
+
+    eingabe = input("Name: ")
+--------
+[hint]
+Für die Ausgabe reicht es bei dieser Aufgabe, einfach den eingelesenen Namen wieder auszugeben. Du kannst deine Ausgabe allerdings noch etwas verfeinern, indem du den Namen in einen Satz einbettest, also z. B. so:
+
+    Name: Helge
+    Hallo, Helge!
+    
+Hierfür musst du beim Aufruf von `print()` mehrere Zeichenketten verknüpfen.
+--------
+[hint]
+Die Zeichenketten, die du verknüpfen musst, sind:
+
+- `"Hallo, "`
+- `eingabe`
+- `"!"`
+
+Du kannst sie mit Hilfe von `+` verknüpfen und so gemeinsam der `print`-Funktion übergeben.

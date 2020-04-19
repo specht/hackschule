@@ -1,0 +1,48 @@
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Anmeldung</h2>
+            <p>
+            Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät per E-Mail. Wenn du diesen innerhalb einer Stunde eingibst, bist du angemeldet.
+            </p>
+            <p class='text-muted'>
+            <em>
+            Hinweis: Die Anmeldung kann momentan nur mit Einladung erfolgen. Wenn du eine Einladung haben möchtest, schreib bitte eine Mail an <a href='mailto:einladung@hackschule.de'>einladung@hackschule.de</a>.
+            </em>
+            </p>
+            <hr />
+            <form id='form' autocomplete='on'>
+            <div class="input-group mb-3">
+            <input type="email" id='email' class="form-control" placeholder="Bitte gib deine E-Mail-Adresse ein" aria-label="E-Mail-Adresse" autocomplete='on'>
+            <div class="input-group-append">
+                <button id='submit' class="btn btn-primary" type="submit">Code zusenden</button>
+            </div>
+            </div>
+            </form>
+            <div class='api_messages' style='display: none;'></div>
+        </div>        
+    </div>
+</div>
+<script type='text/javascript'>
+window.addEventListener('load', function () {
+    $('#form').submit(function(e) { e.preventDefault(); });
+    $('#submit').click(function(e) {
+//         show_success_message("Dein Code wird versandt... <i class='fa fa-cog fa-spin' />");
+        api_call('/api/login', {email: $('#email').val()}, function(data) {
+            console.log(data);
+            if (data.success === true)
+            {
+                window.location.href = '/c/' + data.tag;
+            }
+            else
+            {
+                if (data.error === 'no_invitation_found')
+                    show_error_message('Für die eingegebene E-Mail-Adresse wurde keine Einladung gefunden.');
+                else
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+            }
+        });
+    });
+    $('#email').focus();
+});
+</script>

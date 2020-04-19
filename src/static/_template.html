@@ -1,0 +1,47 @@
+<!-- <!DOCTYPE html> -->
+<html lang="de">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title><!--PAGE_TITLE--></title>
+    #{meta_tags || ''}
+    <link href="/api/compiled.css?#{compiled_css_sha1}" rel="stylesheet" />
+    <script defer src="/api/compiled.js?#{compiled_js_sha1}"></script>
+    <script src="/ace/src-min-noconflict/ace.js"></script>
+    #{PAGE_CSS_HERE}
+</head>
+
+<body>
+<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top justify-content-end">
+        <a class="navbar-brand" href="/"><img src='/android-chrome-192x192.png' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
+    <div class='ml-auto'></div>
+    <button class="btn btn-success ml-auto mr-1" id='run' style='#{original_path == 'task' ? '' : 'display: none;'} position: relative; left: -15px;' #{@session_user.nil? ? 'disabled' : ''}><i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen</button>
+    <div class='icon mobile-avatar' style='margin-right: 16px; #{@session_user.nil? ? 'display: none' : ''};'><img class='menu-avatar' src='/gen/#{(@session_user || {})[:avatar]}-48.png' /></div>    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse my-0 flex-grow-0" id='navbarTogglerDemo02'>
+        <ul class="navbar-nav mr-auto">
+<!--             <span class='rule'></span> -->
+            #{nav_items}
+        </ul>
+    </div>
+</nav>
+#{CONTENT}
+<div class='foot text-muted'>
+    <a href='/impressum'>Impressum und Datenschutz</a>
+    <div id='rate_limit' style='float: right; color: #888;'></div>
+    &nbsp;
+</div>
+<div class='info' style='display: none;'></div>
+<script>
+window.addEventListener('load', function() {
+    $('.fix-this-link').click(function(e) {
+        e = $(e.target);
+        window.location = e.attr('href');
+    });
+});
+</script>
+</body></html>

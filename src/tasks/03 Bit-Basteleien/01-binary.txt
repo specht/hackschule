@@ -1,0 +1,32 @@
+title: "Binärdarstellung"
+enabled: true
+difficulty: medium
+--------
+Schreibe eine Funktion, die eine positive, ganze Zahl in ihre Binärdarstellung umwandelt.
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    123
+    
+Ausgabe:
+
+    '1111011'
+--------
+[template]
+class Task:
+    def to_binary(self, n):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(123, '1111011')
+add_input(1, '1')
+for i in range(18):
+    n = random.randint(1, pow(10, i))
+    add_input(n, bin(n)[2:])
+
+DISABLE_FUNCTION('builtins.bin', 'bin')

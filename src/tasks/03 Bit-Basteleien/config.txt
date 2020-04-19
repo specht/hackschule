@@ -1,0 +1,3 @@
+cat_slug: bits
+--------
+Hier geht es um Bits und Stellenwertsysteme.

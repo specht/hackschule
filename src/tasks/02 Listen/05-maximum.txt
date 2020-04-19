@@ -1,0 +1,34 @@
+title: Maximum finden
+enabled: true
+difficulty: medium
+--------
+Gegeben ist eine Liste von Zahlen. Finde die größte Zahl in der Liste und gib sie zurück.
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    [6, 3, 1, 9, 7]
+    
+Ausgabe:
+
+    9
+
+<em>Erklärung: 9 ist die größte Zahl in der Liste und wird deshalb zurückgegeben.</em>
+--------
+[template]
+class Task:
+    def maximum(self, zahlen):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input([3, 6, 9, 7, 5], 9)
+for i in range(1, 11):
+    l = [random.randint(1, 1000) for j in range(i * 10)]
+    add_input(l, max(l))
+    
+DISABLE_FUNCTION('builtins.min', 'min')
+DISABLE_FUNCTION('builtins.max', 'max')

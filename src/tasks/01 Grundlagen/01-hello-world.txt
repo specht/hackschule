@@ -1,0 +1,23 @@
+title: Hello, world!
+enabled: true
+difficulty: easy
+--------
+Schreibe ein Programm, das den Text `Hello, world!` ausgibt. Achte darauf, dass du genau diesen Text ausgibst.
+--------
+[verify]
+Proc.new do |result|
+    temp = result.downcase
+    ['hello', 'world', '!'].all? { |w| temp.include?(w) }
+end
+--------
+[hint]
+Um eine Zeichenkette auszugeben, kannst du die Funktion `print(s)` verwenden, wobei `s` die Zeichenkette ist, die ausgegeben werden soll.
+--------
+[hint]
+Zeichenketten können entweder in doppelte Anführungszeichen (`"`) oder einfache Anführungszeichen (`'`) gesetzt werden.
+--------
+[hint]
+Das Programm lautet:
+
+    print("Hello, world!")
+--------

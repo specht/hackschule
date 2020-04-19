@@ -1,0 +1,33 @@
+title: Summe von Zahlen
+enabled: true
+difficulty: medium
+--------
+Gegeben ist eine Liste von Zahlen. Bilde die Summe aller Zahlen und gib sie zurück.
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    [3, 6, 9, 7, 5]
+    
+Ausgabe:
+
+    30
+
+<em>Erklärung: 30 ist die Summe der Zahlen in der Liste und wird deshalb zurückgegeben.</em>
+--------
+[template]
+class Task:
+    def summe(self, zahlen):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input([3, 6, 9, 7, 5], 30)
+for i in range(1, 10):
+    l = [random.randint(1, 1000) for j in range(i * 10)]
+    add_input(l, sum(l))
+
+DISABLE_FUNCTION('builtins.sum', 'sum')

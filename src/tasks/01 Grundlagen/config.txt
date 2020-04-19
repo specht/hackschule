@@ -1,0 +1,4 @@
+cat_slug: grundlagen
+--------
+First things first: Hier geht es um grundlegende Themen wie Ein- und Ausgabe, Variablen, Schleifen und Verzweigungen.
+--------

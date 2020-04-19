@@ -1,0 +1,8 @@
+# Diese Datei bitte unter invitations.txt speichern!
+#
+# Dies ist die Whitelist für E-Mail-Adressen. Nur wer hier drin steht, kann sich anmelden.
+# Format: ein Account pro Zeile
+# m Helge <helge@example.com>
+# --> bitte immer m oder w angeben, damit das zufällig ausgewählte 
+#     Profilbild zumindest das richtige Geschlecht hat (oder x wenn unbekannt)
+# --> Kommentare und Leerzeilen sind erlaubt

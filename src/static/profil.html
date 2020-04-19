@@ -1,0 +1,156 @@
+#{this_is_a_page_for_logged_in_users}
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-8 offset-md-2'>
+            <h2 style='margin-bottom: 30px;'>Profil</h2>
+                <div class='row'>
+                    <div class='col-md-8 col-lg-9'>
+                        <div class="form-group">
+                            <label>E-Mail</label>
+                            <input type="email" id='email' class="form-control" value='#{@session_user[:email]}' disabled />
+                            <small class="form-text text-muted">Deine E-Mail-Adresse ist für andere nicht sichtbar.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Anzeigename</label>
+                            <input type="text" class="form-control" id="name" placeholder="Bitte gib einen Namen ein" value="#{htmlentities(@session_user[:name])}" />
+                            <small class="form-text text-muted">Mit diesem Namen wirst du anderen angezeigt.</small>
+                        </div>
+                    </div>
+                    <div class='col-md-4 col-lg-3'>
+                        <div class="form-group">
+                            <div class='avatar-image'>
+                                <img id='avatar-image' data-avatar='#{@session_user[:avatar]}' src='/gen/#{@session_user[:avatar]}-300.png' />
+                                <small style='position: absolute; left: 0; bottom: -20px; width: 100%; text-align: center;' class='text-muted'>Profilbild ändern</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id='save' class="btn btn-primary" disabled>Speichern</button>
+<!--             </form> -->
+                
+            <div class='api_messages' style='display: none;'></div>
+        </div>        
+    </div>
+</div>
+
+<div class="modal fade" id="avatarModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        #{list_all_lego_icons}
+      </div>
+      <div class="modal-footer">
+        <input type='file' name='file' id='file' style='display: none;' />
+        <button id='upload_button' type="button" class="btn btn-primary"><i class='fa fa-upload'></i>&nbsp;&nbsp;Bild hochladen</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type='text/javascript'>
+
+var user_name = #{@session_user[:name].to_json};
+var user_avatar = #{@session_user[:avatar].to_json};
+var unsaved_changes = false;
+
+function readURL(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+//             $('#avatar-image').attr('src', e.target.result);
+            api_call('/api/upload', {image: e.target.result});
+        }
+        reader.readAsBinaryString(input.files[0]);
+    }
+}
+
+function update_save_button()
+{
+    $('.api_messages').hide();
+    unsaved_changes = 
+        ($('#avatar-image').data('avatar') != user_avatar) ||
+        ($('#name').val() != user_name);
+    $('#save').prop('disabled', !unsaved_changes);
+}
+
+window.addEventListener('load', function () {
+    $("#avatar").change(function(){
+        $("#avatar").closest('form').submit();
+//         readURL(this);
+    });    
+    $('.avatar-image').click(function() {
+        $('#avatarModal').modal('show');
+    });
+    $('.profile-icon-preview').click(function(e) {
+        $('#avatarModal').modal('hide');
+        let new_avatar = $(e.target).data('avatar');
+        $('#avatar-image').attr('src', '/gen/' + new_avatar + '-300.png').data('avatar', new_avatar);
+        update_save_button();
+    });
+    $('#name').change(function(e) {
+        update_save_button();
+    });
+    $('#name').keyup(function(e) {
+        update_save_button();
+    });
+    $('#submit').click(function(e) {
+        api_call('/api/login', {email: $('#email').val()}, function(data) {
+            console.log(data);
+            if (data.success === true)
+            {
+                window.location.href = '/c/' + data.tag;
+            }
+            else
+            {
+                if (data.error === 'no_invitation_found')
+                    show_error_message('Für die eingegebene E-Mail-Adresse wurde keine Einladung gefunden.');
+                else
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+            }
+        });
+    });
+    $('#upload_button').click(function(e) {
+        $('#file').click();
+    });
+    $('#file').change(function(e) {
+        var fd = new FormData();
+        fd.append('file', $('#file')[0].files[0]);
+
+        $.ajax({
+            url: '/api/upload',
+            type: 'post',
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function(data) {
+                data = JSON.parse(data);
+                let new_avatar = data.tag;
+                $('#avatar-image').attr('src', '/gen/' + new_avatar + '-300.png').data('avatar', new_avatar);
+                update_save_button();
+                $('#avatarModal').modal('hide');
+            },
+        });
+    });
+    $('#save').click(function(e) {
+        api_call('/api/update_user', 
+            {name: $('#name').val(), avatar: $('#avatar-image').data('avatar')}, 
+            function(data) {
+                if (data.success) 
+                {
+                    user_name = $('#name').val();
+                    user_avatar = $('#avatar-image').data('avatar');
+                    $('img.menu-avatar').attr('src', '/gen/' + user_avatar + '-48.png');
+                    let name_span = document.createElement('span');
+                    name_span.textContent = user_name;
+                    $('.menu-user-name').html(name_span.innerHTML);
+                    update_save_button();
+                    show_success_message('Deine Änderungen wurden gespeichert.');
+                }
+                else
+                    show_error_message('Beim Speichern deiner Änderungen ist ein Fehler aufgetreten.');
+                    
+            });
+    });
+});
+</script>

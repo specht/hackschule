@@ -1,0 +1,51 @@
+title: Quadratzahlen
+require_stdout: 'Hello, world!'
+enabled: true
+difficulty: easy
+--------
+Schreibe ein Programm, das alle Quadratzahlen von 1 bis 20 in der folgenden Form ausgibt:
+
+    
+    1 * 1 = 1
+    2 * 2 = 4
+    3 * 3 = 9
+    (usw.)
+--------
+[verify]
+Proc.new do |result|
+    (1..20).all? { |n| r = "#{n}\\s*\\*\\s*#{n}\\s*=\\s*#{n * n}"; result.match?(Regexp.new(r))
+    }
+end
+--------
+[hint]
+Bei dieser Aufgabe bietet sich wieder die For-Schleife an. Allerdings soll dieses mal nicht nur die Zahl ausgegeben werden, sondern eine Gleichung.
+
+In der Aufgabe #{task_link('persoenliche-begruessung')} hast du bereits gesehen, wie man mehrere Strings verknüpfen kann, um sie mit einer einzigen `print`-Anweisung auszugeben. Das funktioniert allerdings nur mit Strings!
+
+Wenn du Strings und Zahlen gemeinsam ausgeben möchtest, gibt es zwei Möglichkeiten:
+
+##### Möglichkeit 1
+
+Du kannst unterschiedliche Arten von Variablen an die `print`-Funktion übergeben, indem du sie mit einem Komma trennst:
+
+    print(3, '*', 4, '=', 3 * 4)
+    
+Achtung: Zwischen den einzelnen Teilen werden automatisch Leerzeichen eingefügt.
+
+##### Möglichkeit 2
+
+Die elegantere Variante ist die sogenannte _formatierte Ausgabe_:
+
+    print(f"{3} * {4} = {3 * 4}")
+    
+Wichtig ist dabei, dass du direkt vor dem String ein `f` einfügst. Du kannst dann einfach beliebige Ausrücke (also Zahlen, Strings oder beliebige Variablen) in geschweiften Klammern einfügen, die so in den String eingefügt werden.
+--------
+[hint]
+Bei der Aufgabe #{task_link('zahlenreihe')} hast du vielleicht über `range(20)` iteriert und jede Zahl bei der Ausgabe um eins erhöht, um die richtige Zahl auszugeben.
+
+In dieser Aufgabe brauchen wir die Zahl, die wir durchlaufen, jeweils mehr als einmal. Deshalb kannst du auch einfach die `range`-Anweisung anpassen, so dass die Schleife von 1 bis 20 läuft:
+
+    for i in range(1, 21):
+        print(i)
+        
+Wenn du `range` zwei Argumente übergibst, steht das erste Argument für den Startwert (der sonst 0 ist) und das zweite für die obere Grenze des Bereichs, der nicht mehr Teil des Bereichs ist.

@@ -1,0 +1,80 @@
+m 001-lego
+m 002-lego
+w 003-lego
+w 004-lego
+005-lego
+m 006-lego
+m 007-lego
+m 008-lego
+m 009-lego
+m 010-lego
+m 011-lego
+012-lego
+w 013-lego
+m 014-lego
+015-lego
+016-lego
+w 017-lego
+m 018-lego
+m 019-lego
+m 020-lego
+021-lego
+m 022-lego
+m 023-lego
+w 024-lego
+m 025-lego
+026-ninja
+m 027-cowboy
+m 028-knight
+029-explorer
+030-scuba diver
+031-clown
+032-boy
+w 033-native american
+034-cashier
+035-spy
+m 036-mariachi
+m 037-pirate
+m 038-fisherman
+039-cyborg
+040-vampire
+m 041-businessman
+042-conquistador
+m 043-DJ
+m 044-american football player
+w 045-cheerleader
+046-santa claus
+047-diver
+048-thespian
+049-man
+m 050-man
+w 051-cowgirl
+m 052-caveman
+053-witch
+054-vampire
+055-queen
+056-gnome
+057-injured
+058-thief
+m 059-hiker
+060-devil
+061-desert
+062-ninja
+063-batman
+064-superman
+065-wolverine
+066-Spiderman
+067-dummy
+068-magician
+069-thor
+070-deadpool
+071-businessman
+w 072-woman
+073-mummy
+074-singer
+075-Mohawk
+076-explorer
+m 077-dentist
+078-hip hop
+079-surgeon
+080-priest

@@ -1,0 +1,4 @@
+cat_slug: listen
+--------
+Hier geht es um Listen und die Operationen, die man auf ihnen durchführen kann.
+--------

@@ -1,0 +1,11 @@
+source 'https://rubygems.org'
+
+gem 'sinatra', '~> 2.0'
+gem 'thin'
+gem 'rerun'
+gem 'faye'
+gem 'faye-websocket'
+gem 'htmlentities'
+gem 'kramdown'
+gem 'mail'
+gem 'neography'

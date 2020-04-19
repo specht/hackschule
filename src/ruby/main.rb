@@ -392,18 +392,27 @@ class Main < Sinatra::Base
     
     def self.load_invitations
         @@invitations = {}
+        @@user_groups = {}
+        current_group = '(keine Gruppe)'
         File.open('invitations.txt') do |f|
             f.each_line do |line|
                 next if line.strip.empty?
                 next if line.strip[0] == '#'
-                gender = line[0]
-                gender = 'all' if gender == 'x'
-                parts = line[1, line.size - 1].strip.split(' ')
-                email = parts.last.delete_prefix('<').delete_suffix('>')
-                @@invitations[email] = {:gender => gender}
-                if parts.size > 1
-                    name = parts[0, parts.size - 1].join(' ')
-                    @@invitations[email][:name] = name
+                if line[0] == '>'
+                    current_group = line[1, line.size - 1].strip
+                else
+                    gender = line[0]
+                    gender = 'all' if gender == 'x'
+                    parts = line[1, line.size - 1].strip.split(' ')
+                    email = parts.last.delete_prefix('<').delete_suffix('>')
+                    @@user_groups[current_group] ||= []
+                    @@user_groups[current_group] << email
+                    @@invitations[email] = {:gender => gender,
+                                            :group => current_group}
+                    if parts.size > 1
+                        name = parts[0, parts.size - 1].join(' ')
+                        @@invitations[email][:name] = name
+                    end
                 end
             end
         end
@@ -1214,8 +1223,10 @@ class Main < Sinatra::Base
     def dungeon_for_task(slug)
         cache_key = "#{slug}"
         @@dungeon_for_task_cache ||= {}
-        if @@dungeon_for_task_cache.include?(cache_key)
-            return @@dungeon_for_task_cache[cache_key]
+        unless ENV['DEVELOPMENT']
+            if @@dungeon_for_task_cache.include?(cache_key)
+                return @@dungeon_for_task_cache[cache_key]
+            end
         end
         STDERR.puts "Rendering @@dungeon_for_task_cache[#{cache_key}]"
         tiles = []
@@ -1633,6 +1644,10 @@ class Main < Sinatra::Base
                 RETURN u
                 ORDER BY u.name;
             END_OF_QUERY
+            user_for_email = {}
+            users.each do |user|
+                user_for_email[user[:email]] = user
+            end
             submissions = neo4j_query(<<~END_OF_QUERY).map { |x| {:user => x['u'].props, :submission => x['sb'].props, :script => x['sc'].props, :task => x['t'].props}}
                 MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
                         (sb)-[:FOR]->(t:Task),
@@ -1666,27 +1681,36 @@ class Main < Sinatra::Base
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
-            users.each do |user|
-                io.puts "<tr>"
-                io.puts "<td>"
-                io.puts "<img src='/gen/#{user[:avatar]}-48.png' style='width: 20px; position: relative; top: -2px;' />&nbsp;"
-                io.puts "#{user[:name]}"
-                io.puts "</td>"
-                @@task_keys_sorted.each.with_index do |k, i|
-                    io.puts "<td>"
-                    submissions = (submissions_for_user[user[:email]] || {})[k]
-                    if submissions.nil?
-                        io.puts "--"
-                    else
-                        if submissions[:latest_solution]
-                            io.puts "<a href='/task/#{k}/#{submissions[:latest_solution]}'><i class='fa fa-medal text-success'></i></a>"
-                        elsif submissions[:latest_draft]
-                            io.puts "<a href='/task/#{k}/#{submissions[:latest_draft]}'><i class='fa text-warning fa-pen'></i></a>"
-                        end
+            last_group = nil
+            @@user_groups.keys.each do |group|
+                @@user_groups[group].each do |email|
+                    next unless user_for_email.include?(email)
+                    user = user_for_email[email]
+                    if last_group != @@invitations[email][:group]
+                        last_group = @@invitations[email][:group]
+                        io.puts "<tr><th style='background-color: #ddd;' colspan='#{@@tasks.size + 1}'>#{group}</th></tr>"
                     end
+                    io.puts "<tr>"
+                    io.puts "<td>"
+                    io.puts "<img src='/gen/#{user[:avatar]}-48.png' style='width: 20px; position: relative; top: -2px;' />&nbsp;"
+                    io.puts "#{user[:name]}"
                     io.puts "</td>"
+                    @@task_keys_sorted.each.with_index do |k, i|
+                        io.puts "<td>"
+                        submissions = (submissions_for_user[user[:email]] || {})[k]
+                        if submissions.nil?
+                            io.puts "--"
+                        else
+                            if submissions[:latest_solution]
+                                io.puts "<a href='/task/#{k}/#{submissions[:latest_solution]}'><i class='fa fa-medal text-success'></i></a>"
+                            elsif submissions[:latest_draft]
+                                io.puts "<a href='/task/#{k}/#{submissions[:latest_draft]}'><i class='fa text-warning fa-pen'></i></a>"
+                            end
+                        end
+                        io.puts "</td>"
+                    end
+                    io.puts "</tr>"
                 end
-                io.puts "</tr>"
             end
             io.puts "</tbody>"
             io.puts "</table>"

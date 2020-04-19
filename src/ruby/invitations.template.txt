@@ -6,3 +6,6 @@
 # --> bitte immer m oder w angeben, damit das zufällig ausgewählte 
 #     Profilbild zumindest das richtige Geschlecht hat (oder x wenn unbekannt)
 # --> Kommentare und Leerzeilen sind erlaubt
+# alle nachfolgenden Namen in eine Gruppe einordnen mit ">"
+# > Klasse 10
+# m Helge <helge@example.com>

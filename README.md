@@ -6,7 +6,7 @@ Zum lokal ausprobieren einfach folgende Variable in `~/.bashrc` setzen:
 
     export QTS_DEVELOPMENT=1
     
-Dann die `credentials.template.rb` unter `credentials.rb` speichern und eigene Werte einsetzen. Außerdem muss die `src/ruby/invitations.template.txt` als ``src/ruby/invitations.txt` gespeichert werden und es sollte auch eine E-Mail-Adresse drinstehen.
+Dann die `credentials.template.rb` unter `credentials.rb` speichern und eigene Werte einsetzen. Außerdem muss die `src/ruby/invitations.template.txt` als `src/ruby/invitations.txt` gespeichert werden und es sollte auch eine E-Mail-Adresse drinstehen.
 
 Start mit:
 

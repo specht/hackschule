@@ -1733,7 +1733,7 @@ class Main < Sinatra::Base
                     users[email][:s] << [d, t]
                 end
             end
-            io.puts "<h4>Tagesverlauf</h4>"
+            io.puts "<h4>Aktivität</h4>"
             io.puts "<table class='daily-activity table table-sm'>"
             last_group = nil
             users.keys.sort do |a, b|
@@ -1805,7 +1805,7 @@ class Main < Sinatra::Base
                     submissions_for_user[entry[:user][:email]][entry[:task][:slug]][:latest_draft] ||= entry[:script][:sha1] 
                 end
             end
-            io.puts "<h4>Übersicht</h4>"
+            io.puts "<h4>Aufgaben</h4>"
             io.puts "<table class='table table-striped table-sm narrow'>"
             io.puts "<thead>"
             io.puts "<tr>"
@@ -1858,7 +1858,7 @@ class Main < Sinatra::Base
             io.puts "</tbody>"
             io.puts "</table>"
             io.puts show_daily_activity(7)
-            io.puts "<h4>Aktivitäten</h4>"
+            io.puts "<h4>Ausgeführte Programme</h4>"
             io.puts "<table class='table table-striped table-sm narrow'>"
             io.puts "<thead>"
             io.puts "<tr>"

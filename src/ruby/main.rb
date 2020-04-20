@@ -395,18 +395,25 @@ class Main < Sinatra::Base
         @@invitations = {}
         @@user_groups = {}
         current_group = '(keine Gruppe)'
+        group_admins = {}
         File.open('invitations.txt') do |f|
             f.each_line do |line|
                 next if line.strip.empty?
                 next if line.strip[0] == '#'
                 if line[0] == '>'
                     current_group = line[1, line.size - 1].strip
+                    group_admins[current_group] ||= Set.new()
+                    ADMIN_MAIL_ADDRESSES.each do |email|
+                        group_admins[current_group] << email
+                    end
+                elsif line[0] == '+'
+                    group_admins[current_group] << line[1, line.size - 1].strip.delete_prefix('<').delete_suffix('>')
                 else
                     gender = line[0]
                     gender = 'all' if gender == 'x'
                     parts = line[1, line.size - 1].strip.split(' ')
                     email = parts.last.delete_prefix('<').delete_suffix('>')
-                    @@user_groups[current_group] ||= []
+                    @@user_groups[current_group] ||= Set.new()
                     @@user_groups[current_group] << email
                     @@invitations[email] = {:gender => gender,
                                             :group => current_group}
@@ -415,6 +422,13 @@ class Main < Sinatra::Base
                         @@invitations[email][:name] = name
                     end
                 end
+            end
+        end
+        @@teachers = {}
+        group_admins.each_pair do |group, emails|
+            emails.each do |email|
+                @@teachers[email] ||= Set.new()
+                @@teachers[email] << group
             end
         end
         @@lego_icons = {:m => [], :w => [], :all => []}
@@ -520,6 +534,10 @@ class Main < Sinatra::Base
         @session_user && @session_user[:admin]
     end
     
+    def teacher_logged_in?
+        @session_user && @@teachers.include?(@session_user[:email])
+    end
+    
     def this_user_logged_in?(login)
         @session_user && (@session_user[:login] == login)
     end
@@ -534,6 +552,10 @@ class Main < Sinatra::Base
     
     def require_admin!
         assert(admin_logged_in?)
+    end
+    
+    def require_teacher!
+        assert(teacher_logged_in?)
     end
     
     def require_this_user_or_admin(login)
@@ -556,10 +578,10 @@ class Main < Sinatra::Base
         end
     end
     
-    def user_for_login(login)
-        require_admin!
-        assert(login.is_a? String)
-        neo4j_query_expect_one("MATCH (n:User {login: {login}}) RETURN n LIMIT 1", :login => login)['n'].props
+    def this_is_a_page_for_logged_in_teachers
+        unless teacher_logged_in?
+            redirect "#{WEB_ROOT}/", 303
+        end
     end
     
     before '*' do
@@ -1515,9 +1537,9 @@ class Main < Sinatra::Base
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
                     io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Profil</span></a>"
-                    if admin_logged_in?
+                    if teacher_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Admin</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"
@@ -1682,7 +1704,7 @@ class Main < Sinatra::Base
     end
     
     def show_daily_activity(days)
-        require_admin!
+        require_teacher!
         date = (DateTime.now.new_offset(0) - days).to_s
         date = "#{date[0, 10]}T00:00:00+00:00"
         date_date = DateTime.parse(date)
@@ -1697,6 +1719,7 @@ class Main < Sinatra::Base
             results.each do |entry|
                 submission = entry[:submission]
                 email = entry[:user][:email]
+                next unless is_teacher_for_user?(email)
                 users[email] ||= {}
                 users[email][:name] ||= entry[:user][:name]
                 users[email][:avatar] ||= entry[:user][:avatar]
@@ -1711,10 +1734,19 @@ class Main < Sinatra::Base
                 end
             end
             io.puts "<h4>Tagesverlauf</h4>"
-            io.puts "<table class='daily-activity table table-sm table-striped'>"
+            io.puts "<table class='daily-activity table table-sm'>"
+            last_group = nil
             users.keys.sort do |a, b|
-                users[b][:s].size <=> users[a][:s].size
+                (@@invitations[a][:group] == @@invitations[b][:group]) ?
+                (users[b][:s].size <=> users[a][:s].size) :
+                (@@invitations[a][:group] <=> @@invitations[b][:group])
+                
             end.each do |email|
+                group = @@invitations[email][:group]
+                if last_group != group
+                    last_group = group
+                    io.puts "<tr><th style='background-color: #ddd;' colspan='2'>#{group}</th></tr>"
+                end
                 io.puts "<tr>"
                 io.puts "<td class='daily-activity-user'><img class='menu-avatar' src='/gen/#{users[email][:avatar]}-48.png' /> #{htmlentities(users[email][:name])}</td>"
                 io.puts "<td class='daily-activity-d'>"
@@ -1737,8 +1769,13 @@ class Main < Sinatra::Base
         end
     end
     
-    def show_admin_dashboard()
-        require_admin!
+    def is_teacher_for_user?(email)
+        require_teacher!
+        @@teachers[@session_user[:email]].include?((@@invitations[email] || {})[:group])
+    end
+    
+    def show_teacher_dashboard()
+        require_teacher!
         StringIO.open do |io|
             users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u'].props }
                 MATCH (u:User)
@@ -1747,6 +1784,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             user_for_email = {}
             users.each do |user|
+                next unless is_teacher_for_user?(user[:email])
                 user_for_email[user[:email]] = user
             end
             submissions = neo4j_query(<<~END_OF_QUERY).map { |x| {:user => x['u'].props, :submission => x['sb'].props, :script => x['sc'].props, :task => x['t'].props}}
@@ -1758,6 +1796,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             submissions_for_user = {}
             submissions.each do |entry|
+                next unless is_teacher_for_user?(entry[:user][:email])
                 submissions_for_user[entry[:user][:email]] ||= {}
                 submissions_for_user[entry[:user][:email]][entry[:task][:slug]] ||= {}
                 if entry[:submission][:correct]
@@ -1783,9 +1822,9 @@ class Main < Sinatra::Base
             io.puts "</thead>"
             io.puts "<tbody>"
             last_group = nil
-            @@user_groups.keys.each do |group|
+            @@user_groups.keys.sort.each do |group|
                 @@user_groups[group].select do |email|
-                    user_for_email.include?(email)
+                    user_for_email.include?(email) && is_teacher_for_user?(email)
                 end.sort do |a, b|
                     user_for_email[a][:name] <=> user_for_email[b][:name]
                 end.each do |email|
@@ -1845,6 +1884,7 @@ class Main < Sinatra::Base
             script_task_order = []
             script_task_dict = {}
             submissions.reverse.each do |entry|
+                next unless is_teacher_for_user?(entry[:user][:email])
                 script = entry[:script]
                 task = entry[:task]
                 script_task = "#{script[:sha1]}/#{task[:slug]}"

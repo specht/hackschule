@@ -720,14 +720,14 @@ class Main < Sinatra::Base
                             dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
                             FileUtils.rm_rf(dir)
                             FileUtils.mkpath(dir)
-                            script_path = File.join(dir, 'main.py')
+                            script_path = File.join(dir, 'main.rb')
                             File.open(script_path, 'w') do |f|
                                 f.write(script)
                             end
-                            script_path = File.join(dir, 'scaffold.py')
+                            script_path = File.join(dir, 'scaffold.rb')
                             # TODO: Speed this up, do this once at startup
                             File.open(script_path, 'w') do |f|
-                                scaffold = File.read('scaffold.py')
+                                scaffold = File.read('scaffold.rb')
                                 code = StringIO.open do |io|
                                     File.open('os-functions.txt') do |f|
                                         f.each_line do |line|
@@ -780,15 +780,18 @@ class Main < Sinatra::Base
                                 end
                             end
                             Thread.new do
-                                system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
+                                system("docker update --cpus 1.0 --memory 1g #{SANDBOX}");
                             end
                             
                             # first kill all processed from this user
-                            system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                            system("docker exec #{SANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                            command = ['docker', 'exec', '-i', SANDBOX, 
+                                       "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', 
+                                       '-u', script_path.sub('/raw', '')]
+                            command = ['docker', 'exec', '-i', SANDBOX, 
+                                       "timeout", SCRIPT_TIMEOUT.to_s, 'ruby', script_path.sub('/raw', '')]
                             stdin, stdout, stderr, thread = 
-                                    Open3.popen3('docker', 'exec', '-i', 
-                                                  PYSANDBOX, 
-                                                  "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                    Open3.popen3(*command)
                             @@clients[client_id] = {:stdin => stdin,
                                                     :stdout => stdout,
                                                     :stderr => stderr,
@@ -948,7 +951,7 @@ class Main < Sinatra::Base
                                                 
                                                 test_stdin, test_stdout, test_stderr, test_thread = 
                                                         Open3.popen3('docker', 'exec', '-i', 
-                                                                     PYSANDBOX, "timeout", 
+                                                                     SANDBOX, "timeout", 
                                                                      SCRIPT_TIMEOUT.to_s, 
                                                                      'python3', '-u', 
                                                                      script_path.sub('/raw', ''))
@@ -992,7 +995,7 @@ class Main < Sinatra::Base
                         # kill all processed from this user
                         timeout_message = "\u001b[46;1m[ Hinweis ]\u001b[0m Das Programm wurde abgebrochen."
                         ws.send({:stderr => timeout_message}.to_json)
-                        system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                        system("docker exec #{SANDBOX} python3 /killuser.py #{@session_user[:email]}")
                     elsif request['action'] == 'stdin'
                         @@clients[client_id][:stdin].write(request['content'])
                     end

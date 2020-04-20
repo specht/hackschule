@@ -112,15 +112,15 @@ if PROFILE.include?(:dynamic)
             'rerun -b --dir /app -s SIGKILL \'rackup --host 0.0.0.0\'' :
             'rackup --host 0.0.0.0'
     }
-    docker_compose[:services][:pysandbox] = {
-        :build => './docker/pysandbox',
+    docker_compose[:services][:sandbox] = {
+        :build => './docker/sandbox',
         :entrypoint =>  '/usr/bin/tail -f /dev/null',
         :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"]
     }
     if PROFILE.include?(:neo4j)
         docker_compose[:services][:ruby][:depends_on] ||= []
         docker_compose[:services][:ruby][:depends_on] << :neo4j
-        docker_compose[:services][:ruby][:depends_on] << :pysandbox
+        docker_compose[:services][:ruby][:depends_on] << :sandbox
         docker_compose[:services][:ruby][:links] = ['neo4j:neo4j']
     end
 end
@@ -169,8 +169,8 @@ if PROFILE.include?(:dynamic)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'sandbox'))
     FileUtils::mkpath(GEN_FILES_PATH)
 end
-if PROFILE.include?(:pysandbox)
-    FileUtils::cp('src/pysandbox/Gemfile', 'docker/pysandbox/')
+if PROFILE.include?(:sandbox)
+    FileUtils::cp('src/sandbox/Gemfile', 'docker/sandbox/')
 end
 if PROFILE.include?(:neo4j)
     FileUtils::mkpath(NEO4J_DATA_PATH)

@@ -42,5 +42,5 @@ WEBSITE_HOST = 'HIER_LIVE_HOST_EINFÜGEN' # z. B. hackschule.de
 LETSENCRYPT_EMAIL = 'HIER_EMAIL_EINFÜGEN'
 
 WEB_ROOT = ENV['DEVELOPMENT'] ? 'http://localhost:8020' : "https://#{WEBSITE_HOST}"
-PYSANDBOX = ENV['DEVELOPMENT'] ? 'codedev_pysandbox_1' : 'code_pysandbox_1'
+SANDBOX = ENV['DEVELOPMENT'] ? 'codedev_sandbox_1' : 'code_sandbox_1'
 

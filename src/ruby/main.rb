@@ -1294,7 +1294,7 @@ class Main < Sinatra::Base
                     tile = nil
                 end
                 if tile
-                    tiles << {:x => x, :y => y, :sprite => tile}
+                    tiles << {:x => x, :y => y, :sprite => tile, :bg => tile.include?('floor')}
                 end
                 # door
                 if map_is(map, x, y, 'd') && !map_is(map, x + 1, y, 'd')

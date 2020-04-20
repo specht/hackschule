@@ -1,0 +1,40 @@
+title: "Münzspirale"
+enabled: true
+difficulty: easy
+--------
+Sammle alle Münzen auf! 
+--------
+[template]
+from wizard import Wizard
+
+class Fili(Wizard):
+    def run(self):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[dungeon_init]
+def wiz_init(self):
+    pass
+        
+def wiz_verify(self):
+    return self.coins() == 54
+        
+fili.use_init(wiz_init)
+fili.use_verify(wiz_verify)
+--------
+[map]
+lwwbwwwwwwwwwwbwwr
+l/           a   r
+l   cccccccc c   r
+l C c      c c C r
+l   c cccc c c   r
+l   c c  c.c c   r
+l   c c cc c c , r
+l . c c  , c c   r
+l   c cccccc c   r
+l C c        c C r
+l   cccccccccc   r
+l,      .       .r
+--------
+[verify]
+false

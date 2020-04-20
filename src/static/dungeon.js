@@ -35,7 +35,7 @@ function resize_dungeon() {
             width: '' + (16 * dungeon_scale * sprite.data('scale')) + 'px',
             left: (sprite.data('x') * 16 + sprite.data('dx')) * dungeon_scale,
             top: (sprite.data('y') * 16 + sprite.data('dy')) * dungeon_scale,
-            'z-index': (sprite.data('y') * 16) * dungeon_scale + sprite.data('z')
+            'z-index': sprite.data('bg') ? 0 : (sprite.data('y') * 16) * dungeon_scale + sprite.data('z')
         });
     });
     update_hero_sprite();
@@ -90,7 +90,7 @@ function load_dungeon(task_slug) {
         dungeon_height = data.height;
         resize_dungeon();
         data.tiles.forEach(function(info, i) {
-            let tile = $('<img>').addClass('sprite').attr('src', '/sprites/0x72/' + info.sprite + '.png').data({x: info.x, y: info.y, dx: info.dx || 0, dy: info.dy || 0, z: info.z || 0, scale: info.scale || 1}).appendTo(container);
+            let tile = $('<img>').addClass('sprite').attr('src', '/sprites/0x72/' + info.sprite + '.png').data({x: info.x, y: info.y, dx: info.dx || 0, dy: info.dy || 0, z: info.z || 0, scale: info.scale || 1, bg: info.bg || false}).appendTo(container);
             if (info.flip_x)
                 tile.addClass('flip-x');
             if (info.flip_y)

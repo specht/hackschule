@@ -1683,8 +1683,11 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             last_group = nil
             @@user_groups.keys.each do |group|
-                @@user_groups[group].each do |email|
-                    next unless user_for_email.include?(email)
+                @@user_groups[group].select do |email|
+                    user_for_email.include?(email)
+                end.sort do |a, b|
+                    user_for_email[a][:name] <=> user_for_email[b][:name]
+                end.each do |email|
                     user = user_for_email[email]
                     if last_group != @@invitations[email][:group]
                         last_group = @@invitations[email][:group]

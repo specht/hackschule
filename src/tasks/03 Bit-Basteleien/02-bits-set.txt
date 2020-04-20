@@ -1,0 +1,35 @@
+title: "Anzahl der gesetzten Bits"
+enabled: true
+difficulty: medium
+--------
+Schreibe eine Funktion, die ermittelt, wie viele Bits in der Binärdarstellung einer gegebenen Zahl gesetzt sind.
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    123
+    
+Ausgabe:
+
+    6
+    
+*Die Binärdarstellung von 123 lautet 1111011. Es sind also 6 Bits gesetzt und daher lautet die Antwort 6.*
+--------
+[template]
+class Task:
+    def bits_set(self, n):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(6, 123)
+add_input(0, 0)
+add_input(1, 1)
+for i in range(1, 18):
+    n = random.randint(1, pow(10, i))
+    add_input(bin(n)[2:].count('1'), n)
+
+DISABLE_FUNCTION('builtins.bin', 'bin')

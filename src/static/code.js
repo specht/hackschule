@@ -224,6 +224,7 @@ function setup_ws(ws)
         ws.send(JSON.stringify({
             action: 'run', 
             slug: window.slug,
+            language: 'ruby',
             script: window.launch_this_script
         }));
     }

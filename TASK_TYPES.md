@@ -35,14 +35,14 @@
 - define pairs of expected output (one value) / input (n values) with Ruby code
 - possible to disable functions (language specific)
 
-- Python template:
+Python template:
 
     class Task:
         def maximum(self, zahlen):
             # Ersetze 'pass' durch deine Lösung
             pass
 
-- Ruby template:
+Ruby template:
 
     class Task
         def maximum(zahlen)
@@ -50,7 +50,7 @@
         end
     end
     
-- C++ template:
+C++ template:
 
     int Task::maximum(std::list<int> zahlen) 
     {

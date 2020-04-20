@@ -14,6 +14,8 @@ require 'digest/sha1'
 require 'htmlentities'
 require '/credentials.rb'
 
+LANGUAGE_FILE_EXTENSIONS = {:python => '.py', :ruby => '.rb'}
+
 def update_resolutions(use_tag = nil)
     tags = []
     if use_tag.nil?
@@ -638,7 +640,12 @@ class Main < Sinatra::Base
     
     def store_script(script)
         require_user!
-        script = script.rstrip + "\n"
+        # strip spaces at end of lines, remove trailing space, add newline
+        script = script.split("\n").map do |line|
+            line.rstrip
+        end.join("\n").rstrip + "\n"
+        # not really a sha1, but still called sha1
+        # (first 8 characters of base31 sha1)
         script_sha1 = RandomTag::to_base31(Digest::SHA1.hexdigest(script).to_i(16))[0, 8]
         script_path = "/raw/code/#{script_sha1}.py"
         unless File.exists?(script_path)
@@ -672,6 +679,8 @@ class Main < Sinatra::Base
                     if request['action'] == 'run'
                         task = @@tasks[request['slug']]
                         unless task.nil?
+                            language = request['language'].to_sym
+                            # TODO: make sure this language is supported for this task
                             fifo = nil
                             
                             script_sha1, submitted_script = store_script(request['script'])
@@ -680,6 +689,7 @@ class Main < Sinatra::Base
                                 MERGE (t:Task {slug: {slug}})
                             END_OF_QUERY
                             timestamp = DateTime.now.new_offset(0).to_s
+                            # check is submission node already exists
                             result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1)
                                 MATCH (u:User {email: {email}})
                                 MATCH (t:Task {slug: {slug}})
@@ -692,6 +702,7 @@ class Main < Sinatra::Base
                             END_OF_QUERY
                             submission_node_id = nil
                             if result.empty?
+                                # submission node DOES NOT exist, set t0 and t1 timestamps
                                 submission_node_id = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1, :timestamp => timestamp).values.first
                                     MATCH  (u:User {email: {email}})
                                     MATCH  (t:Task {slug: {slug}})
@@ -706,7 +717,7 @@ class Main < Sinatra::Base
                                 END_OF_QUERY
                             else
                                 submission_node_id = result.first.values.first
-                                # update submission timestamp
+                                # submission node DOES exist, update t1 timestamp
                                 r = neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id, :timestamp => timestamp)
                                     MATCH (sb:Submission)
                                     WHERE ID(sb) = {submission_node_id}
@@ -717,10 +728,11 @@ class Main < Sinatra::Base
                             STDERR.puts "Launching process..."
                             script = ''
                             script += submitted_script
+                            # clear sandbox directory for user
                             dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
                             FileUtils.rm_rf(dir)
                             FileUtils.mkpath(dir)
-                            script_path = File.join(dir, 'main.rb')
+                            script_path = File.join(dir, "main#{LANGUAGE_FILE_EXTENSIONS[language]}")
                             File.open(script_path, 'w') do |f|
                                 f.write(script)
                             end
@@ -789,7 +801,7 @@ class Main < Sinatra::Base
                                        "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', 
                                        '-u', script_path.sub('/raw', '')]
                             command = ['docker', 'exec', '-i', SANDBOX, 
-                                       "timeout", SCRIPT_TIMEOUT.to_s, 'ruby', script_path.sub('/raw', '')]
+                                       "timeout", SCRIPT_TIMEOUT.to_s, 'ruby', script_path.sub('scaffold', 'main').sub('/raw', '')]
                             stdin, stdout, stderr, thread = 
                                     Open3.popen3(*command)
                             @@clients[client_id] = {:stdin => stdin,
@@ -995,6 +1007,7 @@ class Main < Sinatra::Base
                         # kill all processed from this user
                         timeout_message = "\u001b[46;1m[ Hinweis ]\u001b[0m Das Programm wurde abgebrochen."
                         ws.send({:stderr => timeout_message}.to_json)
+                        # TODO: Also kill all child processes
                         system("docker exec #{SANDBOX} python3 /killuser.py #{@session_user[:email]}")
                     elsif request['action'] == 'stdin'
                         @@clients[client_id][:stdin].write(request['content'])

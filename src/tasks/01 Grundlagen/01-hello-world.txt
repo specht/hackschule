@@ -1,10 +1,11 @@
 title: Hello, world!
+type: check_stdout
 enabled: true
 difficulty: easy
 --------
 Schreibe ein Programm, das den Text `Hello, world!` ausgibt. Achte darauf, dass du genau diesen Text ausgibst.
 --------
-[verify]
+[check_stdout]
 Proc.new do |result|
     temp = result.downcase
     ['hello', 'world', '!'].all? { |w| temp.include?(w) }

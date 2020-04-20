@@ -1182,7 +1182,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:slug])
         versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
             MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
-                (sb)-[:FOR]->(t:Task {slug: 'wizard-muenzsammler'}),
+                (sb)-[:FOR]->(t:Task {slug: {slug}}),
                 (sc:Script)<-[:USING]-(sb)
             WITH sc.sha1 AS sha1, min(sb.t0) AS t0
             MATCH (sb2:Submission {correct: true, t0: t0})-[:USING]->(sc2:Script {sha1: sha1}),

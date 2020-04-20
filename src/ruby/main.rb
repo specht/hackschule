@@ -1681,6 +1681,62 @@ class Main < Sinatra::Base
         !solution.empty?
     end
     
+    def show_daily_activity(days)
+        require_admin!
+        date = (DateTime.now.new_offset(0) - days).to_s
+        date = "#{date[0, 10]}T00:00:00+00:00"
+        date_date = DateTime.parse(date)
+        StringIO.open do |io|
+            results = neo4j_query(<<~END_OF_QUERY, {:date => date}).map { |x| {:submission => x['sb'].props, :user => x['u'].props} }
+                MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User)
+                WHERE sb.t0 >= {date} OR sb.t1 >= {date}
+                RETURN sb, u
+                ORDER BY sb.t0, sb.t1;
+            END_OF_QUERY
+            users = {}
+            results.each do |entry|
+                submission = entry[:submission]
+                email = entry[:user][:email]
+                users[email] ||= {}
+                users[email][:name] ||= entry[:user][:name]
+                users[email][:avatar] ||= entry[:user][:avatar]
+                users[email][:s] ||= []
+                [:t0, :t1].each do |k|
+                    t = submission[k]
+                    next unless t >= date
+                    f = (DateTime.parse(t) - date_date).to_f
+                    d = f.floor
+                    t = ((f - d) * 10000).to_i / 100.0
+                    users[email][:s] << [d, t]
+                end
+            end
+            io.puts "<h4>Tagesverlauf</h4>"
+            io.puts "<table class='daily-activity table table-sm table-striped'>"
+            users.keys.sort do |a, b|
+                users[b][:s].size <=> users[a][:s].size
+            end.each do |email|
+                io.puts "<tr>"
+                io.puts "<td class='daily-activity-user'><img class='menu-avatar' src='/gen/#{users[email][:avatar]}-48.png' /> #{htmlentities(users[email][:name])}</td>"
+                io.puts "<td class='daily-activity-d'>"
+                io.puts "<div>"
+                (0..days).each do |i|
+                    io.puts "<span class='line d#{i}' style='top: #{i * 3 + 1}px;'></span>"
+                end
+                users[email][:s].each do |pair|
+                    d = pair[0]
+                    t = pair[1]
+                    io.puts "<span class='d d#{d}' style='left: #{t}%;'></span>"
+                end
+                io.puts "</div>"
+                io.puts "</td>"
+                io.puts "</tr>"
+                io.puts "</div>"
+            end
+            io.puts "</table>"
+            io.string
+        end
+    end
+    
     def show_admin_dashboard()
         require_admin!
         StringIO.open do |io|
@@ -1762,6 +1818,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts show_daily_activity(7)
             io.puts "<h4>Aktivitäten</h4>"
             io.puts "<table class='table table-striped table-sm narrow'>"
             io.puts "<thead>"

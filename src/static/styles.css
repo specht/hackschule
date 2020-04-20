@@ -646,6 +646,73 @@ img.menu-avatar {
     white-space: nowrap;
 }
 
+.daily-activity {
+    font-family: 'Roboto Condensed';
+}
+
+.daily-activity-user {
+    white-space: nowrap;
+}
+
+.daily-activity-d {
+    position: relative;
+    width: 100%;
+}
+
+.daily-activity-d div {
+    position: relative;
+    top: 0px;
+}
+
+.daily-activity-d .line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    opacity: 0.3;
+    background-color: #5f3577;
+}
+
+.daily-activity-d .d {
+    position: absolute;
+    height: 3px;
+    width: 3px;
+/*     opacity: 0.5; */
+    background-color: #5f3577;
+}
+.daily-activity-d .d0 {
+    top: 0px;
+/*     background-color: #a40000; */
+}
+.daily-activity-d .d1 {
+    top: 3px;
+/*     background-color: #ed5724; */
+}
+.daily-activity-d .d2 {
+    top: 6px;
+/*     background-color: #fad31c; */
+}
+.daily-activity-d .d3 {
+    top: 9px;
+/*     background-color: #4aa03f; */
+}
+.daily-activity-d .d4 {
+    top: 12px;
+/*     background-color: #55beed; */
+}
+.daily-activity-d .d5 {
+    top: 15px;
+/*     background-color: #0d60ae; */
+}
+.daily-activity-d .d6 {
+    top: 18px;
+/*     background-color: #5f3577; */
+}
+.daily-activity-d .d7 {
+    top: 21px;
+/*     background-color: #b296c7; */
+}
+
 @media (max-width: 992px) {
     .hs-card-index-3 {
         display: none;

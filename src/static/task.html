@@ -11,7 +11,7 @@
         <div class='col-md-3 container-task'>
             <h3 style='margin-top: 15px; margin-bottom: 15px;'>#{TASK_TITLE}</h3>
             <div id='already-solved' style='display: #{current_user_solved_this_task(@task_slug) ? 'block' : 'none'};'>
-            <i class='fa fa-medal text-success' style='font-size: 250%; position: absolute; top: 0; right: 15px;'></i>
+            <i class='fa fa-medal text-success' style='font-size: 250%; position: absolute; top: -1px; right: 15px;'></i>
             <hr />
             <div style='margin-bottom: 10px;'>Du hast diese Aufgabe bereits erfolgreich gelöst!</div>
             <button class='btn btn-success' style='position: relative;' onclick='load_solutions();'>Lösungen vergleichen</button>
@@ -100,7 +100,7 @@
         </button>
       </div>
       <div class="modal-body">
-      <table class='table table-sm'>
+      <table class='table table-sm table-no-textwrap'>
         <thead>
         <tr><th>Datum</th><th class='text-right'>Größe</th><th class='text-right'>Zeilen</th><th>Autor</th></tr>
         </thead>

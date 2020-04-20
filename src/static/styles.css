@@ -638,6 +638,14 @@ img.menu-avatar {
     background-color: #eee;
 }
 
+.modal-body {
+    overflow-x: hidden;
+}
+
+.table-no-textwrap td, .table-no-textwrap th {
+    white-space: nowrap;
+}
+
 @media (max-width: 992px) {
     .hs-card-index-3 {
         display: none;

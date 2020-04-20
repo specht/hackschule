@@ -14,7 +14,7 @@ class TestException(Exception):
     def __init__(self, received, expected, *input):
         self.received = received
         self.expected = expected
-        self.input = input
+        self.input = input[0] if len(input) == 1 else input
     
     def report(self):
         sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')

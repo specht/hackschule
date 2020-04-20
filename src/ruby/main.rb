@@ -206,6 +206,7 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:Task) ASSERT n.slug IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Script) ASSERT n.sha1 IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :Submission(correct)")
+                    neo4j_query("CREATE INDEX ON :Submission(t0)")
                 end
                 transaction do
                     # give admin rights to admin
@@ -1180,11 +1181,14 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:slug])
         versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
-            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User),
-            (sb)-[:FOR]->(t:Task {slug: {slug}}),
-            (sc:Script)<-[:USING]-(sb)
-            RETURN sb.t0 AS t, sc.sha1 AS sha1, sc.size AS size, sc.lines AS lines, u.name AS user_name, u.avatar AS user_avatar
-            ORDER BY sb.t0;
+            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
+                (sb)-[:FOR]->(t:Task {slug: 'wizard-muenzsammler'}),
+                (sc:Script)<-[:USING]-(sb)
+            WITH sc.sha1 AS sha1, min(sb.t0) AS t0
+            MATCH (sb2:Submission {correct: true, t0: t0})-[:USING]->(sc2:Script {sha1: sha1}),
+                (sb2)-[:SUBMITTED_BY]->(u:User)
+            RETURN sb2.t0 AS t, sc2.sha1 AS sha1, sc2.size AS size, sc2.lines AS lines, u.name AS user_name, u.avatar AS user_avatar
+            ORDER BY sb2.t0;
         END_OF_QUERY
         seen_sha1 = Set.new()
         solutions = []

@@ -3,6 +3,8 @@ enabled: true
 difficulty: easy
 --------
 Sammle alle Münzen auf! 
+
+Falls dir der Zauberer zu langsam ist, kannst du die Geschwindigkeit mit `self.set_speed(speed)` einstellen, wobei du eine Zahl von 1 (sehr langsam) bis 100 (sehr schnell) übergeben musst. Die normale Geschwindigkeit ist 50.
 --------
 [template]
 from wizard import Wizard

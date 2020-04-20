@@ -258,6 +258,7 @@ function setup_ws(ws)
         }
         else if (data.status === 'passed')
         {
+            $('#already-solved').show();
             if (!shown_passed_modal)
                 $('#passedModal').modal('show');
             shown_passed_modal = true;

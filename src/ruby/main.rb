@@ -1176,6 +1176,35 @@ class Main < Sinatra::Base
         respond(:versions => versions)
     end
     
+    post '/api/load_script_solutions' do
+        require_user!
+        data = parse_request_data(:required_keys => [:slug])
+        versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User),
+            (sb)-[:FOR]->(t:Task {slug: {slug}}),
+            (sc:Script)<-[:USING]-(sb)
+            RETURN sb.t0 AS t, sc.sha1 AS sha1, sc.size AS size, sc.lines AS lines, u.name AS user_name, u.avatar AS user_avatar
+            ORDER BY sb.t0;
+        END_OF_QUERY
+        seen_sha1 = Set.new()
+        solutions = []
+        versions.each do |info|
+            next if seen_sha1.include?(info['sha1'])
+            seen_sha1 << info['sha1']
+            entry = {}
+            t = DateTime.parse(info['t']).to_time.localtime
+            entry[:date] = t.strftime('%d.%m.%Y')
+            entry[:time] = t.strftime('%T')
+            entry[:sha1] = info['sha1']
+            entry[:size] = info['size']
+            entry[:lines] = info['lines']
+            entry[:user_name] = htmlentities(info['user_name'])
+            entry[:user_avatar] = info['user_avatar']
+            solutions << entry
+        end
+        respond(:solutions => solutions.reverse)
+    end
+    
     post '/api/load_latest_draft' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
@@ -1634,6 +1663,18 @@ class Main < Sinatra::Base
             return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0)} GB"
         end
         return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0 / 1024.0)} TB"
+    end
+    
+    def current_user_solved_this_task(slug)
+        require_user!
+        solution = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :slug => slug})
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
+                  (sb)-[:FOR]->(t:Task {slug: {slug}}),
+                  (sb)-[:USING]->(sc:Script)
+            RETURN sb 
+            LIMIT 1;
+        END_OF_QUERY
+        !solution.empty?
     end
     
     def show_admin_dashboard()

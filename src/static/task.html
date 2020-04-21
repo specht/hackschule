@@ -223,7 +223,7 @@ function reset_script_to_template() {
 
 function share_script_modal() {
     $('.navbar-collapse').collapse('hide');
-    api_call('/api/store_script', {script: editor.getValue()}, function(data) {
+    api_call('/api/store_script', {script: editor.getValue(), language: $('.lang').data('lang')}, function(data) {
         if (data.success)
         {
             $('#share_this_link').val('#{WEB_ROOT}/task/#{TASK_SLUG}/' + data.sha1);

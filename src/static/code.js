@@ -224,7 +224,7 @@ function setup_ws(ws)
         ws.send(JSON.stringify({
             action: 'run', 
             slug: window.slug,
-            language: 'ruby',
+            language: $('.lang').data('lang'),
             script: window.launch_this_script
         }));
     }
@@ -235,6 +235,7 @@ function setup_ws(ws)
     
     ws.onmessage = function (msg) {
         data = JSON.parse(msg.data);
+        console.log(data);
         if (data.hello === 'world')
         {
             window.rate_limit = data.rate_limit;

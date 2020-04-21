@@ -13,8 +13,11 @@ require 'set'
 require 'digest/sha1'
 require 'htmlentities'
 require '/credentials.rb'
+require './runner/runner.rb'
+require './runner/check_stdout/check_stdout_runner.rb'
 
-LANGUAGE_FILE_EXTENSIONS = {:python => '.py', :ruby => '.rb'}
+LANGUAGE_FILE_EXTENSIONS = {:python => '.py', :ruby => '.rb', :cpp => '.cpp'}
+LANGUAGE_LABEL = {:python => 'Python', :ruby => 'Ruby', :cpp => 'C++'}
 
 def update_resolutions(use_tag = nil)
     tags = []
@@ -308,20 +311,11 @@ class Main < Sinatra::Base
                 task[:description] = parse_markdown(s)
                 task[:hints] = []
                 parts.reject! do |part|
-                    if part.strip.index('[verify]') == 0
-                        task[:verify] = part.sub('[verify]', '').strip
+                    if part.strip.index('[check_stdout]') == 0
+                        task[:check_stdout] = part.sub('[check_stdout]', '').strip
                         true
                     elsif part.strip.index('[template]') == 0
                         task[:template] = part.sub('[template]', '').strip
-                        true
-                    elsif part.strip.index('[input]') == 0
-                        task[:input] = part.sub('[input]', '').strip
-                        true
-                    elsif part.strip.index('[dungeon_init]') == 0
-                        task[:dungeon_init] = part.sub('[dungeon_init]', '').strip
-                        true
-                    elsif part.strip.index('[map]') == 0
-                        task[:map] = part.sub('[map]', '').strip
                         true
                     elsif part.strip.index('[hint]') == 0
                         s = part.sub('[hint]', '').strip
@@ -638,20 +632,22 @@ class Main < Sinatra::Base
         @html_entities_coder.encode(s)
     end
     
-    def store_script(script)
+    def store_script(script, language)
         require_user!
+        assert(LANGUAGE_FILE_EXTENSIONS.include?(language))
         # strip spaces at end of lines, remove trailing space, add newline
         script = script.split("\n").map do |line|
             line.rstrip
         end.join("\n").rstrip + "\n"
         # not really a sha1, but still called sha1
         # (first 8 characters of base31 sha1)
-        script_sha1 = RandomTag::to_base31(Digest::SHA1.hexdigest(script).to_i(16))[0, 8]
-        script_path = "/raw/code/#{script_sha1}.py"
+        script_sha1 = RandomTag::to_base31(Digest::SHA1.hexdigest("#{language}/#{script}").to_i(16))[0, 8]
+        STDERR.puts script_sha1
+        script_path = "/raw/code/#{script_sha1}#{LANGUAGE_FILE_EXTENSIONS[language]}"
         unless File.exists?(script_path)
             File.open(script_path, 'w') { |f| f.write(script) }
-            neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :size => script.size, :lines => script.count("\n") + 1)
-                MERGE (sc:Script {sha1: {sha1}, size: {size}, lines: {lines}})
+            neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :language => language, :size => script.size, :lines => script.count("\n") + 1)
+                MERGE (sc:Script {sha1: {sha1}, size: {size}, lines: {lines}, language: {language}})
             END_OF_QUERY
         end
         return script_sha1, script
@@ -683,7 +679,7 @@ class Main < Sinatra::Base
                             # TODO: make sure this language is supported for this task
                             fifo = nil
                             
-                            script_sha1, submitted_script = store_script(request['script'])
+                            script_sha1, submitted_script = store_script(request['script'], language)
                             ws.send({:script_sha1 => script_sha1}.to_json)
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
                                 MERGE (t:Task {slug: {slug}})
@@ -725,13 +721,98 @@ class Main < Sinatra::Base
                                     RETURN sb;
                                 END_OF_QUERY
                             end
+                            
+                            # first kill all processes from this user
+                            system("docker exec #{SANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                            
                             STDERR.puts "Launching process..."
+                            sandbox_dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
+                            runner = nil
+                            if task[:type] == 'check_stdout'
+                                runner = CheckStdoutRunner.new(submitted_script, language, sandbox_dir, task)
+                            end
+                            if runner.nil?
+                                ws.send({:message => "Interner Fehler: Dein Programm konnte leider nicht gestartet werden."}.to_json)
+                                ws.close()
+                                return
+                            end
+
+                            # cap maximum CPU usage for entire sandbox
+                            Thread.new { system("docker update --cpus 1.0 --memory 1g #{SANDBOX}"); }
+                            
+                            stdin, stdout, stderr, thread = runner.launch()
+                            STDERR.puts "Launched process..."
+                            ws.send({:status => 'started'}.to_json)
+
+                            # handle streams until script is finished
+                            Thread.new do 
+                                # TODO: strip stuff from stderr stack trace
+                                streams_closed = false
+                                while true do
+                                    break if streams_closed
+                                    reads = [stdout, stderr]
+                                    streams = IO.select(reads)
+                                    streams.first.each do |stream|
+                                        t = Time.now.to_f
+                                        bytes_read = 0
+                                        while true do
+                                            buffer = nil
+                                            begin
+                                                if RATE_LIMIT == 0
+                                                    buffer = stream.read_nonblock(4096)
+                                                else
+                                                    while Time.now.to_f < t + bytes_read.to_f / RATE_LIMIT
+                                                        sleep 0.1
+                                                    end
+                                                    buffer = stream.read_nonblock(RATE_LIMIT)
+                                                    bytes_read += buffer.size
+                                                end
+                                                buffer.force_encoding(Encoding::UTF_8)
+                                                buffer.encode!(Encoding::UTF_16LE, invalid: :replace, replace: "\uFFFD")
+                                                buffer.encode!(Encoding::UTF_8)
+                                            rescue EOFError => e
+                                                STDERR.puts e
+                                                streams_closed = true
+                                                break
+                                            rescue StandardError => e
+                                                STDERR.puts e
+                                                break
+                                            end
+                                            if buffer
+                                                STDERR.puts "Received #{buffer.size} bytes."
+                                                if stream == stdout
+                                                    ws.send({:stdout => buffer}.to_json)
+                                                    runner.handle_stdout(buffer)
+                                                elsif stream == stderr
+                                                    ws.send({:stderr => buffer}.to_json)
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                                exit_code = thread.value.exitstatus
+                                ws.send({:status => 'stopped', :exit_code => exit_code}.to_json)
+                                
+                                if exit_code == 0
+                                    if runner.verify()
+                                        # mark script as passed
+                                        ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
+                                        neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
+                                            MATCH (sb:Submission)
+                                            WHERE ID(sb) = {submission_node_id}
+                                            SET sb.correct = true;
+                                        END_OF_QUERY
+                                    else
+                                        ws.send({:message => "Hinweis: Dein Programm läuft, aber die Aufgabe ist noch nicht erledigt."}.to_json)
+                                    end
+                                end
+                                ws.close
+                            end
+                            
+                            return
+                                
                             script = ''
                             script += submitted_script
-                            # clear sandbox directory for user
-                            dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
-                            FileUtils.rm_rf(dir)
-                            FileUtils.mkpath(dir)
                             script_path = File.join(dir, "main#{LANGUAGE_FILE_EXTENSIONS[language]}")
                             File.open(script_path, 'w') do |f|
                                 f.write(script)
@@ -791,12 +872,7 @@ class Main < Sinatra::Base
                                     end
                                 end
                             end
-                            Thread.new do
-                                system("docker update --cpus 1.0 --memory 1g #{SANDBOX}");
-                            end
                             
-                            # first kill all processed from this user
-                            system("docker exec #{SANDBOX} python3 /killuser.py #{@session_user[:email]}")
                             command = ['docker', 'exec', '-i', SANDBOX, 
                                        "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', 
                                        '-u', script_path.sub('/raw', '')]
@@ -1188,7 +1264,12 @@ class Main < Sinatra::Base
     
     def read_script_for_sha1(sha1)
         assert(sha1 =~ /^[0-9a-z]+$/)
-        File.read("/raw/code/#{sha1}.py")
+        script = neo4j_query_expect_one(<<~END_OF_QUERY, :sha1 => sha1)['sc'].props
+            MATCH (sc:Script {sha1: {sha1}})
+            RETURN sc;
+        END_OF_QUERY
+        {:script => File.read("/raw/code/#{sha1}#{LANGUAGE_FILE_EXTENSIONS[(script[:language] || 'python').to_sym]}"),
+         :language => script[:language].to_sym }
     end
     
     post '/api/load_script_versions' do
@@ -1254,7 +1335,7 @@ class Main < Sinatra::Base
         if sha1.nil?
             raise 'nope'
         else
-            respond(:script => read_script_for_sha1(sha1))
+            respond(read_script_for_sha1(sha1))
         end
     end
     
@@ -1265,14 +1346,14 @@ class Main < Sinatra::Base
         if sha1.nil?
             raise 'nope'
         else
-            respond(:script => read_script_for_sha1(sha1))
+            respond(read_script_for_sha1(sha1))
         end
     end
     
     post '/api/load_script' do
         require_user!
         data = parse_request_data(:required_keys => [:sha1])
-        respond(:script => read_script_for_sha1(data[:sha1]))
+        respond(read_script_for_sha1(data[:sha1]))
     end
     
     def map_lookup(map, x, y)
@@ -1523,8 +1604,8 @@ class Main < Sinatra::Base
     end
 
     post '/api/store_script' do
-        data = parse_request_data(:required_keys => [:script])
-        sha1, script = store_script(data[:script])
+        data = parse_request_data(:required_keys => [:script, :language])
+        sha1, script = store_script(data[:script], data[:language].to_sym)
         respond(:sha1 => sha1)
     end
     
@@ -2007,6 +2088,9 @@ class Main < Sinatra::Base
                     
                     @original_path = original_path
                     @task_slug = slug
+                    str_script_language = 'python'
+                    str_script_language_label = 'Python'
+                    
                     if original_path == 'cat'
                         content.gsub!('#{cat_slug}', cat_slug)
                     elsif original_path == 'task'
@@ -2015,7 +2099,10 @@ class Main < Sinatra::Base
                         content.gsub!('#{TASK_TITLE}', task[:title])
                         content.gsub!('#{TASK_SLUG}', task[:slug])
                         if sha1
-                            content.gsub!('#{TASK_TEMPLATE}', read_script_for_sha1(sha1).strip + "\n")
+                            info = read_script_for_sha1(sha1)
+                            content.gsub!('#{TASK_TEMPLATE}', info[:script].strip + "\n")
+                            str_script_language = "#{info[:language]}"
+                            str_script_language_label = "#{LANGUAGE_LABEL[info[:language]]}"
                         else
                             content.gsub!('#{TASK_TEMPLATE}', task[:template].strip + "\n")
                         end
@@ -2048,6 +2135,8 @@ class Main < Sinatra::Base
                     s = @template[template_path].dup
                     s.sub!('#{CONTENT}', content)
                     s.gsub!('{BRAND}', brand);
+                    s.gsub!('#{SCRIPT_LANGUAGE}', str_script_language)
+                    s.gsub!('#{SCRIPT_LANGUAGE_LABEL}', str_script_language_label)
                     page_css = ''
                     if File::exist?(path.sub('.html', '.css'))
                         page_css = "<style>\n#{File::read(path.sub('.html', '.css'))}\n</style>"

@@ -1708,7 +1708,7 @@ class Main < Sinatra::Base
     end
     
     def current_user_solved_this_task(slug)
-        require_user!
+        return false unless user_logged_in?
         solution = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :slug => slug})
             MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
                   (sb)-[:FOR]->(t:Task {slug: {slug}}),

@@ -17,8 +17,8 @@
         <a class="navbar-brand" href="/"><img src='/android-chrome-192x192.png' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
     <div class='ml-auto'></div>
     
-    <div class='ml-auto mr-1'>
-        <div class="dropdown" style='display: inline-block; margin-right: 20px;'>
+    <div class='ml-auto mr-1' style='position: relative; left: -8px; #{original_path == 'task' ? '' : 'display: none;'}'>
+        <div class="dropdown" style='display: inline-block; margin-right: 8px;'>
             <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class='lang' data-lang='#{SCRIPT_LANGUAGE}'>#{SCRIPT_LANGUAGE_LABEL}</span>
             </a>
@@ -29,7 +29,7 @@
             </div>
         </div>
         
-        <button class="btn btn-success " id='run' style='#{original_path == 'task' ? '' : 'display: none;'} position: relative; left: -15px;' #{@session_user.nil? ? 'disabled' : ''}><i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen</button>
+        <button class="btn btn-success " id='run'} position: relative; left: -15px;' #{@session_user.nil? ? 'disabled' : ''}><i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen</button>
     </div>
     <div class='icon mobile-avatar' style='margin-right: 16px; #{@session_user.nil? ? 'display: none' : ''};'><img class='menu-avatar' src='/gen/#{(@session_user || {})[:avatar]}-48.png' /></div>    
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">

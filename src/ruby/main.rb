@@ -508,24 +508,6 @@ class Main < Sinatra::Base
         end
     end
     
-    def create_session(login, options = {})
-        options[:remember_me] ||= false
-        options[:impersonate] ||= false
-        sid = RandomTag::generate(24)
-        assert(sid =~ /^[0-9A-Za-z]+$/)
-        data = {:sid => sid,
-                :expires => (DateTime.now() + (options[:remember_me] ? 365 : 1)).to_s}
-        if options[:impersonate]
-            data[:impersonate] = true
-        end
-        neo4j_query_expect_one(<<~END_OF_QUERY, :login => login, :data => data)
-            MATCH (u:User {login: {login}})
-            CREATE (s:Session {data})-[:BELONGS_TO]->(u)
-            RETURN s; 
-        END_OF_QUERY
-        sid
-    end
-
     def user_logged_in?
         !@session_user.nil?
     end
@@ -584,6 +566,43 @@ class Main < Sinatra::Base
         end
     end
     
+    def all_sessions
+        sids = request.cookies['sid']
+        users = []
+        if (sids.is_a? String) && (sids =~ /^[0-9A-Za-z,]+$/)
+            sids.split(',').each do |sid|
+                if sid =~ /^[0-9A-Za-z]+$/
+                    results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| {:sid => x['sid'], :user => x['user'].props } }
+                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        RETURN s.sid AS sid, u AS user;
+                    END_OF_QUERY
+                    results.each do |entry|
+                        users << entry
+                    end
+                end
+            end
+        end
+        users
+    end
+    
+    def purge_missing_sessions
+        sid = request.cookies['sid']
+        existing_sids = []
+        if (sid.is_a? String) && (sid =~ /^[0-9A-Za-z,]+$/)
+            sids = sid.split(',')
+            sids.each do |sid|
+                if sid =~ /^[0-9A-Za-z]+$/
+                    results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| x['sid'] }
+                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        RETURN s.sid AS sid;
+                    END_OF_QUERY
+                    existing_sids << sid unless results.empty?
+                end
+            end
+        end
+        existing_sids.join(',')
+    end
+    
     before '*' do
         if ENV['DEVELOPMENT']
             self.class.load_tasks
@@ -595,15 +614,18 @@ class Main < Sinatra::Base
         @session_user_impersonated = nil
         if request.cookies.include?('sid')
             sid = request.cookies['sid']
-            if (sid.is_a? String) && (sid =~ /^[0-9A-Za-z]+$/)
-                results = neo4j_query(<<~END_OF_QUERY, :sid => sid).to_a
-                    MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
-                    RETURN s, u;
-                END_OF_QUERY
-                if results.size == 1
-                    session_expiry = results.first['s'].props[:expires]
-                    if DateTime.parse(session_expiry) > DateTime.now
-                        @session_user = results.first['u'].props.reject {|k, v| k == :password }
+            if (sid.is_a? String) && (sid =~ /^[0-9A-Za-z,]+$/)
+                first_sid = sid.split(',').first
+                if first_sid =~ /^[0-9A-Za-z]+$/
+                    results = neo4j_query(<<~END_OF_QUERY, :sid => first_sid).to_a
+                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        RETURN s, u;
+                    END_OF_QUERY
+                    if results.size == 1
+                        session_expiry = results.first['s'].props[:expires]
+                        if DateTime.parse(session_expiry) > DateTime.now
+                            @session_user = results.first['u'].props.reject {|k, v| k == :password }
+                        end
                     end
                 end
             end
@@ -1027,18 +1049,22 @@ class Main < Sinatra::Base
         END_OF_QUERY
     end
     
-    def logout(sid)
-        assert(sid.is_a? String)
-        assert(sid =~ /^[0-9A-Za-z]+$/)
-        result = neo4j_query(<<~END_OF_QUERY, :sid => sid)
-            MATCH (s:Session {sid: {sid}})-[r:BELONGS_TO]->()
-            DELETE r, s
-        END_OF_QUERY
+    def logout()
+        sid = request.cookies['sid']
+        if sid =~ /^[0-9A-Za-z,]+$/
+            current_sid = sid.split(',').first
+            if current_sid =~ /^[0-9A-Za-z]+$/
+                result = neo4j_query(<<~END_OF_QUERY, :sid => current_sid)
+                    MATCH (s:Session {sid: {sid}})
+                    DETACH DELETE s;
+                END_OF_QUERY
+            end
+        end
+        purge_missing_sessions()
     end
 
     post '/api/logout' do
-        data = parse_request_data(:required_keys => [:sid])
-        respond(:login => logout(data[:sid]))
+        respond(:remaining_sids => logout())
     end
     
     post '/api/login' do
@@ -1107,16 +1133,28 @@ class Main < Sinatra::Base
     end
     
     def create_session(email)
+        STDERR.puts "ALL SESSIONS: #{all_sessions.to_yaml}"
         sid = RandomTag::generate(24)
         assert(sid =~ /^[0-9A-Za-z]+$/)
         data = {:sid => sid,
                 :expires => (DateTime.now() + 365).to_s}
+        all_sessions().each do |session|
+            other_sid = session[:sid]
+            result = neo4j_query(<<~END_OF_QUERY, :email => email, :other_sid => other_sid).map { |x| x['sid'] }
+                MATCH (s:Session {sid: {other_sid}})-[:BELONGS_TO]->(u:User {email: {email}})
+                DETACH DELETE s;
+            END_OF_QUERY
+        end
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :data => data)
             MATCH (u:User {email: {email}})
             CREATE (s:Session {data})-[:BELONGS_TO]->(u)
             RETURN s; 
         END_OF_QUERY
-        sid
+        all_sids = all_sessions().map { |x| x[:sid] }
+        STDERR.puts all_sessions().to_yaml
+        STDERR.puts all_sids.to_yaml
+        all_sids.unshift(sid)
+        all_sids.join(',')
     end
     
     post '/api/confirm_login' do
@@ -1537,6 +1575,15 @@ class Main < Sinatra::Base
                     io.puts "</a>"
                     io.puts "<div class='dropdown-menu dropdown-menu-right' aria-labelledby='navbarDropdown'>"
                     io.puts "<a class='dropdown-item nav-icon' href='/profil'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Profil</span></a>"
+                    sessions = all_sessions()
+                    if sessions.size > 1
+                        io.puts "<div class='dropdown-divider'></div>"
+                        sessions[1, sessions.size - 1].each do |entry|
+                            local_sids = ([entry[:sid]] + sessions.reject { |x| x[:sid] == entry[:sid]}.map { |x| x[:sid] }).join(',')
+                            io.puts "<a class='dropdown-item nav-icon' href='#' onclick=\"set_sid_cookie('#{local_sids}');\"><img class='icon menu-avatar' src='/gen/#{entry[:user][:avatar]}-48.png' /><span class='label'>#{htmlentities(entry[:user][:name])}</span></a>"
+                        end
+                    end
+                    io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in-alt'></i></div><span class='label'>Zusätzliches Konto...</span></a>"
                     if teacher_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
@@ -1594,7 +1641,7 @@ class Main < Sinatra::Base
             
             @@task_keys_sorted.each do |k|
                 task = @@tasks[k]
-                unless admin_logged_in?
+                unless teacher_logged_in?
                     next unless task[:enabled]
                 end
                 unless show_cat_slug.nil?
@@ -2032,6 +2079,19 @@ class Main < Sinatra::Base
                     s = @template[template_path].dup
                     s.sub!('#{CONTENT}', content)
                     s.gsub!('{BRAND}', brand);
+                    purge_deleted_sids_code = ''
+                    existing_sids = purge_missing_sessions()
+                    sent_sids = request.cookies['sid']
+                    if existing_sids != sent_sids
+                        purge_deleted_sids_code = StringIO.open do |io|
+                            io.puts "var options = {};"
+                            io.puts "options.expires = 365;"
+                            io.puts "options.path = '/';"
+                            io.puts "$.cookie('sid', '#{existing_sids}', options);"
+                            io.string
+                        end
+                    end
+                    s.sub!('#{PURGE_DELETED_SIDS}', purge_deleted_sids_code)
                     page_css = ''
                     if File::exist?(path.sub('.html', '.css'))
                         page_css = "<style>\n#{File::read(path.sub('.html', '.css'))}\n</style>"

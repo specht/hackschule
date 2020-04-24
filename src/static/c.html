@@ -25,13 +25,7 @@ window.addEventListener('load', function () {
         api_call('/api/confirm_login', {tag: '#{login_tag}', code: $('#code').val()}, function(data) {
             console.log(data);
             if (data.success === true)
-            {
-                var options = {};
-                options.expires = 365;
-                options.path = '/';
-                $.cookie("sid", data.session_id, options);
-                window.location.href = '/';
-            }
+                set_sid_cookie(data.session_id);
             else
             {
                 if (data.error === 'code_expired')

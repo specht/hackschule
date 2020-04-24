@@ -42,6 +42,20 @@ window.addEventListener('load', function() {
         e = $(e.target);
         window.location = e.attr('href');
     });
+    #{PURGE_DELETED_SIDS}
 });
+function set_sid_cookie(s) {
+    console.log('set_sid_cookie(', s, ')');
+    if (s.length > 0)
+    {
+        var options = {};
+        options.expires = 365;
+        options.path = '/';
+        $.cookie("sid", s, options);
+    }
+    else
+        $.removeCookie("sid");
+    window.location.href = '/';
+};
 </script>
 </body></html>

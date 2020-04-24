@@ -713,6 +713,10 @@ img.menu-avatar {
 /*     background-color: #b296c7; */
 }
 
+.wordwrap {
+    white-space: normal;
+}
+
 @media (max-width: 992px) {
     .hs-card-index-3 {
         display: none;

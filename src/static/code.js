@@ -89,11 +89,9 @@ function api_call(url, data, callback, options)
 
 function perform_logout()
 {
-    var sid = $.cookie('sid');
-    $.removeCookie("sid");
-    api_call('/api/logout', {sid: sid}, function(data) {
+    api_call('/api/logout', {}, function(data) {
         if (data.success)
-            window.location.href = '/';
+            set_sid_cookie(data.remaining_sids);
     });
 }
 

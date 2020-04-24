@@ -3,7 +3,8 @@
         <div class='col-md-8 offset-md-2'>
             <h2 style='margin-bottom: 30px;'>Anmeldung</h2>
             <p>
-            Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät per E-Mail. Wenn du diesen innerhalb einer Stunde eingibst, bist du angemeldet.
+            Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät per E-Mail. Wenn du diesen innerhalb einer Stunde eingibst, bist du angemeldet. Du kannst
+            jederzeit einen neuen Code anfordern.
             </p>
             <p class='text-muted'>
             <em>
@@ -39,7 +40,7 @@ window.addEventListener('load', function () {
                 if (data.error === 'no_invitation_found')
                     show_error_message('Für die eingegebene E-Mail-Adresse wurde keine Einladung gefunden.');
                 else
-                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten.');
+                    show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten, bitte versuche es erneut.');
             }
         });
     });

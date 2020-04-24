@@ -1,0 +1,57 @@
+title: Man in the middle
+enabled: false
+difficulty: medium
+--------
+Gegeben ist ein Datenstrom (also ein Text) unbekannter Länge, der von dir gefiltert werden soll. Ein bestimmtes Wort, das vorher definiert wird, soll durch dein Programm im Datenstrom immer durch ein anderes Wort ersetzt werden.
+
+Implementiere die Methode `receive` in der Klasse `Filter`, die immer ein oder mehrere Zeichen dieses Datenstroms erhält und die Aufgabe hat, sie mit Hilfe der Methode `send` wieder auszugeben. Achte aber darauf, dass du das Suchwort niemals ausgibst, sondern immer durch das Ersatzwort ersetzst.
+
+Das Suchwort findest du in `self.search`, das Ersatzwort in `self.replace` (es handelt sich um Strings, es können also genaugenommen beliebige Zeichenketten sein, nicht nur Wörter). 
+
+*Hinweis: du kannst bei der Lösung dieser Aufgabe nicht warten, bis du "alle" Zeichen empfangen hast, um dann einfach alle Vorkommen von `search` durch `replace` zu ersetzen, weil du nie weißt, wann der Datenstrom zuende ist. Auch falls eine Weile lang kein Zeichen mehr kommt, heisst das nicht, dass der Datenstrom zuende ist. Sorge dafür, dass jedes Zeichen, das du ausgibst, so früh wie möglich gesendet wird.*
+
+---
+
+**Beispiel** (für `search` = `"Alice"` und `replace` = `"Mallory"`)
+
+Eingabestrom:
+
+{:.wordwrap}
+    Alles deutet darauf hin: Alice hat den Keks aus der Dose geklaut.
+    
+Ausgabestrom:
+
+{:.wordwrap}
+    Alles deutet darauf hin: Mallory hat den Keks aus der Dose geklaut.
+
+---
+
+**Beispiel** (für `search` = `"Euler"` und `replace` = `"Gauß"`)
+
+Eingabestrom: 
+
+{:.wordwrap}
+    Showdown: Euler vs. 100 Eulen
+    
+Ausgabestrom:
+
+{:.wordwrap}
+    Showdown: Gauß vs. 100 Eulen
+--------
+[template]
+class Task:
+    def init(self, search, replace):
+        self.search = search
+        self.replace = replace
+        
+    def receive(self, data):
+        # Diese Methode sendet bis jetzt einfach jedes 
+        # Zeichen unverändert weiter. Ändere sie so, dass 
+        # sie das Suchwort in self.search durch das Ersatzwort 
+        # in self.replace ersetzt.
+        self.send(c)
+--------
+[custom]
+task = Task('Alice', 'Mallory')
+teletype('Alles deutet darauf hin: Mallory hat den Keks aus der Dose geklaut.',
+    'Alles deutet darauf hin: Alice hat den Keks aus der Dose geklaut.')

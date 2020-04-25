@@ -1,12 +1,12 @@
 title: Man in the middle
 enabled: true
-difficulty: medium
+difficulty: hard
 --------
 Gegeben ist ein Datenstrom (also ein Text) unbekannter Länge, der von dir gefiltert werden soll. Ein bestimmtes Wort, das vorher definiert wird, soll durch dein Programm im Datenstrom immer durch ein anderes Wort ersetzt werden.
 
 Implementiere die Methode `receive` in der Klasse `Filter`, die immer ein oder mehrere Zeichen dieses Datenstroms erhält und die Aufgabe hat, sie mit Hilfe der Methode `send` wieder auszugeben. Achte aber darauf, dass du das Suchwort niemals ausgibst, sondern immer durch das Ersatzwort ersetzst.
 
-Das Suchwort findest du in `self.search`, das Ersatzwort in `self.replace` (es handelt sich um Strings, es können also genaugenommen beliebige Zeichenketten sein, nicht nur Wörter). 
+Das Suchwort findest du in `self.search`, das Ersatzwort in `self.replace` (es handelt sich um Strings, es können also genaugenommen beliebige Zeichenketten sein, nicht nur Wörter).
 
 *Hinweis: du kannst bei der Lösung dieser Aufgabe nicht warten, bis du "alle" Zeichen empfangen hast, um dann einfach alle Vorkommen von `search` durch `replace` zu ersetzen, weil du nie weißt, wann der Datenstrom zuende ist. Auch falls eine Weile lang kein Zeichen mehr kommt, heisst das nicht, dass der Datenstrom zuende ist. Sorge dafür, dass jedes Zeichen, das du ausgibst, so früh wie möglich gesendet wird.*
 
@@ -68,6 +68,9 @@ class ManInTheMiddle:
         return self.__buffer
 --------
 [custom_post]
+
+import string
+
 def find_all(a_str, sub):
     start = 0
     while True:
@@ -92,12 +95,12 @@ class ManInTheMiddleTest:
             task.receive(self.input[i:i+k])
             i += k
             # check that characters don't get delayed for too long
-            if len(task._read_buffer()) < i - len(self.search) * self.occurences:
-                sys.stderr.write(" fehlgeschlagen.\r\n\r\n")
-                sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')
-                sys.stderr.flush()
-                sys.stderr.write("Dein Programm ist leider noch nicht korrekt, da es zu lange keine Daten weitergeleitet hat.\n")
-                sys.exit(1)
+            # if len(task._read_buffer()) < i - len(self.search) * self.occurences:
+            #     sys.stderr.write(" fehlgeschlagen.\r\n\r\n")
+            #     sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')
+            #     sys.stderr.flush()
+            #     sys.stderr.write("Dein Programm ist leider noch nicht korrekt, da es zu lange keine Daten weitergeleitet hat.\n")
+            #     sys.exit(1)
                 
         return task._read_buffer()
     
@@ -111,6 +114,20 @@ tests.append(['Hogwarts', 'Privet Drive', "Harry Potter must not return to Hogwa
 tests.append(['pirate', 'flooring inspector', "My name is Guybrush Threepwood and I want to be a pirate!"])
 tests.append(['The signals are very strong tonight.', 'Coo! Coo!', "The signals are very strong tonight."])
 tests.append(['Coo', 'The signals are very strong tonight', "Coo! Coo!"])
+tests.append(['ET', 'AH', "=> YEET!!! <="])
+tests.append(['AAAH', 'AAAAAAH', 'AAAAAAAAH!!'])
+tests.append(['XXB5', 'G53', 'P7FXXB51IEUPSXXXB5TCZ2U9XXXXB5PVD227XXBXXB57H5bqs'])
+for i in range(5):
+    search = ''.join(random.choices(string.ascii_uppercase + string.digits, k=i + 1))
+    replace = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+    input = ''
+    for k in range(4):
+        input += ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+        input += search[0:k]
+        input += search
+        input += ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+    input += ''.join(random.choices(string.ascii_lowercase, k=3))
+    tests.append([search, replace, input])
     
 for i, data in enumerate(tests):
     test = ManInTheMiddleTest(*data)
@@ -127,4 +144,5 @@ for i, data in enumerate(tests):
         sys.stderr.write(f'Erwartet : {test.expected}\n')
         sys.stderr.write(f'Bekommen : {received}\n')
         sys.exit(1)
+
 sys.stderr.write(" ok.\r\n")

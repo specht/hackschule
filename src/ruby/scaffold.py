@@ -40,7 +40,10 @@ def DISABLE_FUNCTION(*argv):
 #{INPUT}
 
 #{IMPORTS}
+#{CUSTOM_PRE}
 from main import *
+
+#{CUSTOM_POST}
 
 #{DISABLE_FUNCTIONS}
 def run_tests():

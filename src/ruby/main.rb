@@ -299,7 +299,6 @@ class Main < Sinatra::Base
                 if @@tasks.include?(task[:slug])
                     raise "Duplicate task slug: #{task[:slug]}"
                 end
-#                 STDERR.puts "Loading #{path}..."
                 parts = File.read(path).split('-' * 8)
                 task.merge!(Hash[YAML::load(parts.shift.strip).map {|k, v| [k.to_sym, v]}])
                 s = parts.shift.strip
@@ -314,6 +313,19 @@ class Main < Sinatra::Base
                         true
                     elsif part.strip.index('[input]') == 0
                         task[:input] = part.sub('[input]', '').strip
+                        true
+                    elsif part.strip.index('[custom_pre]') == 0
+                        task[:custom_pre] = part.sub('[custom_pre]', '').strip
+                        true
+                    elsif part.strip.index('[custom_file') == 0
+                        task[:custom_files] ||= {}
+                        cfpath = part.strip.match(/\[custom_file\s+(.+)\]/)[1]
+                        lines = part.strip.split("\n")
+                        lines = lines[1, lines.size - 1]
+                        task[:custom_files][cfpath] = lines.join("\n")
+                        true
+                    elsif part.strip.index('[custom_post]') == 0
+                        task[:custom_post] = part.sub('[custom_post]', '').strip
                         true
                     elsif part.strip.index('[dungeon_init]') == 0
                         task[:dungeon_init] = part.sub('[dungeon_init]', '').strip
@@ -748,6 +760,11 @@ class Main < Sinatra::Base
                             end
                             script_path = File.join(dir, 'scaffold.py')
                             # TODO: Speed this up, do this once at startup
+                            (task[:custom_files] || {}).each_pair do |path, contents|
+                                File.open(File.join(dir, path), 'w') do |f|
+                                    f.write(contents)
+                                end
+                            end
                             File.open(script_path, 'w') do |f|
                                 scaffold = File.read('scaffold.py')
                                 code = StringIO.open do |io|
@@ -763,6 +780,8 @@ class Main < Sinatra::Base
                                 scaffold.sub!('#{DISABLE_OS_FUNCTIONS}', code)
                                 scaffold.sub!('#{USE_TASK_CLASS}', task[:input] ? 'True' : 'False')
                                 scaffold.sub!('#{INPUT}', task[:input] || '')
+                                scaffold.sub!('#{CUSTOM_PRE}', task[:custom_pre] || '')
+                                scaffold.sub!('#{CUSTOM_POST}', task[:custom_post] || '')
                                 scaffold.sub!('#{THE_FUNCTION_NAME}', task[:function_name] || '')
                                 imports = ''
                                 if task[:dungeon]
@@ -871,7 +890,7 @@ class Main < Sinatra::Base
                             end
                             Thread.new do 
                                 result = ''
-                                strip_from_stderr = "  File \"/sandbox/#{@session_user[:email]}/scaffold.py\", line 248, in <module>\n    from main import *\n"
+                                strip_from_stderr = "  File \"/sandbox/#{@session_user[:email]}/scaffold.py\", line 249, in <module>\n    from main import *\n"
                                 strip_from_stderr_length = 0
                                 streams_closed = false
                                 fifo_buffer = ''

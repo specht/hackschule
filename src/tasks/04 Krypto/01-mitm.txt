@@ -1,5 +1,5 @@
 title: Man in the middle
-enabled: false
+enabled: true
 difficulty: medium
 --------
 Gegeben ist ein Datenstrom (also ein Text) unbekannter Länge, der von dir gefiltert werden soll. Ein bestimmtes Wort, das vorher definiert wird, soll durch dein Programm im Datenstrom immer durch ein anderes Wort ersetzt werden.
@@ -39,19 +39,92 @@ Ausgabestrom:
     Showdown: Gauß vs. 100 Eulen
 --------
 [template]
-class Task:
-    def init(self, search, replace):
+from mitm import ManInTheMiddle
+
+class Task(ManInTheMiddle):
+    def __init__(self, search, replace):
+        super().__init__()
         self.search = search
         self.replace = replace
         
     def receive(self, data):
-        # Diese Methode sendet bis jetzt einfach jedes 
-        # Zeichen unverändert weiter. Ändere sie so, dass 
-        # sie das Suchwort in self.search durch das Ersatzwort 
-        # in self.replace ersetzt.
-        self.send(c)
+        # Diese Methode sendet bis jetzt einfach jede
+        # Eingabe unverändert weiter. Ändere sie so, dass 
+        # sie das Suchwort in self.search durch das 
+        # Ersatzwort in self.replace ersetzt.
+        self.send(data)
 --------
-[custom]
-task = Task('Alice', 'Mallory')
-teletype('Alles deutet darauf hin: Mallory hat den Keks aus der Dose geklaut.',
-    'Alles deutet darauf hin: Alice hat den Keks aus der Dose geklaut.')
+[custom_pre]
+--------
+[custom_file mitm.py]
+class ManInTheMiddle:
+    def __init__(self):
+        self.__buffer = ''
+
+    def send(self, data):
+        self.__buffer += data
+        
+    def _read_buffer(self):
+        return self.__buffer
+--------
+[custom_post]
+def find_all(a_str, sub):
+    start = 0
+    while True:
+        start = a_str.find(sub, start)
+        if start == -1: return
+        yield start
+        start += len(sub)
+        
+class ManInTheMiddleTest:
+    def __init__(self, search, replace, input):
+        self.search = search
+        self.replace = replace
+        self.input = input
+        self.expected = input.replace(search, replace)
+        self.occurences = len(list(find_all(input, search)))
+        
+    def run(self):
+        task = Task(self.search, self.replace)
+        i = 0
+        while i < len(self.input):
+            k = random.randint(1, 5)
+            task.receive(self.input[i:i+k])
+            i += k
+            # check that characters don't get delayed for too long
+            if len(task._read_buffer()) < i - len(self.search) * self.occurences:
+                sys.stderr.write(" fehlgeschlagen.\r\n\r\n")
+                sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')
+                sys.stderr.flush()
+                sys.stderr.write("Dein Programm ist leider noch nicht korrekt, da es zu lange keine Daten weitergeleitet hat.\n")
+                sys.exit(1)
+                
+        return task._read_buffer()
+    
+random.seed()
+tests = list()
+tests.append(['Alice', 'Mallory', 'Alles deutet darauf hin: Alice hat den Keks aus der Dose geklaut.'])
+tests.append(['Euler', 'Gauß', 'Showdown: Euler vs. 100 Eulen'])
+tests.append(['Frances', 'Baby', 'Nobody puts Frances in a corner.'])
+tests.append(['my suitcase', 'my paddles', "I’m on a curiosity voyage, and I need my suitcase to travel."])
+tests.append(['Hogwarts', 'Privet Drive', "Harry Potter must not return to Hogwarts!"])
+tests.append(['pirate', 'flooring inspector', "My name is Guybrush Threepwood and I want to be a pirate!"])
+tests.append(['The signals are very strong tonight.', 'Coo! Coo!', "The signals are very strong tonight."])
+tests.append(['Coo', 'The signals are very strong tonight', "Coo! Coo!"])
+    
+for i, data in enumerate(tests):
+    test = ManInTheMiddleTest(*data)
+    sys.stderr.write("\r\u001b[44;1m[ Test ]\u001b[0m ")
+    sys.stderr.write(f"Durchlauf {i + 1} von {len(tests)}...")
+    received = test.run()
+    if received != test.expected:
+        sys.stderr.write(" fehlgeschlagen.\r\n\r\n")
+        sys.stderr.write('\u001b[44;1m[ Hinweis ]\u001b[0m ')
+        sys.stderr.flush()
+        sys.stderr.write("Dein Programm ist leider noch nicht korrekt, da es ein falsches Ergebnis berechnet hat.\n")
+        sys.stderr.write(f'Ersetzung: {test.search} => {test.replace}\n')
+        sys.stderr.write(f'Eingabe  : {test.input}\n')
+        sys.stderr.write(f'Erwartet : {test.expected}\n')
+        sys.stderr.write(f'Bekommen : {received}\n')
+        sys.exit(1)
+sys.stderr.write(" ok.\r\n")

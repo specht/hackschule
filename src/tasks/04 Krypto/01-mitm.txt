@@ -1,6 +1,6 @@
 title: Man in the middle
 enabled: true
-difficulty: hard
+difficulty: medium
 --------
 Gegeben ist ein Datenstrom (also ein Text) unbekannter Länge, der von dir gefiltert werden soll. Ein bestimmtes Wort, das vorher definiert wird, soll durch dein Programm im Datenstrom immer durch ein anderes Wort ersetzt werden.
 

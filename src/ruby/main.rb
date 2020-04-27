@@ -424,7 +424,7 @@ class Main < Sinatra::Base
                     gender = line[0]
                     gender = 'all' if gender == 'x'
                     parts = line[1, line.size - 1].strip.split(' ')
-                    email = parts.last.delete_prefix('<').delete_suffix('>')
+                    email = parts.last.delete_prefix('<').delete_suffix('>').downcase
                     @@user_groups[current_group] ||= Set.new()
                     @@user_groups[current_group] << email
                     @@invitations[email] = {:gender => gender,
@@ -1602,7 +1602,7 @@ class Main < Sinatra::Base
                             io.puts "<a class='dropdown-item nav-icon' href='#' onclick=\"set_sid_cookie('#{local_sids}');\"><img class='icon menu-avatar' src='/gen/#{entry[:user][:avatar]}-48.png' /><span class='label'>#{htmlentities(entry[:user][:name])}</span></a>"
                         end
                     end
-                    io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in-alt'></i></div><span class='label'>Zusätzliches Konto...</span></a>"
+                    io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in-alt'></i></div><span class='label'>Zusätzliche Anmeldung...</span></a>"
                     if teacher_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
@@ -1923,7 +1923,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
-            io.puts show_daily_activity(7)
+#             io.puts show_daily_activity(7)
             io.puts "<h4>Ausgeführte Programme</h4>"
             io.puts "<table class='table table-striped table-sm narrow'>"
             io.puts "<thead>"

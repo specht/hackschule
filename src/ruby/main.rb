@@ -1032,15 +1032,13 @@ class Main < Sinatra::Base
                                 end
                                 STDERR.puts "mark_script_passed: #{mark_script_passed}"
                                 ws.send({:status => 'stopped', :exit_code => exit_code}.to_json)
-                                unless task[:pixelflut]
-                                    if mark_script_passed
-                                        ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
-                                        neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
-                                            MATCH (sb:Submission)
-                                            WHERE ID(sb) = {submission_node_id}
-                                            SET sb.correct = true;
-                                        END_OF_QUERY
-                                    end
+                                if mark_script_passed
+                                    ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
+                                    neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
+                                        MATCH (sb:Submission)
+                                        WHERE ID(sb) = {submission_node_id}
+                                        SET sb.correct = true;
+                                    END_OF_QUERY
                                 end
                                 ws.close
                             end

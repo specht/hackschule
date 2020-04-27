@@ -1,0 +1,85 @@
+title: Monotonie
+enabled: true
+difficulty: medium
+--------
+Gegeben ist eine Reihe (also eine Liste) von Zahlen. Schreibe eine Funktion, die überprüft, ob die Reihe streng monoton ist.
+
+---
+
+**Beispiel 1**
+
+Eingabe:
+
+    [3, 6, 9]
+    
+Ausgabe:
+
+    True
+
+<em>Erklärung: Die Zahlenreihe ist streng monoton, weshalb True zurückgegeben wird.</em>
+
+---
+
+**Beispiel 2**
+
+Eingabe:
+
+    [10, 8, 7]
+    
+Ausgabe:
+
+    True
+
+<em>Erklärung: Die Zahlenreihe ist streng monoton, weshalb True zurückgegeben wird.</em>
+
+---
+
+**Beispiel 3**
+
+Eingabe:
+
+    [6, 3, 9]
+    
+Ausgabe:
+
+    False
+
+<em>Erklärung: Die Zahlenreihe ist nicht streng monoton, weshalb False zurückgegeben wird.</em>
+
+---
+
+**Beispiel 4**
+
+Eingabe:
+
+    [3, 3, 9]
+    
+Ausgabe:
+
+    False
+
+<em>Erklärung: Die Zahlenreihe ist nicht streng monoton, weshalb False zurückgegeben wird.</em>
+
+--------
+[template]
+class Task:
+    def monoton(self, zahlen):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(True, [3, 6, 9])
+add_input(True, [9, 6, 3])
+add_input(False, [6, 3, 9])
+add_input(False, [3, 3, 9])
+for i in range(2, 20):
+    mul = random.randint(1, 3)
+    add = random.randint(0, 100)
+    l = list()
+    falling = (random.randint(0, 1) == 1)
+    broken = (random.randint(0, 1) == 1)
+    for k in range(i):
+        l.append((i - k - 1 if falling else k) * mul + add)
+    if broken:
+        l[random.randint(1, len(l) - 2)] = l[(len(l) - 1) if falling else 0]
+    add_input(not broken, l)

@@ -717,7 +717,7 @@ img.menu-avatar {
     white-space: normal;
 }
 
-@media (max-width: 992px) {
+@media (max-width: 991px) {
     .hs-card-index-3 {
         display: none;
     }

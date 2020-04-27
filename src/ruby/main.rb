@@ -268,7 +268,7 @@ class Main < Sinatra::Base
         @@cat_config = {}
         @@tasks = {}
         cat_slug_for_cat_title = {}
-        Dir['/tasks/**/*'].sort.each do |path|
+        Dir['/tasks/**/*.txt'].sort.each do |path|
             next unless File.file?(path)
             if File.basename(path) == 'config.txt'
                 parts = path.sub('/tasks/', '').split('/')
@@ -809,14 +809,24 @@ class Main < Sinatra::Base
                                 f.write(scaffold)
                                 f.puts
                                 if task[:dungeon]
-                                    File.mkfifo(File.join(dir, 'dungeon_fifo'))
-                                    f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/dungeon_fifo', 'w')"
+                                    File.mkfifo(File.join(dir, 'fifo'))
+                                    f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                     dungeon = dungeon_for_task(task[:slug])
                                     f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json})"
                                     f.puts task[:dungeon_init] || ''
                                     f.puts "fili.run_it()"
                                     File.open(File.join(dir, 'wizard.py'), 'w') do |f2|
                                         f2.write(File.read('wizard.py'))
+                                    end
+                                end
+                                if task[:pixelflut]
+                                    File.mkfifo(File.join(dir, 'fifo'))
+                                    f.puts "pixelflut_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                    f.puts "task = Task(pixelflut_out)"
+                                    f.puts "task.run()"
+                                    f.puts "task.finalize()"
+                                    File.open(File.join(dir, 'pixelflut.py'), 'w') do |f2|
+                                        f2.write(File.read('pixelflut.py'))
                                     end
                                 end
                             end
@@ -839,9 +849,9 @@ class Main < Sinatra::Base
                             ws.send({:status => 'started'}.to_json)
                             fifo_thread = nil
                             mark_script_passed = false
-                            if task[:dungeon]
+                            if task[:dungeon] || task[:pixelflut]
                                 fifo_thread = Thread.new do
-                                    fifo = File.open(File.join(dir, 'dungeon_fifo'), 'r')
+                                    fifo = File.open(File.join(dir, 'fifo'), 'r')
                                     fifo_closed = false
                                     result = ''
                                     fifo_buffer = ''
@@ -868,14 +878,18 @@ class Main < Sinatra::Base
                                                     break
                                                 end
                                                 if buffer
-                                                    STDERR.puts "Received #{buffer.size} bytes."
+                                                    STDERR.puts "FIFO: Received #{buffer.size} bytes."
                                                     buffer.each_char do |c|
                                                         if c == "\n"
                                                             data = JSON.parse(fifo_buffer)
                                                             if data['status'] == 'passed'
                                                                 mark_script_passed = true
                                                             end
-                                                            ws.send({:dungeon => data}.to_json)
+                                                            if task[:dungeon]
+                                                                ws.send({:dungeon => data}.to_json)
+                                                            elsif task[:pixelflut]
+                                                                ws.send(data.to_json)
+                                                            end
                                                             fifo_buffer = ''
                                                         else
                                                             fifo_buffer += c
@@ -1018,13 +1032,15 @@ class Main < Sinatra::Base
                                 end
                                 STDERR.puts "mark_script_passed: #{mark_script_passed}"
                                 ws.send({:status => 'stopped', :exit_code => exit_code}.to_json)
-                                if mark_script_passed
-                                    ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
-                                    neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
-                                        MATCH (sb:Submission)
-                                        WHERE ID(sb) = {submission_node_id}
-                                        SET sb.correct = true;
-                                    END_OF_QUERY
+                                unless task[:pixelflut]
+                                    if mark_script_passed
+                                        ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
+                                        neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
+                                            MATCH (sb:Submission)
+                                            WHERE ID(sb) = {submission_node_id}
+                                            SET sb.correct = true;
+                                        END_OF_QUERY
+                                    end
                                 end
                                 ws.close
                             end
@@ -2062,6 +2078,7 @@ class Main < Sinatra::Base
                     elsif original_path == 'task'
                         task_has_screen = task[:screen] == true
                         task_has_dungeon = task[:dungeon] == true
+                        task_has_pixelflut = task[:pixelflut] == true
                         content.gsub!('#{TASK_TITLE}', task[:title])
                         content.gsub!('#{TASK_SLUG}', task[:slug])
                         if sha1

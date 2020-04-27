@@ -45,7 +45,8 @@ if PROFILE.include?(:static)
         docker_compose[:services][:nginx][:expose] = ['80']
     end
     if PROFILE.include?(:dynamic)
-        docker_compose[:services][:nginx][:links] = ["ruby:#{PROJECT_NAME}_ruby_1"]
+        docker_compose[:services][:nginx][:links] = ["ruby:#{PROJECT_NAME}_ruby_1",
+                                                     "pixelflut:#{PROJECT_NAME}_pixelflut_1"]
     end
     nginx_config = <<~eos
         log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
@@ -71,6 +72,16 @@ if PROFILE.include?(:static)
                 root /gen;
             }
 
+            location /pixelflut/ {
+                try_files $uri @pixelflut;
+            }
+
+            location @pixelflut {
+                proxy_pass http://#{PROJECT_NAME}_pixelflut_1:9292;
+                proxy_set_header Host $host;
+                proxy_http_version 1.1;
+            }
+        
             location / {
                 root /usr/share/nginx/html;
                 try_files $uri @ruby;
@@ -90,7 +101,7 @@ if PROFILE.include?(:static)
         f.write nginx_config
     end
     if PROFILE.include?(:dynamic)
-        docker_compose[:services][:nginx][:depends_on] = [:ruby]
+        docker_compose[:services][:nginx][:depends_on] = [:ruby, :pixelflut]
     end
 end
 
@@ -115,7 +126,18 @@ if PROFILE.include?(:dynamic)
     docker_compose[:services][:pysandbox] = {
         :build => './docker/pysandbox',
         :entrypoint =>  '/usr/bin/tail -f /dev/null',
-        :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"]
+        :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"],
+        :links => ['pixelflut:pixelflut']
+    }
+    docker_compose[:services][:pixelflut] = {
+        :build => './docker/pixelflut',
+        :volumes => ['./src/pixelflut:/app:ro',
+                     "#{RAW_FILES_PATH}/pixelflut:/raw"],
+        :environment => env,
+        :working_dir => '/app',
+        :entrypoint =>  DEVELOPMENT ?
+            'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
+            'rackup --quiet --host 0.0.0.0'
     }
     if PROFILE.include?(:neo4j)
         docker_compose[:services][:ruby][:depends_on] ||= []
@@ -163,10 +185,12 @@ FileUtils::mkpath(LOGS_PATH)
 if PROFILE.include?(:dynamic)
     FileUtils::cp('src/ruby/Gemfile', 'docker/ruby/')
     FileUtils::cp('credentials.rb', 'docker/ruby/')
+    FileUtils::cp('src/pixelflut/Gemfile', 'docker/pixelflut/')
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
     system("cp -purv src/static/avatars/* #{File::join(RAW_FILES_PATH, 'uploads')}")
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'code'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'sandbox'))
+    FileUtils::mkpath(File::join(RAW_FILES_PATH, 'pixelflut'))
     FileUtils::mkpath(GEN_FILES_PATH)
 end
 if PROFILE.include?(:pysandbox)

@@ -120,6 +120,7 @@ Du bist momentan nicht angemeldet. Bitte <a href='/login'>melde dich an</a>, um 
 </div>
 
 <script defer src="/dungeon.js"></script>
+<script defer src="/pixelflut.js"></script>
 
 <script type='text/javascript'>
 
@@ -325,6 +326,8 @@ window.addEventListener('load', function () {
         fitAddon.fit();
         if (#{task_has_dungeon})
             resize_dungeon();
+        if (#{task_has_pixelflut})
+            resize_pixelflut();
     };
     window.onkeydown = function(e) {
         if (e.key === 'Enter' && e.ctrlKey === true)
@@ -341,6 +344,11 @@ window.addEventListener('load', function () {
     {
         load_dungeon('#{@task_slug}');
         resize_dungeon();
+    }
+    if (#{task_has_pixelflut})
+    {
+        load_pixelflut();
+        resize_pixelflut();
     }
     $('#trigger_share').click(function(e) {
         let title = '#{task[:title]}';

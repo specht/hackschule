@@ -253,6 +253,7 @@ function setup_ws(ws)
             term.blur();
             if ($('body').width() >= 768)
                 editor.focus();
+            $('#screen img.pixelflut').removeAttr('src').attr('src', '/pixelflut/?' + Date.now());
         }
         else if (data.status === 'passed')
         {

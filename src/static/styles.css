@@ -360,6 +360,13 @@ a:hover {
     position: absolute;
 }
 
+#screen img.pixelflut {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    position: absolute;
+}
+
+
 #screen .sprite.flip-x {
     -webkit-transform: scaleX(-1);
     transform: scaleX(-1);

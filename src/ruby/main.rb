@@ -1273,33 +1273,43 @@ class Main < Sinatra::Base
     post '/api/load_script_solutions' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
-        versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
-            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
-                (sb)-[:FOR]->(t:Task {slug: {slug}}),
-                (sc:Script)<-[:USING]-(sb)
-            WITH sc.sha1 AS sha1, min(sb.t0) AS t0
-            MATCH (sb2:Submission {correct: true, t0: t0})-[:USING]->(sc2:Script {sha1: sha1}),
-                (sb2)-[:SUBMITTED_BY]->(u:User)
-            RETURN sb2.t0 AS t, sc2.sha1 AS sha1, sc2.size AS size, sc2.lines AS lines, u.name AS user_name, u.avatar AS user_avatar
-            ORDER BY sb2.t0;
-        END_OF_QUERY
-        seen_sha1 = Set.new()
         solutions = []
-        versions.each do |info|
-            next if seen_sha1.include?(info['sha1'])
-            seen_sha1 << info['sha1']
-            entry = {}
-            t = DateTime.parse(info['t']).to_time.localtime
-            entry[:date] = t.strftime('%d.%m.%Y')
-            entry[:time] = t.strftime('%T')
-            entry[:sha1] = info['sha1']
-            entry[:size] = info['size']
-            entry[:lines] = info['lines']
-            entry[:user_name] = htmlentities(info['user_name'])
-            entry[:user_avatar] = info['user_avatar']
-            solutions << entry
+        own_solution_count = neo4j_query_expect_one(<<~END_OF_QUERY, :slug => data[:slug], :email => @session_user[:email])['n']
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
+                    (sb)-[:FOR]->(t:Task {slug: {slug}})
+            RETURN COUNT(sb) AS n;
+        END_OF_QUERY
+        
+        if own_solution_count == 0
+            respond(:see_other => 'https://youtu.be/dQw4w9WgXcQ')
+        else
+            versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
+                MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
+                    (sb)-[:FOR]->(t:Task {slug: {slug}}),
+                    (sc:Script)<-[:USING]-(sb)
+                WITH sc.sha1 AS sha1, min(sb.t0) AS t0
+                MATCH (sb2:Submission {correct: true, t0: t0})-[:USING]->(sc2:Script {sha1: sha1}),
+                    (sb2)-[:SUBMITTED_BY]->(u:User)
+                RETURN sb2.t0 AS t, sc2.sha1 AS sha1, sc2.size AS size, sc2.lines AS lines, u.name AS user_name, u.avatar AS user_avatar
+                ORDER BY sb2.t0;
+            END_OF_QUERY
+            seen_sha1 = Set.new()
+            versions.each do |info|
+                next if seen_sha1.include?(info['sha1'])
+                seen_sha1 << info['sha1']
+                entry = {}
+                t = DateTime.parse(info['t']).to_time.localtime
+                entry[:date] = t.strftime('%d.%m.%Y')
+                entry[:time] = t.strftime('%T')
+                entry[:sha1] = info['sha1']
+                entry[:size] = info['size']
+                entry[:lines] = info['lines']
+                entry[:user_name] = htmlentities(info['user_name'])
+                entry[:user_avatar] = info['user_avatar']
+                solutions << entry
+            end
+            respond(:solutions => solutions.reverse)
         end
-        respond(:solutions => solutions.reverse)
     end
     
     post '/api/load_latest_draft' do

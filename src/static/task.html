@@ -185,27 +185,32 @@ function load_solutions() {
     api_call('/api/load_script_solutions', {slug: window.slug}, function(data) {
         if (data.success)
         {
-            let div = $('#solutions-tbody');
-            div.empty();
-            data.solutions.forEach(function(entry, i) {
-                let row = $('<tr>').addClass('versions-row').data('sha1', entry.sha1);
-                $('<td>').html(entry.date).appendTo(row);
-                $('<td>').addClass('text-right').html(bytes_to_str(entry.size)).appendTo(row);
-                $('<td>').addClass('text-right').html('' + (entry.lines - 1) + ' Zeile' + ((entry.lines - 1) === 1 ? '' : 'n')).appendTo(row);
-                row.appendTo(div);
-                $('<td>').html("<img class='menu-avatar' src='/gen/" + entry.user_avatar + "-48.png' /> " + entry.user_name).appendTo(row);
-                row.click(function(e) {
-                    let row = $(e.target).closest('tr');
-                    let sha1 = row.data('sha1');
-                    api_call('/api/load_script', {sha1: sha1}, function(data) {
-                        if (data.success)
-                            editor.setValue(data.script);
-                            editor.clearSelection();
-                            $('#solutionsModal').modal('hide');
+            if (typeof(data.solutions) !== 'undefined')
+            {
+                let div = $('#solutions-tbody');
+                div.empty();
+                data.solutions.forEach(function(entry, i) {
+                    let row = $('<tr>').addClass('versions-row').data('sha1', entry.sha1);
+                    $('<td>').html(entry.date).appendTo(row);
+                    $('<td>').addClass('text-right').html(bytes_to_str(entry.size)).appendTo(row);
+                    $('<td>').addClass('text-right').html('' + (entry.lines - 1) + ' Zeile' + ((entry.lines - 1) === 1 ? '' : 'n')).appendTo(row);
+                    row.appendTo(div);
+                    $('<td>').html("<img class='menu-avatar' src='/gen/" + entry.user_avatar + "-48.png' /> " + entry.user_name).appendTo(row);
+                    row.click(function(e) {
+                        let row = $(e.target).closest('tr');
+                        let sha1 = row.data('sha1');
+                        api_call('/api/load_script', {sha1: sha1}, function(data) {
+                            if (data.success)
+                                editor.setValue(data.script);
+                                editor.clearSelection();
+                                $('#solutionsModal').modal('hide');
+                        });
                     });
                 });
-            });
-            $('#solutionsModal').modal('show');
+                $('#solutionsModal').modal('show');
+            }
+            else
+                console.log(data);
         }
     });
 }

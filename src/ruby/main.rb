@@ -1915,7 +1915,7 @@ class Main < Sinatra::Base
                     end
                     io.puts "<tr>"
                     io.puts "<td>"
-                    io.puts "<img src='/gen/#{user[:avatar]}-48.png' style='width: 20px; position: relative; top: -2px;' />&nbsp;"
+                    io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
                     io.puts "#{user[:name]}"
                     io.puts "</td>"
                     @@task_keys_sorted.each.with_index do |k, i|
@@ -1993,7 +1993,7 @@ class Main < Sinatra::Base
                 io.puts "<td>#{DateTime.parse(info[:t]).to_time.localtime.strftime('%d.%m.%Y %T')}</td>"
                 user = info[:user]
                 io.puts "<td>"
-                io.puts "<img src='/gen/#{user[:avatar]}-48.png' style='width: 20px; position: relative; top: -2px;' />&nbsp;"
+                io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
                 io.puts "#{user[:name]}"
                 io.puts "</td>"
                 io.puts "<td>#{@@tasks[info[:slug]][:title]}</td>"
@@ -2002,7 +2002,7 @@ class Main < Sinatra::Base
                 io.puts "<td class='text-right'>#{info[:lines] - 1}</td>"
                 io.puts "<td>"
                 info[:others_order].each do |other|
-                    io.puts "<img title='#{other[:name]}' src='/gen/#{other[:avatar]}-48.png' style='width: 20px; position: relative; top: -2px;' />&nbsp;"
+                    io.puts "<img class='menu-avatar' title='#{other[:name]}' src='/gen/#{other[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
                 end
                 io.puts "</td>"
                 io.puts "</tr>"

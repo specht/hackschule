@@ -16,7 +16,7 @@ Ausgabe:
 
     30
 
-<em>Erklärung: 30 ist die Summe der Zahlen in der Liste und wird deshalb zurückgegeben.</em>
+_Erklärung: 30 ist die Summe der Zahlen in der Liste und wird deshalb zurückgegeben._
 --------
 [template]
 class Task:

@@ -1,0 +1,60 @@
+title: Cäsar-Chiffre
+enabled: true
+difficulty: medium
+--------
+Bei der <a href='https://de.wikipedia.org/wiki/Caesar-Verschl%C3%BCsselung'>Cäsar-Verschlüsselung</a> wird jeder Buchstabe einer Nachricht einfach immer um eine bestimmte Entfernung k nach rechts "verschoben". Ist z. B. k = 3, so würde aus dem Wort "CAESAR" das Wort "FDHVDU" werden, da C zu F wird, A zu D und immer so weiter. Es wird also gewissermaßen auf jeden Buchstaben eine Zahl k "addiert". Dabei handelt es sich um eine zyklische Addition. Das heisst, dass man wieder bei A beginnt, wenn man über den Buchstaben Z hinauskommt.
+
+Um einen so verschlüsselten Geheimtext zu entschlüsseln, wendet man dasselbe Verfahren an, nur dass man nicht k addiert, sondern k subtrahiert (im Spezialfall k = 13 erhält man so das <a href='https://de.wikipedia.org/wiki/ROT13'>ROT13-Verfahren</a>, bei es egal ist, ob man addiert oder subtrahiert).
+
+Schreibe eine Funktion, die ein mit dem Cäsar-Verfahren verschlüsseltes Wort wieder entschlüsselt und das entschlüsselte Wort zurückgibt. Das verschlüsselte Wort wird als Parameter `s` in die Funktion übergeben, der zur Verschlüsselung verwendete Wert `k` ebenfalls.
+
+_Hinweise: Das Argument, das in `s` übergeben wird, enthält ausschließlich Großbuchstaben von A bis Z (es enthält keine Leerzeichen oder sonstigen Sonderzeichen). Für den Wert `k` gilt: 0 < `k` < 26._
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    k = 3
+    s = "WRSVHFUHW"
+    
+Ausgabe:
+
+    "TOPSECRET"
+    
+_Erklärung: Alle Buchstaben werden um 3 Positionen im Alphabet nach links verschoben (da wir entschlüsseln) und so entsteht das Lösungswort._
+--------
+[hint]
+Für diese Aufgabe musst du Zeichen in Zahlen umwandeln können und andersherum. Dafür gibt es <a href='https://de.wikipedia.org/wiki/Unicode'>Unicode</a>, und in unserem Fall reicht sogar der deutlich einfachere <a href='https://de.wikipedia.org/wiki/American_Standard_Code_for_Information_Interchange'>ASCII-Code</a>. 
+--------
+[hint]
+Um ein Zeichen in eine Zahl umzuwandeln, kannst du in Python die <a href='https://docs.python.org/3/library/functions.html#ord'>`ord()`</a>-Funktion verwenden. Die Umwandlung in die andere Richtung erfolgt mit <a href='https://docs.python.org/3/library/functions.html#chr'>`chr()`</a>.
+
+Lass dir vielleicht erst einmal die ASCII-Codes aller Zeichen in `s` ausgeben und überlege, was dann der nächste Schritt wäre:
+
+    for c in s:
+        print(c, ord(c))
+--------
+[template]
+class Task:
+    def decode_caesar(self, s, k):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+import string
+
+def __encode(s, k):
+    return ''.join([chr((ord(c) - 65 + k) % 26 + 65) for c in s])
+    
+__inputs = list()
+__inputs.append(['TOPSECRET', 3])
+__inputs.append(['ALICE', 1])
+__inputs.append(['BOB', 11])
+__inputs.append(['MALLORY', 21])
+__inputs.append(['GABBAGABBAHEY', 13])
+for n in range(1, 26):
+    __inputs.append([''.join(random.choices(string.ascii_uppercase, k = n)), n])
+for x in __inputs:
+    add_input(x[0], __encode(x[0], x[1]), x[1])

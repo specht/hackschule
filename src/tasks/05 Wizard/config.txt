@@ -6,7 +6,7 @@ Steuere einen Zauberer durch ein Verlies und sorge dafür, dass er bestimmte Auf
 --------
 Für den Zauberer stehen dir folgende Befehle zur Verfügung:
 
-{:.table.table-striped}
+{:.table.table-striped.table-sm.narrowwrap}
 `forward()`        | einen Schritt nach vorn gehen
 `turn_left()`      | nach links drehen
 `turn_right()`     | nach rechts drehen

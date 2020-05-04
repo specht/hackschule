@@ -594,6 +594,10 @@ img.menu-avatar {
     white-space: nowrap;
 }
 
+.container-task .table.narrowwrap th, .container-task .table.narrowwrap td {
+    font-family: 'Roboto Condensed';
+}
+
 .task-badge {
     position: absolute;
     right: 10px;

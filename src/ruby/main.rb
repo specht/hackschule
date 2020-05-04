@@ -2097,6 +2097,12 @@ class Main < Sinatra::Base
                             content.gsub!('#{TASK_TEMPLATE}', task[:template].strip + "\n")
                         end
                         description = task[:description]
+                        cat_slug = task[:cat_slug]
+                        cat = @@cat_config[cat_slug]
+                        STDERR.puts cat.to_yaml
+                        if cat[:config]['dungeon']
+                            description += "\n<hr />\n" + cat[:description]
+                        end
                         unless task[:hints].empty?
                             description += "<hr />"
                             description += "<div class='hint'>"

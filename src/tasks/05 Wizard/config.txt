@@ -1,0 +1,19 @@
+cat_slug: wizard
+screen: true
+dungeon: true
+--------
+Steuere einen Zauberer durch ein Verlies und sorge dafür, dass er bestimmte Aufträge erfüllt.
+--------
+Für den Zauberer stehen dir folgende Befehle zur Verfügung:
+
+{:.table.table-striped}
+`forward()`        | einen Schritt nach vorn gehen
+`turn_left()`      | nach links drehen
+`turn_right()`     | nach rechts drehen
+`say(message)`     | einen Satz sagen
+`wait(delay)`      | eine bestimmte Zeit warten (in Sekunden)
+`coins()`          | gibt zurück, wie viele Münzen der Zauberer bei sich trägt
+`get_coin()`       | eine Münze aufheben
+`set_speed(speed)` | Spielgeschwindigkeit ändern (1: langsam, 50: normal, 100: schnell)
+
+Du musst aufpassen, dass du nicht gegen Hindernisse läufst oder z. B. versuchst, eine Münze aufzuheben, obwohl gar keine Münze auf dem aktuellen Feld liegt.

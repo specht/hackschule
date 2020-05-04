@@ -293,6 +293,7 @@ class Main < Sinatra::Base
                 @@cat_order[cat] = cat_index
                 task = {}
                 task[:cat] = cat
+                task[:count_score] = true
                 task[:order] = slug.to_i
                 task[:slug] = slug.sub(/^\d+(\-)?/, '').sub(/\.txt$/, '').strip
                 read_this = false
@@ -1034,7 +1035,9 @@ class Main < Sinatra::Base
                                         end
                                     end
                                     if !mark_script_passed
-                                        ws.send({:message => "Hinweis: Dein Programm läuft, aber die Aufgabe ist noch nicht erledigt."}.to_json)
+                                        if task[:count_score]
+                                            ws.send({:message => "Hinweis: Dein Programm läuft, aber die Aufgabe ist noch nicht erledigt."}.to_json)
+                                        end
                                     end
                                 end
                                 STDERR.puts "mark_script_passed: #{mark_script_passed}"
@@ -1260,7 +1263,7 @@ class Main < Sinatra::Base
             MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User {email: {email}}),
             (sb)-[:FOR]->(t:Task {slug: {slug}}),
             (sc:Script)<-[:USING]-(sb)
-            RETURN sb.t0 AS t, sc.sha1 AS sha1, sb.correct AS correct, sc.size AS size, sc.lines AS lines
+            RETURN sb.t0 AS t, sc.sha1 AS sha1, sb.correct AS correct, sc.size AS size, sc.lines AS lines, COALESCE(sb.name, '') AS name
             ORDER BY sb.t0 DESC;
         END_OF_QUERY
         versions.map! do |info|
@@ -1269,8 +1272,9 @@ class Main < Sinatra::Base
             entry[:date] = t.strftime('%d.%m.%Y')
             entry[:time] = t.strftime('%T')
             entry[:sha1] = info['sha1']
-            entry[:size] = info['size']
+            entry[:size] = info['size'] - 1
             entry[:lines] = info['lines']
+            entry[:name] = info['name']
             entry[:correct] = info['correct'] || false
             entry
         end
@@ -1309,7 +1313,7 @@ class Main < Sinatra::Base
                 entry[:date] = t.strftime('%d.%m.%Y')
                 entry[:time] = t.strftime('%T')
                 entry[:sha1] = info['sha1']
-                entry[:size] = info['size']
+                entry[:size] = info['size'] - 1
                 entry[:lines] = info['lines']
                 entry[:user_name] = htmlentities(info['user_name'])
                 entry[:user_avatar] = info['user_avatar']
@@ -1595,9 +1599,32 @@ class Main < Sinatra::Base
     end
 
     post '/api/store_script' do
-        data = parse_request_data(:required_keys => [:script])
+        require_user!
+        data = parse_request_data(:required_keys => [:script, :slug])
         sha1, script = store_script(data[:script])
-        respond(:sha1 => sha1)
+        # fetch name if available
+        result = neo4j_query(<<~END_OF_QUERY, :sha1 => sha1, :slug => data[:slug], :email => @session_user[:email])
+            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
+            MATCH (u:User {email: {email}})
+            WHERE (sb)-[:SUBMITTED_BY]->(u)
+            RETURN COALESCE(sb.name, '') AS name;
+        END_OF_QUERY
+        if result.size > 0
+            name = result.first['name']
+        end
+        respond(:sha1 => sha1, :name => name)
+    end
+    
+    post '/api/save_script_as' do
+        require_user!
+        data = parse_request_data(:required_keys => [:slug, :sha1, :name])
+        neo4j_query(<<~END_OF_QUERY, :sha1 => data[:sha1], :slug => data[:slug], :email => @session_user[:email], :name => data[:name])
+            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
+            MATCH (u:User {email: {email}})
+            WHERE (sb)-[:SUBMITTED_BY]->(u)
+            SET sb.name = {name};
+        END_OF_QUERY
+        respond(:ok => 'yeah')
     end
     
     def nav_items()
@@ -1651,7 +1678,8 @@ class Main < Sinatra::Base
                         io.puts "<div class='icon'><i class='fa fa-edit'></i></div>Programm"
                         io.puts "</a>"
                         io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownScripts'>"
-                        io.puts "<a class='mi-load-version dropdown-item nav-icon #{(latest_draft.nil? && latest_solution.nil?) ? 'disabled' : ''}' href='#' onclick='load_version();'><div class='icon'><i class='fa fa-folder-open'></i></div><span class='label'>Version laden&hellip;</span></a>"
+                        io.puts "<a class='mi-load-version dropdown-item nav-icon #{(latest_draft.nil? && latest_solution.nil?) ? 'disabled' : ''}' href='#' onclick='load_version();'><div class='icon'><i class='fa fa-folder-open'></i></div><span class='label'>Version laden…</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='#' onclick='name_script_modal();'><div class='icon'><i class='fa fa-save'></i></div><span class='label'>Speichern unter…</span></a>"
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='#' onclick='share_script_modal();'><div class='icon'><i class='fa fa-share-alt'></i></div><span class='label'>Programm teilen</span></a>"
                         io.puts "<div class='dropdown-divider'></div>"
@@ -1710,7 +1738,7 @@ class Main < Sinatra::Base
                         io.puts "#{@@cat_config[task[:cat_slug]][:teaser]}"
                     end
                     # progress meter
-                    task_count = @@cat_info[task[:cat]].size
+                    task_count = @@cat_info[task[:cat]].select { |x| @@tasks[x][:count_score] }.size
                     solved_task_count = (Set.new(@@cat_info[task[:cat]]) & solved_tasks).size
                     io.puts "<div class='row'>"
                     io.puts "<div class='col-md-12'>"
@@ -1727,12 +1755,16 @@ class Main < Sinatra::Base
                     io.puts "<div class='col-lg-3 col-md-4 col-sm-6 #{show_cat_slug ? '' : "hs-card-index-#{printed_tasks_per_cat}"}'}'>"
                     io.puts "<div class='card' style='#{task[:enabled] ? '' : 'opacity: 0.5;'}'>"
                     io.puts "<div class='card-header #{task[:enabled] ? '' : 'text-muted'}'>#{task[:title]}"
-                    if task[:difficulty] == 'easy'
-                        io.puts "<span title='leicht' class='badge task-badge easy'><i class='fa fa-lightbulb'></i></span>"
-                    elsif task[:difficulty] == 'medium'
-                        io.puts "<span title='mittel' class='badge task-badge medium'><i class='fa fa-lightbulb'></i></span>"
-                    elsif task[:difficulty] == 'hard'
-                        io.puts "<span title='nicht ganz trivial' class='badge task-badge hard'><i class='fa fa-lightbulb'></i></span>"
+                    if task[:count_score]
+                        if task[:difficulty] == 'easy'
+                            io.puts "<span title='leicht' class='badge task-badge easy'><i class='fa fa-lightbulb'></i></span>"
+                        elsif task[:difficulty] == 'medium'
+                            io.puts "<span title='mittel' class='badge task-badge medium'><i class='fa fa-lightbulb'></i></span>"
+                        elsif task[:difficulty] == 'hard'
+                            io.puts "<span title='nicht ganz trivial' class='badge task-badge hard'><i class='fa fa-lightbulb'></i></span>"
+                        end
+                    else
+                            io.puts "<span title='leicht' class='badge task-badge sandbox'><i class='fa fa-vial'></i></span>"
                     end
                     
                     io.puts "</div>"
@@ -1743,7 +1775,9 @@ class Main < Sinatra::Base
                     solution_sha1 = latest_solution_sha1(k)
                     io.puts "<div class='card-footer text-muted'>"
 #                     io.puts "<div class='btn-group'>"
-                    io.puts "  <a type='button' href='/task/#{task[:slug]}' class='btn btn-sm btn-primary'><i class='fa fa-pen'></i>&nbsp;&nbsp;Aufgabe lösen</a>"
+                    label = 'Aufgabe lösen'
+                    label = 'Sandbox starten' unless task[:count_score]
+                    io.puts "  <a type='button' href='/task/#{task[:slug]}' class='btn btn-sm btn-primary'><i class='fa fa-pen'></i>&nbsp;&nbsp;#{label}</a>"
 #                     io.puts "  <button type='button' class='#{draft_sha1.nil? && solution_sha1.nil? ? 'disabled' : ''} btn btn-sm btn-primary dropdown-toggle dropdown-toggle-split' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false' />"
 #                     io.puts "  <div class='dropdown-menu'>"
 #                     io.puts "    <a class='fix-this-link dropdown-item #{draft_sha1.nil? ? 'disabled' : ''}' data-href='/task/#{task[:slug]}/#{draft_sha1}' href='/task/#{task[:slug]}/#{draft_sha1}'>Letzten Entwurf laden</a>"
@@ -2096,6 +2130,7 @@ class Main < Sinatra::Base
                         task_has_pixelflut = task[:pixelflut] == true
                         content.gsub!('#{TASK_TITLE}', task[:title])
                         content.gsub!('#{TASK_SLUG}', task[:slug])
+                        content.gsub!('#{TASK_CONFIG}', task.to_json)
                         if sha1
                             content.gsub!('#{TASK_TEMPLATE}', read_script_for_sha1(sha1).strip + "\n")
                         else

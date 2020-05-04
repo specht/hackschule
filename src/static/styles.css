@@ -614,7 +614,7 @@ img.menu-avatar {
 
 .task-badge.easy {
     background-color: #28a745;
-    box-shadow: #28a745 0px 0px 1px;
+/*     box-shadow: #28a745 0px 0px 1px; */
 }
 
 .task-badge.medium {
@@ -623,6 +623,10 @@ img.menu-avatar {
 
 .task-badge.hard {
     background-color: #a40000;
+}
+
+.task-badge.sandbox {
+    background-color: #238acc;
 }
 
 .task-badge-solved {

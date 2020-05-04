@@ -1,0 +1,11 @@
+title: Sandbox
+enabled: true
+count_score: no
+difficulty: easy
+--------
+In dieser Sandbox kannst du beliebige Dinge programmieren. Es gibt hier keine richtigen oder falschen Lösungen, aber wenn du mal einen Python-Interpreter zum ausprobieren brauchst, bist du hier genau richtig.
+--------
+[template]
+--------
+[verify]
+false

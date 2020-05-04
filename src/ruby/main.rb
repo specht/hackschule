@@ -2099,7 +2099,6 @@ class Main < Sinatra::Base
                         description = task[:description]
                         cat_slug = task[:cat_slug]
                         cat = @@cat_config[cat_slug]
-                        STDERR.puts cat.to_yaml
                         if cat[:config]['dungeon']
                             description += "\n<hr />\n" + cat[:description]
                         end

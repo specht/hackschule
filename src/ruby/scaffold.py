@@ -41,8 +41,7 @@ def DISABLE_FUNCTION(*argv):
 
 #{IMPORTS}
 #{CUSTOM_PRE}
-from main import *
-
+#{CUSTOM_IMPORT_MAIN}
 #{CUSTOM_POST}
 
 #{DISABLE_FUNCTIONS}

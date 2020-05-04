@@ -304,6 +304,7 @@ class Main < Sinatra::Base
                 s = parts.shift.strip
                 task[:description] = parse_markdown(s)
                 task[:hints] = []
+                task[:custom_import_main] = 'from main import *'
                 parts.reject! do |part|
                     if part.strip.index('[verify]') == 0
                         task[:verify] = part.sub('[verify]', '').strip
@@ -326,6 +327,9 @@ class Main < Sinatra::Base
                         true
                     elsif part.strip.index('[custom_post]') == 0
                         task[:custom_post] = part.sub('[custom_post]', '').strip
+                        true
+                    elsif part.strip.index('[custom_import_main]') == 0
+                        task[:custom_import_main] = part.sub('[custom_import_main]', '').strip
                         true
                     elsif part.strip.index('[dungeon_init]') == 0
                         task[:dungeon_init] = part.sub('[dungeon_init]', '').strip
@@ -781,6 +785,7 @@ class Main < Sinatra::Base
                                 scaffold.sub!('#{USE_TASK_CLASS}', task[:input] ? 'True' : 'False')
                                 scaffold.sub!('#{INPUT}', task[:input] || '')
                                 scaffold.sub!('#{CUSTOM_PRE}', task[:custom_pre] || '')
+                                scaffold.sub!('#{CUSTOM_IMPORT_MAIN}', task[:custom_import_main] || '')
                                 scaffold.sub!('#{CUSTOM_POST}', task[:custom_post] || '')
                                 scaffold.sub!('#{THE_FUNCTION_NAME}', task[:function_name] || '')
                                 imports = ''

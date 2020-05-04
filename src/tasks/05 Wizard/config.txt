@@ -4,7 +4,7 @@ dungeon: true
 --------
 Steuere einen Zauberer durch ein Verlies und sorge dafür, dass er bestimmte Aufträge erfüllt.
 --------
-Für den Zauberer stehen dir folgende Befehle zur Verfügung:
+Für den Zauberer stehen dir folgende Methoden zur Verfügung:
 
 {:.table.table-striped.table-sm.narrowwrap}
 `forward()`        | einen Schritt nach vorn gehen
@@ -16,4 +16,5 @@ Für den Zauberer stehen dir folgende Befehle zur Verfügung:
 `get_coin()`       | eine Münze aufheben
 `set_speed(speed)` | Spielgeschwindigkeit ändern (1: langsam, 50: normal, 100: schnell)
 
+Achtung: Um eine Methode aufzurufen, musst du `self.` davor schreiben, also z. B. `self.say('Hallo!')`.
 Du musst aufpassen, dass du nicht gegen Hindernisse läufst oder z. B. versuchst, eine Münze aufzuheben, obwohl gar keine Münze auf dem aktuellen Feld liegt.

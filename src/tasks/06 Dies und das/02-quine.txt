@@ -1,5 +1,5 @@
 title: Quine
-enabled: false
+enabled: true
 difficulty: hard
 --------
 Ein <a href='https://de.wikipedia.org/wiki/Quine_(Computerprogramm)'>Quine</a> ist ein Programm, das seinen eigenen Quelltext ausgibt. Dabei ist es nicht erlaubt, den eigenen Quelltext zu lesen.
@@ -14,5 +14,16 @@ Proc.new do |result|
 end
 --------
 [custom_pre]
-DISABLE_FUNCTION('builtins.open', 'open')
-DISABLE_FUNCTION('builtins.max', 'max')
+def disable_open(*argv):
+    sys.stderr.write("Es ist in dieser Aufgabe nicht erlaubt, eine Datei zu öffnen. 😉")
+    exit(2)
+@patch('builtins.open', disable_open)
+
+def __run_test__():
+    import main
+--------
+[custom_import_main]
+# don't import main here
+--------
+[custom_post]
+__run_test__()

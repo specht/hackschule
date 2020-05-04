@@ -1,5 +1,5 @@
 title: Quine
-enabled: true
+enabled: false
 difficulty: hard
 --------
 Ein <a href='https://de.wikipedia.org/wiki/Quine_(Computerprogramm)'>Quine</a> ist ein Programm, das seinen eigenen Quelltext ausgibt. Dabei ist es nicht erlaubt, den eigenen Quelltext zu lesen.
@@ -12,3 +12,7 @@ Schreibe einen Quine! Bonuspunkte (ehrenhalber) gibt es für Lösungen, die nich
 Proc.new do |result|
     result.strip == script.strip
 end
+--------
+[custom_pre]
+DISABLE_FUNCTION('builtins.open', 'open')
+DISABLE_FUNCTION('builtins.max', 'max')

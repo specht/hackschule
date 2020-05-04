@@ -792,6 +792,7 @@ class Main < Sinatra::Base
                                 disable_functions_code = ''
                                 disable_functions_patch_code = ''
                                 scaffold.scan(/^DISABLE_FUNCTION.*$/).each do |x|
+                                    STDERR.puts "Disabling #{x}"
                                     x = x.sub('DISABLE_FUNCTION', '').strip
                                     x = x[1, x.size - 2].strip
                                     x = x.split(',').map do |y|
@@ -807,6 +808,7 @@ class Main < Sinatra::Base
                                 end
                                 scaffold.sub!('#{DISABLE_FUNCTIONS}', disable_functions_code + disable_functions_patch_code)
                                 f.write(scaffold)
+                                STDERR.puts scaffold
                                 f.puts
                                 if task[:dungeon]
                                     File.mkfifo(File.join(dir, 'fifo'))

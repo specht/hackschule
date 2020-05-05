@@ -1,0 +1,37 @@
+title: Großbuchstaben
+enabled: true
+difficulty: easy
+--------
+Schreibe eine Methode, die in einem String alle Buchstaben von A bis Z in Großbuchstaben umwandelt. Alle anderen Zeichen sollen unverändert bleiben.
+
+---
+**Beispiel**
+
+Eingabe:
+
+    "breaking news"
+    
+Ausgabe:
+
+    "BREAKING NEWS"
+
+--------
+[template]
+class Task:
+    def grossbuchstaben(self, s):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+class str_no_upper(str):
+    def upper(self):
+        sys.stderr.write("Die upper()-Methode ist in dieser Aufgabe nicht erlaubt! 😉\n")
+        sys.exit(2)
+        
+words = []
+words.append('breaking news')
+words.append('I think we should stop screaming now.')
+words.append('Was hast du gerade gesagt?')
+words.append('Python ist nicht die schlechteste Sprache!')
+for word in words:
+    add_input(word.upper(), str_no_upper(word))

@@ -1,0 +1,37 @@
+title: Anagramm
+enabled: true
+difficulty: easy
+--------
+<a href='https://de.wikipedia.org/wiki/Anagramm'>Anagramme</a> sind Paare sinnvoller Wörter, die aus denselben Buchstaben bestehen, sich aber in der Anordnung dieser Buchstaben unterscheiden.
+
+Schreibe eine Methode, die ermittelt, ob ein ein gegebener Strings `a` ein Anagramm eines anderen gegebenen Strings `b` ist. Leerzeichen sowie Groß- und Kleinschreibung sollen dabei keine Rolle spielen.
+
+---
+**Beispiel**
+
+Eingabe:
+
+    a = "Weizenfeld", b = "zweifelnde"
+    
+Ausgabe:
+
+    True
+
+_Erklärung: Die Buchstaben des Wortes "Weizenfeld" können so umgestellt werden, dass sich das Wort "zweifelnde" ergibt (unter Nichtberücksichtigung der Groß- und Kleinschreibung), deshalb handelt es sich um ein Anagramm._
+
+--------
+[template]
+class Task:
+    def anagramm(self, a, b):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(True, 'Tom Marvolo Riddle', 'I am Lord Voldemort')
+add_input(True, 'Lampe', 'Ampel')
+add_input(True, 'Albert Einstein', 'etablierte Sinn')
+add_input(True, 'Einbrecher', 'bereichern')
+add_input(True, 'Subventionen', 'Venus in Beton')
+add_input(False, 'Hugh Everett', 'Viele Welten')
+add_input(False, 'Donald Duck', 'Franz Gans')
+add_input(True, 'Weizenfeld', 'zweifelnde')

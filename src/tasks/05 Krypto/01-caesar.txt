@@ -1,6 +1,6 @@
 title: Cäsar-Chiffre
 enabled: true
-difficulty: medium
+difficulty: easy
 --------
 Bei der <a href='https://de.wikipedia.org/wiki/Caesar-Verschl%C3%BCsselung'>Cäsar-Verschlüsselung</a> wird jeder Buchstabe einer Nachricht einfach immer um eine bestimmte Entfernung k nach rechts "verschoben". Ist z. B. k = 3, so würde aus dem Wort "CAESAR" das Wort "FDHVDU" werden, da C zu F wird, A zu D und immer so weiter. Es wird also gewissermaßen auf jeden Buchstaben eine Zahl k "addiert". Dabei handelt es sich um eine zyklische Addition. Das heisst, dass man wieder bei A beginnt, wenn man über den Buchstaben Z hinauskommt.
 

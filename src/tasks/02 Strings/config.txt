@@ -1,0 +1,4 @@
+cat_slug: strings
+--------
+Hier geht es um Strings und die Operationen, die man auf ihnen durchführen kann.
+--------

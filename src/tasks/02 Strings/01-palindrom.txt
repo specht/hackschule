@@ -1,0 +1,56 @@
+title: Palindrom
+enabled: true
+difficulty: easy
+--------
+Ein <a href='https://de.wikipedia.org/wiki/Palindrom'>Palindrom</a> ist ein Wort, welches sich nicht verändert, wenn rückwärts gelesen wird. Dabei spielt die Groß- und Kleinschreibung keine Rolle.
+
+Schreibe eine Methode, die ermittelt, ob ein gegebenes Wort ein Palindrom ist oder nicht.
+
+---
+**Beispiel**
+
+Eingabe:
+
+    "Otto"
+    
+Ausgabe:
+
+    True
+
+_Erklärung: "Otto" ist rückwärts geschrieben "ottO" und somit ohne Berücksichtigung der Groß- und Kleinschreibung ein Palindrom._
+
+---
+
+**Beispiel**
+
+Eingabe:
+
+    "Peter"
+    
+Ausgabe:
+
+    False
+
+_Erklärung: "Peter" ist rückwärts geschrieben "reteP" und somit selbst ohne Berücksichtigung der Groß- und Kleinschreibung kein Palindrom._
+
+--------
+[template]
+class Task:
+    def palindrom(self, s):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[input]
+add_input(True, 'Otto')
+add_input(False, 'Peter')
+add_input(True, 'Regallager')
+add_input(True, 'neben')
+add_input(True, 'Hannah')
+add_input(True, 'Reittier')
+add_input(True, 'Reliefpfeiler')
+add_input(True, 'Rentner')
+add_input(True, 'RADAR')
+add_input(True, 'Soos')
+add_input(True, 'wow')
+add_input(False, 'Alaska')
+add_input(False, 'Orinoco')

@@ -1957,7 +1957,7 @@ class Main < Sinatra::Base
                 @@user_groups[group].select do |email|
                     user_for_email.include?(email) && is_teacher_for_user?(email)
                 end.sort do |a, b|
-                    user_for_email[a][:name] <=> user_for_email[b][:name]
+                    (user_for_email[a][:name] || '') <=> (user_for_email[b][:name] || '')
                 end.each do |email|
                     user = user_for_email[email]
                     if last_group != @@invitations[email][:group]

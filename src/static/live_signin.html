@@ -1,0 +1,22 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+@media (max-width: 440px) {
+    .brand-brand {
+        display: none;
+    }
+}
+</style>
+
+<div class='container-fluid'>
+    <div class='row' style='padding-top: 30px;'>
+        #{print_live_signin_codes()}
+    </div>
+</div>
+
+<script type='text/javascript'>
+
+window.addEventListener('load', function () {
+    setInterval(function() { window.location.reload(); }, 2000);
+    console.log('hey');
+});
+</script>

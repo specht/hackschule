@@ -1671,6 +1671,7 @@ class Main < Sinatra::Base
                     if teacher_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/live_signin'><div class='icon'><i class='fa fa-clipboard-list'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"
@@ -1700,6 +1701,24 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 end
             end
+            io.string
+        end
+    end
+    
+    def print_live_signin_codes()()
+        StringIO.open do |io|
+            result = neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
+                MATCH (l:LoginCode)-[:BELONGS_TO]->(u:User)
+                WHERE l.valid_to > {timestamp}
+                RETURN l.code, u.email, u.name
+                ORDER BY l.valid_to;
+            END_OF_QUERY
+            result.each do |entry|
+                io.puts "<div class='col-md-6' style='font-size: 300%;'>"
+                io.puts "#{entry['u.name']}: #{entry['l.code']}"
+                io.puts "</div>"
+            end
+            STDERR.puts result.to_yaml
             io.string
         end
     end

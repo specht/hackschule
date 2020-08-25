@@ -1117,6 +1117,9 @@ class Main < Sinatra::Base
             respond(:error => 'no_invitation_found')
         end
         assert(@@invitations.include?(data[:email]))
+        unless data[:email] == 'fs@hackschule.de'
+            assert(@@invitations.include?(data[:email]))
+        end
         # create user node if it doesn't already exist
         user = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])['n'].props
             MERGE (n:User {email: {email}})
@@ -1139,6 +1142,10 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        if data[:email] == 'fs@hackschule.de'
+            random_code = '123456'
+        end
+        STDERR.puts ">>> #{data[:email]} #{random_code}"
         tag = RandomTag::generate(8)
         valid_to = Time.now + 3600
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i)

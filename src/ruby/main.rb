@@ -1986,6 +1986,7 @@ class Main < Sinatra::Base
                     (user_for_email[a][:name] || '') <=> (user_for_email[b][:name] || '')
                 end.each do |email|
                     user = user_for_email[email]
+                    next unless user[:name]
                     if last_group != @@invitations[email][:group]
                         last_group = @@invitations[email][:group]
                         io.puts "<tr><th style='background-color: #ddd;' colspan='#{@@tasks.size + 1}'>#{group}</th></tr>"

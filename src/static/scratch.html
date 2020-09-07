@@ -1,0 +1,33 @@
+<style>
+@media (max-width: 440px) {
+    .brand-brand {
+        display: none;
+    }
+}
+.navbar, .foot {
+    display: none;
+}
+body {
+    margin: 0;
+}
+</style>
+
+<div class='container-fluid'>
+    <div class='row h-100'>
+        <div class='col-md-12 container-editor'>
+            <pre id="editor"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/eclipse");
+//     editor.session.setMode("ace/mode/python");
+    editor.setOption('fontSize', 16);
+    editor.setOption('enableBasicAutocompletion', true);
+    editor.session.setUseSoftTabs(true);
+    
+});
+</script>

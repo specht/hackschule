@@ -1672,6 +1672,7 @@ class Main < Sinatra::Base
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/live_signin'><div class='icon'><i class='fa fa-clipboard-list'></i></div><span class='label'>Live-Anmeldungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/scratch'><div class='icon'><i class='fa fa-pen'></i></div><span class='label'>Scratchpad</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"

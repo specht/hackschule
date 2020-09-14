@@ -18,9 +18,15 @@
             <hr />
             </div>
             #{TASK_DESCRIPTION}
+            <div class='hide-task-sidebar'>
+                <button class='btn btn-secondary bu-hide-sidebar'><i class='fa fa-angle-double-left'></i>&nbsp;&nbsp;Seitenleiste ausblenden</button>
+            </div>
         </div>
         <div class='col-md-4 container-editor'>
             <pre id="editor">#{TASK_TEMPLATE}</pre>
+            <div class='show-task-sidebar'>
+                <button class='btn btn-secondary bu-show-sidebar'><i class='fa fa-angle-double-right'></i></button>
+            </div>
         </div>
         <div class='col-md-5 container-terminal'>
             <div id='screen' style="#{task_has_screen ? '' : 'display: none;'}">
@@ -411,6 +417,18 @@ window.addEventListener('load', function () {
     $('#name_this_script').keydown(function(e) {
         if (e.keyCode === 13)
             $('#buStoreScriptName').click();
+    });
+    $('.bu-hide-sidebar').click(function(e) {
+        $('.container-task').hide();
+        $('.container-editor').removeClass('col-md-4').addClass('col-md-6');
+        $('.container-terminal').removeClass('col-md-5').addClass('col-md-6');
+        $('.show-task-sidebar').show();
+    });
+    $('.bu-show-sidebar').click(function(e) {
+        $('.container-task').show();
+        $('.container-editor').removeClass('col-md-6').addClass('col-md-4');
+        $('.container-terminal').removeClass('col-md-6').addClass('col-md-5');
+        $('.show-task-sidebar').hide();
     });
 });
 window.slug = '#{TASK_SLUG}';

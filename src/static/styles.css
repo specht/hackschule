@@ -390,7 +390,7 @@ a:hover {
 .container-task {
     overflow-y: scroll; 
     height: 100%; 
-    padding: 8px 15px 8px 15px; 
+    padding: 8px 15px 48px 15px; 
     margin-bottom: 0;
 }
 
@@ -799,4 +799,18 @@ img.menu-avatar {
     .brand-brand {
 /*         display: none; */
     }
+}
+
+.hide-task-sidebar {
+    position: fixed;
+    bottom: 30px;
+    left: 10px;
+}
+
+.show-task-sidebar {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    left: 0px;
+    z-index: 1000;
 }

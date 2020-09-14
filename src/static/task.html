@@ -423,12 +423,14 @@ window.addEventListener('load', function () {
         $('.container-editor').removeClass('col-md-4').addClass('col-md-6');
         $('.container-terminal').removeClass('col-md-5').addClass('col-md-6');
         $('.show-task-sidebar').show();
+        $(window).trigger('resize');
     });
     $('.bu-show-sidebar').click(function(e) {
         $('.container-task').show();
         $('.container-editor').removeClass('col-md-6').addClass('col-md-4');
         $('.container-terminal').removeClass('col-md-6').addClass('col-md-5');
         $('.show-task-sidebar').hide();
+        $(window).trigger('resize');
     });
 });
 window.slug = '#{TASK_SLUG}';

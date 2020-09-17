@@ -129,7 +129,17 @@ function load_dungeon(task_slug) {
     });
 }
 
+var delayed_forward_ops = [];
+
 function enqueue_dungeon_command(data) {
+    console.log(data.command);
+    if (delayed_forward_ops.length > 0 && data.command !== 'move_demons')
+    {
+        // flush delayed_forward_ops
+        for (let x of delayed_forward_ops)
+            dungeon_queue.push(x);
+        delayed_forward_ops = [];
+    }
     if (data.command === 'say')
     {
         for (let i = 1; i <= data.message.length; i++)
@@ -143,7 +153,7 @@ function enqueue_dungeon_command(data) {
         data.command = 'forward_4';
         data.sleep /= 4;
         for (let i = 0; i < 4; i++)
-            dungeon_queue.push(data);
+            delayed_forward_ops.push(data);
     }
     else if (data.command === 'move_demons')
     {
@@ -156,8 +166,15 @@ function enqueue_dungeon_command(data) {
                 partial_data.demons.push(demon_pos);
             }
             partial_data.sleep = data.sleep / 4;
-            dungeon_queue.push(partial_data);
+            if (delayed_forward_ops.length === 0)
+                dungeon_queue.push(partial_data);
+            else
+                delayed_forward_ops[step].move_demons = partial_data;
         }
+        // flush delayed_forward_ops
+        for (let x of delayed_forward_ops)
+            dungeon_queue.push(x);
+        delayed_forward_ops = [];
     }
     else
         dungeon_queue.push(data);
@@ -219,6 +236,13 @@ function handle_dungeon_command(data) {
         else if (hero.dir === 3)
             hero.y -= 1.0 / 4;
         update_hero_sprite();
+        if (typeof(data.move_demons) !== 'undefined') {
+            for (let i = 0; i < demons.length; i++) {
+                demons[i].x += data.move_demons.demons[i][0];
+                demons[i].y += data.move_demons.demons[i][1];
+            }
+            update_demon_sprites();
+        }
     }
     else if (data.command === 'move_demons_4')
     {
@@ -260,5 +284,9 @@ function handle_dungeon_command(data) {
     else if (data.command === 'eaten_alive')
     {
         hero.tile.css('display', 'none');
+    }
+    else if (data.command === 'demons_asplode')
+    {
+        $('.demon').fadeOut(3000);
     }
 }

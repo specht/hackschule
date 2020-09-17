@@ -151,6 +151,11 @@ class Wizard:
         self.pipe.flush()
         self.hero.x = nx
         self.hero.y = ny
+        for i, demon in enumerate(self.demons):
+            if demon.x == self.hero.x and demon.y == self.hero.y:
+                self.pipe.write(json.dumps({'command': 'eaten_alive'}) + "\n")
+                self.pipe.flush()
+                raise WizardException("Autsch, du wurdest von einem Monster gefressen!")
         self.move_demons()
         self.pipe.flush()
         time.sleep(self.delay)

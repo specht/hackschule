@@ -1743,6 +1743,7 @@ class Main < Sinatra::Base
             printed_tasks_per_cat = 0
             max_printed_tasks_per_cat = 4
             max_printed_tasks_per_cat = nil if show_cat_slug
+            max_printed_tasks_per_cat = nil
             
             @@task_keys_sorted.each do |k|
                 task = @@tasks[k]

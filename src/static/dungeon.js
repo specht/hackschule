@@ -1,4 +1,5 @@
 window.hero = {tile: null, x: 0, y: 0, dir: 0, dy: -14, phase: 0};
+window.demons = [];
 window.dungeon_width = 100;
 window.dungeon_height = 100;
 window.dungeon_scale = 2;
@@ -10,7 +11,6 @@ window.coin_sprites = {};
 window.fountain_top_sprites = [];
 window.fountain_bottom_sprites = [];
 window.animation_timeout_handle = null;
-window.demon_tile = null;
 window.dialog_timeout = null;
 window.dungeon_queue_timeout = null;
 
@@ -35,10 +35,11 @@ function resize_dungeon() {
             width: '' + (16 * dungeon_scale * sprite.data('scale')) + 'px',
             left: (sprite.data('x') * 16 + sprite.data('dx')) * dungeon_scale,
             top: (sprite.data('y') * 16 + sprite.data('dy')) * dungeon_scale,
-            'z-index': sprite.data('bg') ? 0 : (sprite.data('y') * 16) * dungeon_scale + sprite.data('z')
+            'z-index': sprite.data('bg') ? 0 : (sprite.data('y') * 16) + sprite.data('z')
         });
     });
     update_hero_sprite();
+    update_demon_sprites();
     let dialog_y = shift_y / 2;
     if (dialog_y < 0)
         dialog_y = 0;
@@ -49,8 +50,8 @@ function resize_dungeon() {
 function animate() {
     hero.phase = (hero.phase + 1) % 4;
     hero.tile.attr('src', '/sprites/0x72/wiz_' +dirs[hero.dir] + hero.phase + '.png');
-    if (demon_tile !== null)
-        demon_tile.attr('src', '/sprites/0x72/big_demon_idle_anim_f' + hero.phase + '.png');
+    for (demon of demons)
+        demon.tile.attr('src', '/sprites/0x72/big_demon_idle_anim_f' + hero.phase + '.png');
     coin_phase = (coin_phase + 1) % 4;
     $('.sprite-coin').each(function(i, coin) {
         coin = $(coin);
@@ -64,22 +65,24 @@ function animate() {
     fountain_bottom_sprites.forEach(function(sprite, i) {
         sprite.attr('src', '/sprites/0x72/wall_fountain_basin_blue_anim_f' + fountain_phase + '.png');
     });
-//     // darken
-//     $('.sprite').each(function(i, sprite) {
-//         sprite = $(sprite);
-//         if (!sprite.hasClass('hero')) 
-//         {
-//             let x = sprite.data('x');
-//             let y = sprite.data('y');
-//             let dist = (hero.x - x) * (hero.x - x) + (hero.y - y) * (hero.y - y);
-//             let opacity = 1.0 - dist * 0.05;
-//             if (opacity < 0.1)
-//                 opacity = 0.1;
-//             sprite.css({
-//                 opacity: opacity
-//             });
-//         }
-//     });
+    // darken
+    /*
+    $('.sprite').each(function(i, sprite) {
+        sprite = $(sprite);
+        if (!sprite.hasClass('hero')) 
+        {
+            let x = sprite.data('x');
+            let y = sprite.data('y');
+            let dist = (hero.x - x) * (hero.x - x) + (hero.y - y) * (hero.y - y);
+            let opacity = 1.0 - dist * 0.05;
+            if (opacity < 0.1)
+                opacity = 0.1;
+            sprite.css({
+                opacity: opacity
+            });
+        }
+    });
+    */
 }
 
 function load_dungeon(task_slug) {
@@ -88,9 +91,10 @@ function load_dungeon(task_slug) {
         container.empty();
         dungeon_width = data.width;
         dungeon_height = data.height;
+        demons = [];
         resize_dungeon();
         data.tiles.forEach(function(info, i) {
-            let tile = $('<img>').addClass('sprite').attr('src', '/sprites/0x72/' + info.sprite + '.png').data({x: info.x, y: info.y, dx: info.dx || 0, dy: info.dy || 0, z: info.z || 0, scale: info.scale || 1, bg: info.bg || false}).appendTo(container);
+            let tile = $('<img>').addClass('sprite').attr('src', '/sprites/0x72/' + info.sprite + '.png').data({x: info.x, y: info.y, dx: info.dx || 0, dy: info.dy || 0, z: info.z || 0, scale: info.scale || 1, bg: info.bg || false, shift_x: info.shift_x || 0, shift_y: info.shift_y || 0}).appendTo(container);
             if (info.flip_x)
                 tile.addClass('flip-x');
             if (info.flip_y)
@@ -103,6 +107,11 @@ function load_dungeon(task_slug) {
                 hero.dir = info.dir;
                 tile.addClass('hero');
             }
+            if (info.demon)
+            {
+                demons.push({tile: tile, x: info.x, y: info.y, dir: info.dir, dx: 0, dy: -100});
+                tile.addClass('demon');
+            }
             if (info.coin) 
             {
                 tile.addClass('sprite-coin');
@@ -112,8 +121,6 @@ function load_dungeon(task_slug) {
                 fountain_top_sprites.push(tile);
             if (info.fountain_bottom) 
                 fountain_bottom_sprites.push(tile);
-            if (info.demon) 
-                demon_tile = tile;
         });
         resize_dungeon();
         if (animation_timeout_handle !== null)
@@ -138,6 +145,20 @@ function enqueue_dungeon_command(data) {
         for (let i = 0; i < 4; i++)
             dungeon_queue.push(data);
     }
+    else if (data.command === 'move_demons')
+    {
+        for (let step = 0; step < 4; step++) {
+            let partial_data = {};
+            partial_data.command = 'move_demons_4';
+            partial_data.demons = [];
+            for (let i = 0; i < demons.length; i++) {
+                let demon_pos = [data.demons[i].x / 4, data.demons[i].y / 4];
+                partial_data.demons.push(demon_pos);
+            }
+            partial_data.sleep = data.sleep / 4;
+            dungeon_queue.push(partial_data);
+        }
+    }
     else
         dungeon_queue.push(data);
     if (dungeon_queue_timeout === null)
@@ -158,10 +179,19 @@ function handle_next_dungeon_command() {
 function update_hero_sprite() {
     if (hero.tile !== null)
     {
-        hero.tile.css('left', (hero.x * 16 + hero.tile.data('dx'))  * dungeon_scale);
+        hero.tile.css('left', (hero.x * 16 + hero.tile.data('dx')) * dungeon_scale);
         hero.tile.css('top', (hero.y * 16 + hero.tile.data('dy')) * dungeon_scale);
-        hero.tile.css('z-index', ((hero.y * 16 + hero.tile.data('dy')) + 16) * dungeon_scale);
+        hero.tile.css('z-index', ((hero.y * 16 + hero.tile.data('dy')) + 16));
         hero.tile.attr('src', '/sprites/0x72/wiz_' +dirs[hero.dir] + hero.phase + '.png');
+    }
+}
+
+function update_demon_sprites() {
+    for (let demon of demons) {
+        demon.tile.css('left', (demon.x * 16 + demon.tile.data('dx') + demon.tile.data('shift_x')) * dungeon_scale);
+        demon.tile.css('top', (demon.y * 16 + demon.tile.data('dy') + demon.tile.data('shift_y')) * dungeon_scale);
+        demon.tile.css('z-index', ((demon.y * 16 + demon.tile.data('dy')) + 16));
+        demon.tile.attr('src', '/sprites/0x72/big_demon_idle_anim_f' + hero.phase + '.png');
     }
 }
 
@@ -189,6 +219,14 @@ function handle_dungeon_command(data) {
         else if (hero.dir === 3)
             hero.y -= 1.0 / 4;
         update_hero_sprite();
+    }
+    else if (data.command === 'move_demons_4')
+    {
+        for (let i = 0; i < demons.length; i++) {
+            demons[i].x += data.demons[i][0];
+            demons[i].y += data.demons[i][1];
+        }
+        update_demon_sprites();
     }
     else if (data.command === 'turn_left')
     {
@@ -218,5 +256,9 @@ function handle_dungeon_command(data) {
                 $('#screen .dialog').fadeOut();
             }, 4000);
         })();
+    }
+    else if (data.command === 'eaten_alive')
+    {
+        hero.tile.css('display', 'none');
     }
 }

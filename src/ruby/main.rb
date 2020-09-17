@@ -820,7 +820,7 @@ class Main < Sinatra::Base
                                     File.mkfifo(File.join(dir, 'fifo'))
                                     f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                     dungeon = dungeon_for_task(task[:slug])
-                                    f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json})"
+                                    f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json}, #{dungeon[:demons].to_json})"
                                     f.puts task[:dungeon_init] || ''
                                     f.puts "fili.run_it()"
                                     File.open(File.join(dir, 'wizard.py'), 'w') do |f2|
@@ -1386,6 +1386,7 @@ class Main < Sinatra::Base
         width = map.first.size
         start_pos = nil
         end_pos = nil
+        demons_pos = []
         (-1...height+1).each do |y|
             (0...width).each do |x|
                 tile = nil
@@ -1459,12 +1460,12 @@ class Main < Sinatra::Base
                     end
                 end
                 if map_is(map, x, y, 'U')
-                    tiles << {:x => x, :y => y - 1, :sprite => 'wall_mid', :z => 4, :dy => 4}
+                    tiles << {:x => x, :y => y - 1, :sprite => 'wall_mid', :z => 6, :dy => 4}
                 end
                 # inner wall left
                 if map_is(map, x, y, 'ULW') && !map_is(map, x - 1, y, 'ULW') 
                     if !map_is(map, x - 1, y, 'x')
-                        tiles << {:x => x, :y => y - 1, :sprite => 'wall_side_mid_right', :z => 4}
+                        tiles << {:x => x, :y => y - 1, :sprite => 'wall_side_mid_right', :z => 6}
                         if !map_is(map, x, y - 1, 'ULW')
                             tiles << {:x => x, :y => y - 2, :sprite => 'wall_side_top_right', :z => 1000, :dy => 4}
                         end
@@ -1476,7 +1477,7 @@ class Main < Sinatra::Base
                 # inner wall right
                 if map_is(map, x, y, 'URW') && !map_is(map, x + 1, y, 'URW')
                     if !map_is(map, x + 1, y, 'x')
-                        tiles << {:x => x, :y => y - 1, :sprite => 'wall_side_mid_left', :z => 4}
+                        tiles << {:x => x, :y => y - 1, :sprite => 'wall_side_mid_left', :z => 6}
                         if !map_is(map, x, y - 1, 'URW')
                             tiles << {:x => x, :y => y - 2, :sprite => 'wall_side_top_left', :z => 100, :dy => 4}
                         end
@@ -1519,7 +1520,8 @@ class Main < Sinatra::Base
                 end
                 
                 if map_is(map, x, y, 'D')
-                    tiles << {:x => x, :y => y, :sprite => 'big_demon_idle_anim_f0', :scale => 2, :z => 48, :flip_x => true, :dx => -8, :dy => -24, :demon => true}
+                    tiles << {:x => x, :y => y, :sprite => 'big_demon_idle_anim_f0', :scale => 2, :z => 48, :flip_x => true, :dx => -8, :dy => -13, :demon => true, :shift_y => -9}
+                    demons_pos << [x, y]
                 end
                 if map_is(map, x, y, 'z')
                     tiles << {:x => x, :y => y, :sprite => 'chest_empty_open_anim_f2', :dy => -2}
@@ -1540,7 +1542,8 @@ class Main < Sinatra::Base
         tiles.map! { |x| x[:y] += 1; x }
             
         @@dungeon_for_task_cache[cache_key] = {:map => map, :tiles => tiles, :width => width, :height => height + 2, 
-                  :hero => {:x => start_pos[0], :y => start_pos[1], :dir => 0}}
+                  :hero => {:x => start_pos[0], :y => start_pos[1], :dir => 0},
+                  :demons => demons_pos.map { |m| {:x => m[0], :y => m[1], :dir => 0}}}
     end
     
     post '/api/load_dungeon' do

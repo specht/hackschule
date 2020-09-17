@@ -13,6 +13,7 @@ Für den Zauberer stehen dir folgende Methoden zur Verfügung:
 `say(message)`     | einen Satz sagen
 `wait(delay)`      | eine bestimmte Zeit warten (in Sekunden)
 `coins()`          | gibt zurück, wie viele Münzen der Zauberer bei sich trägt
+`coin_here()`      | überprüft, ob auf dem aktuellen Feld eine Münze liegt
 `get_coin()`       | eine Münze aufheben
 `set_speed(speed)` | Spielgeschwindigkeit ändern (1: langsam, 50: normal, 100: schnell)
 

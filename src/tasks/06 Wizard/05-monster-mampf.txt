@@ -1,0 +1,37 @@
+title: "Monster-Mampf"
+enabled: true
+difficulty: easy
+--------
+Sammle alle Münzen auf. Aber pass auf, dass du nicht vom Monster gefressen wirst!
+--------
+[template]
+from wizard import Wizard
+
+class Fili(Wizard):
+    def run(self):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[dungeon_init]
+def wiz_init(self):
+    pass
+        
+def wiz_verify(self):
+    return self.coins() == 20
+        
+fili.use_init(wiz_init)
+fili.use_verify(wiz_verify)
+--------
+[map]
+lwwbwwwwfwwwbwwr
+la c c c c c c.r
+l c         c cr
+l   UUUUUUU  C,r
+l c LxxxxxR cCcr
+l   LxxxxxR  C/r
+l c WWWWWWW cCcr
+l  c c c c c C.r
+l            CDr
+--------
+[verify]
+false

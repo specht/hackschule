@@ -2101,7 +2101,7 @@ class Main < Sinatra::Base
             STDERR.puts timestamps.to_yaml
             histogram = {}
             timestamps.each do |t|
-                d = DateTime.parse(t)
+                d = DateTime.parse(t).to_time.localtime
                 STDERR.puts "#{d} #{d.wday} #{d.strftime('%H')}"
                 key = "#{d.wday}/#{d.strftime('%H')}"
                 histogram[key] ||= 0

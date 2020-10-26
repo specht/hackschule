@@ -2093,6 +2093,39 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            timestamps = neo4j_query(<<~END_OF_QUERY).map { |x| x['t'] }
+                MATCH (s:Submission)
+                RETURN s.t0 AS t
+                ORDER BY t;
+            END_OF_QUERY
+            STDERR.puts timestamps.to_yaml
+            histogram = {}
+            timestamps.each do |t|
+                d = DateTime.parse(t)
+                STDERR.puts "#{d} #{d.wday} #{d.strftime('%H')}"
+                key = "#{d.wday}/#{d.strftime('%H')}"
+                histogram[key] ||= 0
+                histogram[key] += 1
+            end
+            io.puts "<table class='table'>"
+            wdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+            io.puts "<th></th>"
+            (0..23).each do |h|
+                k = sprintf('%02d', h)
+                io.puts "<th>#{k}</th>"
+            end
+            (0..6).each do |wday|
+                io.puts "<tr>"
+                io.puts "<th>#{wdays[wday]}</th>"
+                (0..23).each do |h|
+                    k = sprintf('%d/%02d', wday, h)
+                    v = histogram[k] || 0
+                    io.puts "<td>#{v}</td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+#             STDERR.puts timestamps.to_yaml
             io.string
         end
     end

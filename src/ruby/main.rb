@@ -2098,29 +2098,34 @@ class Main < Sinatra::Base
                 RETURN s.t0 AS t
                 ORDER BY t;
             END_OF_QUERY
-            STDERR.puts timestamps.to_yaml
             histogram = {}
             timestamps.each do |t|
                 d = DateTime.parse(t).to_time.localtime
-                STDERR.puts "#{d} #{d.wday} #{d.strftime('%H')}"
                 key = "#{d.wday}/#{d.strftime('%H')}"
                 histogram[key] ||= 0
                 histogram[key] += 1
             end
+            max_count = histogram.values.max
+            # #4aa03f => green
             io.puts "<table class='table'>"
             wdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
             io.puts "<th></th>"
             (0..23).each do |h|
                 k = sprintf('%02d', h)
-                io.puts "<th>#{k}</th>"
+                io.puts "<th style='text-align: center;'>#{k}</th>"
             end
-            (0..6).each do |wday|
+            (1..7).each do |_wday|
+                wday = _wday % 7
                 io.puts "<tr>"
-                io.puts "<th>#{wdays[wday]}</th>"
+                io.puts "<th style='text-align: center;'>#{wdays[wday]}</th>"
                 (0..23).each do |h|
                     k = sprintf('%d/%02d', wday, h)
                     v = histogram[k] || 0
-                    io.puts "<td>#{v}</td>"
+                    f = (v.to_f / max_count) ** 0.5
+                    r = 0xff - (0xff - 0x4a) * f
+                    g = 0xff - (0xff - 0xa0) * f
+                    b = 0xff - (0xff - 0x3f) * f
+                    io.puts sprintf("<td style='text-align: center; background-color: #%02x%02x%02x;'>#{v}</td>", r, g, b)
                 end
                 io.puts "</tr>"
             end

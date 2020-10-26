@@ -1148,6 +1148,10 @@ class Main < Sinatra::Base
         STDERR.puts ">>> #{data[:email]} #{random_code}"
         tag = RandomTag::generate(8)
         valid_to = Time.now + 3600
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email])
+            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: {email}})
+            DETACH DELETE l;
+        END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i)
             MATCH (n:User {email: {email}})
             CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)

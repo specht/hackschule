@@ -28,6 +28,7 @@
 window.addEventListener('load', function () {
     $('#form').submit(function(e) { e.preventDefault(); });
     $('#submit').click(function(e) {
+        $('#submit').prop('disabled', true);
 //         show_success_message("Dein Code wird versandt... <i class='fa fa-cog fa-spin' />");
         api_call('/api/login', {email: $('#email').val()}, function(data) {
             console.log(data);
@@ -37,6 +38,7 @@ window.addEventListener('load', function () {
             }
             else
             {
+                $('#submit').prop('disabled', false);
                 if (data.error === 'no_invitation_found')
                     show_error_message('Für die eingegebene E-Mail-Adresse wurde keine Einladung gefunden.');
                 else

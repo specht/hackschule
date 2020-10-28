@@ -2093,13 +2093,19 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
-            timestamps = neo4j_query(<<~END_OF_QUERY).map { |x| x['t'] }
-                MATCH (s:Submission)
-                RETURN s.t0 AS t
+            timestamps = neo4j_query(<<~END_OF_QUERY).map { |x| {:t => x['t'], :email => x['email'] } }
+                MATCH (s:Submission)-[:SUBMITTED_BY]-(u:User)
+                RETURN s.t0 AS t, u.email AS email
                 ORDER BY t;
             END_OF_QUERY
             histogram = {}
-            timestamps.each do |t|
+            submissions_for_user = {}
+            timestamps.each do |row|
+                email = row[:email]
+                t = row[:t]
+                submissions_for_user[email] ||= 0
+                submissions_for_user[email] += 1
+                next if @@teachers.include?(row[:email])
                 d = DateTime.parse(t).to_time.localtime
                 key = "#{d.wday}/#{d.strftime('%H')}"
                 histogram[key] ||= 0
@@ -2128,6 +2134,17 @@ class Main < Sinatra::Base
                     io.puts sprintf("<td style='text-align: center; background-color: #%02x%02x%02x;'>#{v}</td>", r, g, b)
                 end
                 io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "<table class='table'>"
+            io.puts "<tr><th>E-Mail</th><th>Name</th><th>Submissions</th></tr>"
+            submissions_for_user.keys.sort do |a, b|
+                submissions_for_user[b] <=> submissions_for_user[a]
+            end.each do |email|
+                user = user_for_email[email] || {}
+                io.puts "<tr><td>#{email}</td><td>"
+                io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
+                io.puts "#{user[:name]}</td><td>#{submissions_for_user[email]}</td></tr>"
             end
             io.puts "</table>"
 #             STDERR.puts timestamps.to_yaml

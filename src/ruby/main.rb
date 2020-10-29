@@ -2100,6 +2100,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
             histogram = {}
             submissions_for_user = {}
+            spare_time_submissions_for_user = {}
             timestamps.each do |row|
                 email = row[:email]
                 t = row[:t]
@@ -2110,8 +2111,12 @@ class Main < Sinatra::Base
                 key = "#{d.wday}/#{d.strftime('%H')}"
                 histogram[key] ||= 0
                 histogram[key] += 1
+                if d.hour < 8 || d.hour > 16
+                    spare_time_submissions_for_user[email] ||= 0
+                    spare_time_submissions_for_user[email] += 1
+                end
             end
-            max_count = histogram.values.max
+            max_count = histogram.values.max || 1
             # #4aa03f => green
             io.puts "<table class='table'>"
             wdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
@@ -2136,6 +2141,7 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             io.puts "</table>"
+            io.puts "Außerhalb von 8 bis 17 Uhr: #{spare_time_submissions_for_user.keys.size} / #{submissions_for_user.keys.size}" 
             io.puts "<table class='table'>"
             io.puts "<tr><th>E-Mail</th><th>Name</th><th>Submissions</th></tr>"
             submissions_for_user.keys.sort do |a, b|

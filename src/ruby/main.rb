@@ -2111,7 +2111,7 @@ class Main < Sinatra::Base
                 key = "#{d.wday}/#{d.strftime('%H')}"
                 histogram[key] ||= 0
                 histogram[key] += 1
-                if d.hour < 8 || d.hour > 16
+                if ([0, 6].include?(d.wday)) || (d.hour < 8 || d.hour > 16)
                     spare_time_submissions_for_user[email] ||= 0
                     spare_time_submissions_for_user[email] += 1
                 end

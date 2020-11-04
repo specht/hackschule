@@ -158,10 +158,14 @@ def mail_html_to_plain_text(s)
     s.gsub('<p>', "\n\n").gsub(/<br\s*\/?>/, "\n").gsub(/<\/?[^>]*>/, '').strip
 end
 
-def deliver_mail(&block)
+def create_mail(&block)
     mail = Mail.new do
         self.instance_eval(&block)
     end
+    return mail
+end
+
+def deliver_mail(mail)
     mail.deliver!
 
 #     mail.subject("[WEB] #{mail.subject}")
@@ -1142,7 +1146,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
-        if data[:email] == 'fs@hackschule.de'
+        if data[:email] == 'fs@hackschule.de' && ENV['DEVELOPMENT']
             random_code = '123456'
         end
         STDERR.puts ">>> #{data[:email]} #{random_code}"
@@ -1157,7 +1161,9 @@ class Main < Sinatra::Base
             CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
             RETURN n;
         END_OF_QUERY
-        deliver_mail do
+
+        # create email to be handled later on
+        mail = create_mail do
             to data[:email]
             from SMTP_FROM
             
@@ -1180,6 +1186,16 @@ class Main < Sinatra::Base
                 body mail_html_to_plain_text(message)
             end
         end
+
+        # if we are in a dev environment, we do not want the mail delivered. Instead just output it.
+        if ENV['DEVELOPMENT']
+          STDERR.puts "Somebody requested a login code."
+          STDERR.puts "We are in DEVELOPMENT mode, so no mails will be send. Instead it will be dumped here:"
+          STDERR.puts mail
+        else
+          deliver_mail(mail)
+        end
+
         respond(:tag => tag)
     end
     

@@ -12,6 +12,12 @@ PROFILE = [:static, :dynamic, :neo4j]
 
 DEVELOPMENT    = !(ENV['QTS_DEVELOPMENT'].nil?)
 PROJECT_NAME = 'code' + (DEVELOPMENT ? 'dev' : '')
+# In DEV Mode:
+# To make hackerschule only listen for connections from localhost:
+# DEV_NGINX_IP = "127.0.0.1"
+# If you want hackerschule to listen for connections from other hosts as well, put
+# DEV_NGINX_IP = "0.0.0.0"
+DEV_NGINX_IP = "127.0.0.1"
 DEV_NGINX_PORT = 8020
 DEV_NEO4J_PORT = 8021
 LOGS_PATH = DEVELOPMENT ? './logs' : "/home/qts/logs/#{PROJECT_NAME}"
@@ -165,10 +171,10 @@ docker_compose[:services].values.each do |x|
 end
 
 if DEVELOPMENT
-    docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
+    docker_compose[:services][:nginx][:ports] = ["#{DEV_NGINX_IP}:#{DEV_NGINX_PORT}:80"]
     if PROFILE.include?(:neo4j)
-        docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
-                                                     "127.0.0.1:7687:7687"]
+        docker_compose[:services][:neo4j][:ports] = ["#{DEV_NGINX_IP}:#{DEV_NEO4J_PORT}:7474",
+                                                     "#{DEV_NGINX_IP}:7687:7687"]
     end
 else
     docker_compose[:services].values.each do |x|

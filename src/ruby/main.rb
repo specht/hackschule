@@ -1157,28 +1157,32 @@ class Main < Sinatra::Base
             CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
             RETURN n;
         END_OF_QUERY
-        deliver_mail do
-            to data[:email]
-            from SMTP_FROM
-            
-            subject "Dein Anmeldecode lautet #{random_code}"
+        begin
+            deliver_mail do
+                to data[:email]
+                from SMTP_FROM
+                
+                subject "Dein Anmeldecode lautet #{random_code}"
 
-            message = StringIO.open do |io|
-                io.puts "<p>Hallo!</p>"
-                io.puts "<p>Dein Anmeldecode lautet: #{random_code}. Der Code ist eine Stunde lang gültig.</p>"
-                io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand deine E-Mail-Adresse auf <a href='https://hackschule.de/login'>https://hackschule.de/login</a> eingegeben. In diesem Fall musst du nichts weiter tun.</p>"
-                io.puts "<p>Viel Spaß beim programmieren!</p>"
-                io.puts "<p>Michael Specht</p>"
-                io.string
+                message = StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Dein Anmeldecode lautet: #{random_code}. Der Code ist eine Stunde lang gültig.</p>"
+                    io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand deine E-Mail-Adresse auf <a href='https://hackschule.de/login'>https://hackschule.de/login</a> eingegeben. In diesem Fall musst du nichts weiter tun.</p>"
+                    io.puts "<p>Viel Spaß beim programmieren!</p>"
+                    io.puts "<p>Michael Specht</p>"
+                    io.string
+                end
+                
+                html_part do
+                    body message
+                end
+                
+                text_part do
+                    body mail_html_to_plain_text(message)
+                end
             end
-            
-            html_part do
-                body message
-            end
-            
-            text_part do
-                body mail_html_to_plain_text(message)
-            end
+        rescue
+            STDERR.puts "Unable to send mail to #{data[:email]}, continuing anyway."
         end
         respond(:tag => tag)
     end

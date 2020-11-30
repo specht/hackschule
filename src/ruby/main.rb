@@ -2194,7 +2194,7 @@ class Main < Sinatra::Base
             sha1 = parts[3]
             if @@tasks.include?(slug)
                 task = @@tasks[slug]
-                if sha1.include?(/[^0-9a-z]/)
+                if sha1 =~ /[^0-9a-z]/
                     redirect "#{WEB_ROOT}/task/#{slug}/#{sha1.gsub(/[^0-9a-z]/, '')}", 302
                 end
             else

@@ -50,8 +50,12 @@ def run_tests():
         task = Task()
         for i, data in enumerate(_test_cases):
             sys.stderr.write("\r\u001b[44;1m[ Test ]\u001b[0m ")
-            sys.stderr.write(f"Durchlauf {i + 1} von {len(_test_cases)}...")
-            assert_equal(task.#{THE_FUNCTION_NAME}(*data[1]), data[0], *data[1])
+            sys.stderr.write(f"Durchlauf {i + 1} von {len(_test_cases)}...\n")
+            ret = task.#{THE_FUNCTION_NAME}(*data[1])
+            assert_equal(ret, data[0], *data[1])
+            sys.stderr.write(f'Eingabe : {data[1]}\n')
+            sys.stderr.write(f'Erwartet: {data[0]}\n')
+            sys.stderr.write(f'Bekommen: {ret}\n')
         sys.stderr.write(" ok.\r\n")
     except TestException as e:
         sys.stderr.write(" fehlgeschlagen.\r\n\r\n")

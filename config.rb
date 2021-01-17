@@ -12,7 +12,7 @@ PROFILE = [:static, :dynamic, :neo4j]
 
 DEVELOPMENT    = !(ENV['QTS_DEVELOPMENT'].nil?)
 PROJECT_NAME = 'code' + (DEVELOPMENT ? 'dev' : '')
-DEV_NGINX_PORT = 8020
+DEV_NGINX_PORT = 8025
 DEV_NEO4J_PORT = 8021
 LOGS_PATH = DEVELOPMENT ? './logs' : "/home/qts/logs/#{PROJECT_NAME}"
 DATA_PATH = DEVELOPMENT ? './data' : "/home/qts/data/#{PROJECT_NAME}"

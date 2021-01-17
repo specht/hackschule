@@ -305,7 +305,7 @@ function launch_script(script)
     $('#editor').prop('disabled', true);
     editor.setReadOnly(true);
     var ws_uri = 'ws://' + location.host + '/ws';
-    if (location.host !== 'localhost:8020')
+    if (location.host !== 'localhost:8025')
         ws_uri = 'wss://' + location.host + '/ws';
     ws = new WebSocket(ws_uri);
     setup_ws(ws);

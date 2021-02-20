@@ -46,7 +46,8 @@ if PROFILE.include?(:static)
     end
     if PROFILE.include?(:dynamic)
         docker_compose[:services][:nginx][:links] = ["ruby:#{PROJECT_NAME}_ruby_1",
-                                                     "pixelflut:#{PROJECT_NAME}_pixelflut_1"]
+                                                     "pixelflut:#{PROJECT_NAME}_pixelflut_1",
+                                                     "canvas:#{PROJECT_NAME}_canvas_1"]
     end
     nginx_config = <<~eos
         log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
@@ -76,8 +77,18 @@ if PROFILE.include?(:static)
                 try_files $uri @pixelflut;
             }
 
+            location /canvas/ {
+                try_files $uri @canvas;
+            }
+
             location @pixelflut {
                 proxy_pass http://#{PROJECT_NAME}_pixelflut_1:9292;
+                proxy_set_header Host $host;
+                proxy_http_version 1.1;
+            }
+        
+            location @canvas {
+                proxy_pass http://#{PROJECT_NAME}_canvas_1:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
             }
@@ -101,7 +112,7 @@ if PROFILE.include?(:static)
         f.write nginx_config
     end
     if PROFILE.include?(:dynamic)
-        docker_compose[:services][:nginx][:depends_on] = [:ruby, :pixelflut]
+        docker_compose[:services][:nginx][:depends_on] = [:ruby, :pixelflut, :canvas]
     end
 end
 
@@ -113,6 +124,7 @@ if PROFILE.include?(:dynamic)
         :volumes => ['./src/ruby:/app:ro',
                      './src/static:/static:ro',
                      './src/tasks:/tasks:ro',
+                     './src/planets:/planets:ro',
                      "#{RAW_FILES_PATH}:/raw",
                      "#{GEN_FILES_PATH}:/gen",
                      "/var/run/docker.sock:/var/run/docker.sock"],
@@ -127,12 +139,22 @@ if PROFILE.include?(:dynamic)
         :build => './docker/pysandbox',
         :entrypoint =>  '/usr/bin/tail -f /dev/null',
         :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"],
-        :links => ['pixelflut:pixelflut']
+        :links => ['pixelflut:pixelflut', 'canvas:canvas']
     }
     docker_compose[:services][:pixelflut] = {
         :build => './docker/pixelflut',
         :volumes => ['./src/pixelflut:/app:ro',
                      "#{RAW_FILES_PATH}/pixelflut:/raw"],
+        :environment => env,
+        :working_dir => '/app',
+        :entrypoint =>  DEVELOPMENT ?
+            'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
+            'rackup --quiet --host 0.0.0.0'
+    }
+    docker_compose[:services][:canvas] = {
+        :build => './docker/canvas',
+        :volumes => ['./src/canvas:/app:ro',
+                     "#{RAW_FILES_PATH}/canvas:/raw"],
         :environment => env,
         :working_dir => '/app',
         :entrypoint =>  DEVELOPMENT ?
@@ -186,11 +208,13 @@ if PROFILE.include?(:dynamic)
     FileUtils::cp('src/ruby/Gemfile', 'docker/ruby/')
     FileUtils::cp('credentials.rb', 'docker/ruby/')
     FileUtils::cp('src/pixelflut/Gemfile', 'docker/pixelflut/')
+    FileUtils::cp('src/canvas/Gemfile', 'docker/canvas/')
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
     system("cp -purv src/static/avatars/* #{File::join(RAW_FILES_PATH, 'uploads')}")
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'code'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'sandbox'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'pixelflut'))
+    FileUtils::mkpath(File::join(RAW_FILES_PATH, 'canvas'))
     FileUtils::mkpath(GEN_FILES_PATH)
 end
 if PROFILE.include?(:pysandbox)

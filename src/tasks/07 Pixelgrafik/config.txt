@@ -1,0 +1,25 @@
+cat_slug: pixelgrafik
+screen: true
+canvas: true
+--------
+Deine Aufgabe ist es, ein Bild zu decodieren. Du bekommst einen Strom einzelner Bytes und daraus ein Bild erstellen.
+--------
+Im Gegensatz zur [Pixelflut](/task/pixelflut) kannst du hier Pixel nicht auf beliebige RGB-Farben setzen, sondern nur einfache, ganze Zahlen als Farben verwenden. Dafür gibt es in jeder Aufgabe eine vordefinierte Palette, die einer Handvoll Zahlen jeweils eine Farbe zuordnet.
+
+Deine Aufgabe ist es, ein codiertes Bild zu decodieren. Die Art der Decodierung ist abhängig von der Aufgabenstellung, die du ganz oben findest (es geht einfach los und wird später schwieriger).
+
+Die codierten Zahlen findest du im Parameter `data` deiner `run`-Methode. Für diese Variable stehen dir folgende Methoden zur Vefügung:
+
+{:.table.table-striped.table-sm.narrowwrap}
+`next()`        | gibt das nächste Byte zurück
+`length()`      | gibt die Länge des Datenstroms in Bytes zurück
+`eof()`         | gibt an, ob wir am Ende des Datenstroms angelangt sind (eof = »end of file«)
+`reset()`       | springt zurück zum Anfang des Datenstroms
+`read()`        | liefert alle Bytes in einer Liste zurück
+
+Du kannst also, solange du nicht am Ende des Datenstroms angelangt bist, immer das nächste Byte mit Hilfe der `next`-Methode lesen und dann dieses Byte untersuchen. Je nach Aufgabenstellung musst du nun aus jedem Byte ableiten, wie viele und welche Pixel du setzen musste. Am Ende soll ein fertiges Bild entstehen.
+
+Um Pixel zu setzen, kannst du die folgende Methode verwenden:
+
+{:.table.table-striped.table-sm.narrowwrap}
+`set_pixel(x, y, c)` | Pixel an Position (x, y) auf Farbe c setzen

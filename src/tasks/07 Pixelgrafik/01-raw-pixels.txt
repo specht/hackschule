@@ -1,0 +1,21 @@
+title: Raw Pixels
+enabled: true
+difficulty: easy
+screen: true
+canvas: true
+target_image: p0.png.json
+--------
+In dieser Aufgabe entspricht jedes Byte einem Pixel. Die einzelnen Pixel sind zeilenweise von oben nach unten und in jeder Zeile von links nach rechts codiert. Lies alle Bytes hintereinander und setze den entsprechenden Pixel auf die jeweilge Farbe.
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Der folgende Code demonstriert, wie du Daten lesen 
+        # und Pixel setzen kannst. Du solltest ihn löschen, 
+        # wenn du diese Basics verstanden hast.
+        print(f"Im Datenstrom befinden sich {data.length()} Bytes!")
+        print(f"Die Zeichenfläche ist {width}x{height} Pixel groß.")
+        # Wir setzen nun den Pixel links oben auf die Farbe 6 (grün)
+        self.set_pixel(0, 0, 6)

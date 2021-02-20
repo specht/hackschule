@@ -1,0 +1,38 @@
+title: RLE-Komprimierung &#35;3
+enabled: true
+difficulty: medium
+screen: true
+canvas: true
+target_image: p4.png.json
+--------
+In dieser Aufgabe wird wieder die RLE-Komprimierung verwendet. Hier wird wieder jeder Pixel lauflängencodiert, allerdings werden die Anzahl der Wiederholungen und die Farbe in einem Byte gespeichert:
+
+<table class="table table-sm narrowwrap center-cells framed">
+  <tbody>
+    <tr>
+      <th>7</th>
+      <th>6</th>
+      <th>5</th>
+      <th>4</th>
+      <th>3</th>
+      <th>2</th>
+      <th>1</th>
+      <th>0</th>
+    </tr>
+    <tr>
+        <td colspan='4'>Anzahl der Wiederholungen - 1</td>
+        <td colspan='4'>Farbe, die wiederholt werden soll</td>
+    </tr>
+  </tbody>
+</table>
+
+Da kein Pixel 0 mal wiederholt wird, sondern mindestens immer einmal, wird die Anzahl der Wiederholungen subtrahiert um 1 abgespeichert.
+
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Ersetze 'pass' durch deine Lösung
+        pass

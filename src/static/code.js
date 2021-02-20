@@ -254,6 +254,7 @@ function setup_ws(ws)
             if ($('body').width() >= 768)
                 editor.focus();
             $('#screen img.pixelflut').removeAttr('src').attr('src', '/pixelflut/?' + Date.now());
+            $('#screen img.canvas').removeAttr('src').attr('src', '/canvas/' + session_user_email + '/?' + Date.now());
         }
         else if (data.status === 'passed')
         {

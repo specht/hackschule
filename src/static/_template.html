@@ -16,8 +16,9 @@
 <body>
 <nav class="navbar navbar-expand-md navbar-light bg-light fixed-top justify-content-end">
         <a class="navbar-brand" href="/"><img src='/android-chrome-192x192.png' style='width: 24px; height: 24px; position: relative; top: -2px;' /><span class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
-    <div class='ml-auto'></div>
-    <button class="btn btn-success ml-auto mr-1" id='run' style='#{original_path == 'task' ? '' : 'display: none;'} position: relative; left: -15px;' #{@session_user.nil? ? 'disabled' : ''}><i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen</button>
+    <div class='ml-auto'>
+    </div>
+    <button class="btn btn-success mr-1" id='run' style='#{original_path == 'task' ? '' : 'display: none;'} position: relative; left: -15px;' #{@session_user.nil? ? 'disabled' : ''}><i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen</button>
     <div class='icon mobile-avatar' style='margin-right: 16px; #{@session_user.nil? ? 'display: none' : ''};'><img class='menu-avatar' src='/gen/#{(@session_user || {})[:avatar]}-48.png' /></div>    
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>

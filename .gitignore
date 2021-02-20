@@ -3,5 +3,7 @@ data
 docker-compose.yaml
 docker/nginx/default.conf
 docker/ruby/Gemfile
+docker/pixelflut/Gemfile
+docker/canvas/Gemfile
 logs
 src/ruby/invitations.txt

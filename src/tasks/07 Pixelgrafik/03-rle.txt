@@ -1,0 +1,17 @@
+title: RLE-Komprimierung
+enabled: true
+difficulty: medium
+screen: true
+canvas: true
+target_image: p2.png.json
+--------
+In dieser Aufgabe werden Pixel derselben Farbe zusammengefasst. Dies spart viel Speicherplatz, wenn mehrmals hintereinander dieselbe Farbe im Bild vorkommt. Dieses Verfahren heisst 
+»RLE-Komprimierung« (RLE = Run Length Encoding, auf deutsch »Lauflängencodierung«). Dabei müssen immer zwei Bytes gelesen werden. Das erste Byte gibt an, wie oft die im darauffolgenden Byte codierte Farbe wiederholt wird.
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Ersetze 'pass' durch deine Lösung
+        pass

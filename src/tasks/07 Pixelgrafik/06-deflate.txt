@@ -1,0 +1,24 @@
+title: Deflate-Komprimierung
+enabled: true
+difficulty: hard
+screen: true
+canvas: true
+target_image: p5.png.json
+--------
+In dieser Aufgabe wird die [Deflate-Komprimierung](https://de.wikipedia.org/wiki/Deflate) verwendet, das in vielen Dateiformaten (wie z. B. [ZIP](https://de.wikipedia.org/wiki/ZIP-Dateiformat), [PNG](https://de.wikipedia.org/wiki/Portable_Network_Graphics), [PDF](https://de.wikipedia.org/wiki/Portable_Document_Format), [ODT](https://de.wikipedia.org/wiki/OpenDocument) und [TIFF](https://de.wikipedia.org/wiki/Tagged_Image_File_Format)) zum Einsatz kommt.
+
+Da es nicht trivial ist, einen mit Deflate komprimierten Datenstrom zu dekomprimieren, bietet es sich an, auf die [zlib-Bibliothek](https://docs.python.org/3/library/zlib.html) und die darin enthaltene Methode [zlib.decompress](https://docs.python.org/3/library/zlib.html#zlib.decompress) zurückzugreifen.
+
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[hint]
+Die Methode `zlib.decompress` erwartet die zu dekomprimierenden Daten als »bytes-like object«. Du kannst eine Liste von Bytes in ein solches Objekt umwandeln, indem du die Methode »bytes« verwendest:
+
+    compressed_data = bytes(data.read())

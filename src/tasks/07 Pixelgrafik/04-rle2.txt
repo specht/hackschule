@@ -1,0 +1,65 @@
+title: RLE-Komprimierung &#35;2
+enabled: true
+difficulty: medium
+screen: true
+canvas: true
+target_image: p3.png.json
+--------
+In dieser Aufgabe wird wieder die RLE-Komprimierung verwendet. Allerdings wird dieses Verfahren hier nur angewendet, wenn ein Pixel mehr als zweimal wiederholt wird, um weiteren Speicherplatz zu sparen. 
+
+Dass ein Pixel wiederholt werden soll, wird dadurch signalisiert, dass in einem Byte das höchste Bit gesetzt ist. Wenn es gesetzt ist, wird die Anzahl der Wiederholungen in den unteren 7 Bits angegeben und die Farbe im darauffolgenden Byte. Ist das höchste Bit nicht gesetzt, repräsentiert dieses Byte einfach die Farbe des nächsten Pixels.
+
+Es werden also die folgenden zwei Fälle unterschieden (je nachdem ob das höchste Bit gesetzt ist oder nicht):
+
+<table class="table table-sm narrowwrap center-cells framed">
+  <tbody>
+    <tr>
+      <th></th>
+      <th>7</th>
+      <th>6</th>
+      <th>5</th>
+      <th>4</th>
+      <th>3</th>
+      <th>2</th>
+      <th>1</th>
+      <th>0</th>
+    </tr>
+    <tr>
+        <td colspan='1'>1. Byte</td>
+        <td colspan='1'>1</td>
+        <td colspan='7'>Anzahl der Wiederholungen</td>
+    </tr>
+    <tr>
+        <td colspan='1'>2. Byte</td>
+        <td colspan='8'>Farbe, die wiederholt werden soll</td>
+    </tr>
+    <tr>
+        <td colspan='9' style='border: none;'></td>
+    </tr>
+    <tr>
+      <th></th>
+      <th>7</th>
+      <th>6</th>
+      <th>5</th>
+      <th>4</th>
+      <th>3</th>
+      <th>2</th>
+      <th>1</th>
+      <th>0</th>
+    </tr>
+    <tr>
+        <td colspan='1'>1. Byte</td>
+        <td colspan='1'>0</td>
+        <td colspan='7'>Farbe des Pixels</td>
+    </tr>
+  </tbody>
+</table>
+
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Ersetze 'pass' durch deine Lösung
+        pass

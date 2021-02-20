@@ -366,6 +366,11 @@ a:hover {
     position: absolute;
 }
 
+#screen img.canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    position: absolute;
+}
 
 #screen .sprite.flip-x {
     -webkit-transform: scaleX(-1);
@@ -813,4 +818,39 @@ img.menu-avatar {
     bottom: 30px;
     left: 0px;
     z-index: 1000;
+}
+
+.palette_swatch {
+    display: inline-block;
+    width: 48px;
+    height: 48px;
+    margin: 0 3px 6px 0;
+    border-radius: 100%;
+    text-align: center;
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.palette_swatch span {
+    background-color: rgba(0,0,0,0.5);
+    color: #fff;
+    border-radius: 100%;
+    width: 24px;
+    padding-top: 1px;
+    height: 24px;
+    display: inline-block;
+    font-size: 90%;
+    position: relative;
+    top: 12px;
+}
+
+table.center-cells td, table.center-cells th {
+    text-align: center;
+}
+
+table.framed td, table.framed th {
+    border: 1px solid #444;
+}
+
+table.framed th {
+    background-color: #eee;
 }

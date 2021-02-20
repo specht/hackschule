@@ -1,0 +1,61 @@
+title: 4 Bit-Pixel
+enabled: true
+difficulty: easy
+screen: true
+canvas: true
+target_image: p1.png.json
+--------
+In dieser Aufgabe werden immer zwei Pixel in einem Byte komprimiert. Da es nicht mehr als 16 Farben gibt, können immer zwei Pixel zu einem Byte zusammengefasst werden. Dabei bezeichnen die unteren 4 Bits den ersten Pixel, und die oberen 4 Bits den zweiten Pixel:
+
+<table class="table table-striped table-sm narrowwrap center-cells framed">
+  <tbody>
+    <tr>
+      <th>7</th>
+      <th>6</th>
+      <th>5</th>
+      <th>4</th>
+      <th>3</th>
+      <th>2</th>
+      <th>1</th>
+      <th>0</th>
+    </tr>
+    <tr>
+        <td colspan='4'>2. Pixel</td>
+        <td colspan='4'>1. Pixel</td>
+    </tr>
+  </tbody>
+</table>
+--------
+[template]
+from canvas import Canvas
+
+class Task(Canvas):
+    def run(self, data, width, height):
+        # Ersetze 'pass' durch deine Lösung
+        pass
+--------
+[hint]
+Du kannst Bits aus einem Byte extrahieren, indem du eine UND-Verknüpfung verwendest:
+
+{:.table.table-striped.table-sm.narrowwrap.center-cells}
+0 | 1 | 1 | 0 | 1 | 1 | 0 | 1
+
+<p style='text-align: center;'>AND</p>
+
+{:.table.table-striped.table-sm.narrowwrap.center-cells}
+0 | 0 | 0 | 0 | 1 | 1 | 1 | 1
+
+<p style='text-align: center;'>=</p>
+
+{:.table.table-striped.table-sm.narrowwrap.center-cells}
+0 | 0 | 0 | 0 | 1 | 1 | 0 | 1
+--------
+[hint]
+Du kannst also die unteren vier Bits extrahieren, indem du das Byte AND 15 rechnest:
+
+    color1 = byte & 15
+--------
+[hint]
+Um an die oberen vier Bits zu gelangen, bietet sich der »Shift Right«-Operator `>>` an, mit dem du Bits nach rechts schieben kannst (das Byte wird dann links mit `0` aufgefüllt).
+
+    color2 = (byte >> 4) & 15

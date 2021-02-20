@@ -126,7 +126,13 @@ module QtsNeo4j
     def neo4j_query_expect_one(query_str, options = {})
         transaction do
             result = neo4j_query(query_str, options).to_a
-            raise "Expected one result but got #{result.size}" unless result.size == 1
+            unless result.size == 1
+                STDERR.puts '-' * 40
+                STDERR.puts query_str
+                STDERR.puts options.to_json
+                STDERR.puts '-' * 40
+                raise "Expected one result but got #{result.size}"
+            end
             result.first
         end
     end
@@ -292,6 +298,7 @@ class Main < Sinatra::Base
                 cat.strip!
                 @@cat_order[cat] = cat_index
                 task = {}
+                task[:dir] = File::dirname(path)
                 task[:cat] = cat
                 task[:count_score] = true
                 task[:order] = slug.to_i
@@ -305,6 +312,11 @@ class Main < Sinatra::Base
                 s = parts.shift.strip
                 task[:description] = parse_markdown(s)
                 task[:hints] = []
+                if task[:target_image]
+                    task[:target_image] = JSON.parse(File.read(File.join('/planets', task[:target_image])))
+                    task[:target_image] = Hash[task[:target_image].map { |k, v| [k.to_sym, v] }]
+                end
+
                 task[:custom_import_main] = 'from main import *'
                 parts.reject! do |part|
                     if part.strip.index('[verify]') == 0
@@ -718,6 +730,9 @@ class Main < Sinatra::Base
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
                                 MERGE (t:Task {slug: {slug}})
                             END_OF_QUERY
+                            neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
+                                MERGE (sc:Script {sha1: {sha1}})
+                            END_OF_QUERY
                             timestamp = DateTime.now.new_offset(0).to_s
                             result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1)
                                 MATCH (u:User {email: {email}})
@@ -814,7 +829,7 @@ class Main < Sinatra::Base
                                 end
                                 scaffold.sub!('#{DISABLE_FUNCTIONS}', disable_functions_code + disable_functions_patch_code)
                                 f.write(scaffold)
-                                STDERR.puts scaffold
+#                                 STDERR.puts scaffold
                                 f.puts
                                 if task[:dungeon]
                                     File.mkfifo(File.join(dir, 'fifo'))
@@ -837,12 +852,25 @@ class Main < Sinatra::Base
                                         f2.write(File.read('pixelflut.py'))
                                     end
                                 end
+                                if task[:canvas]
+                                    File.mkfifo(File.join(dir, 'fifo'))
+                                    f.puts "canvas_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                    f.puts "task = Task(canvas_out, '#{@session_user[:email]}', 128, 128, #{task[:target_image][:palette]}, #{task[:target_image][:encoded]}, #{task[:target_image][:raw]})"
+                                    f.puts "task.run(task.in_data_stream, 128, 128)"
+                                    f.puts "task.finalize()"
+                                    File.open(File.join(dir, 'canvas.py'), 'w') do |f2|
+                                        f2.write(File.read('canvas.py'))
+                                    end
+                                    File.open(File.join(dir, 'data_stream.py'), 'w') do |f2|
+                                        f2.write(File.read('data_stream.py'))
+                                    end
+                                end
                             end
                             Thread.new do
                                 system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
                             end
                             
-                            # first kill all processed from this user
+                            # first kill all processes from this user
                             system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
                             stdin, stdout, stderr, thread = 
                                     Open3.popen3('docker', 'exec', '-i', 
@@ -857,7 +885,7 @@ class Main < Sinatra::Base
                             ws.send({:status => 'started'}.to_json)
                             fifo_thread = nil
                             mark_script_passed = false
-                            if task[:dungeon] || task[:pixelflut]
+                            if task[:dungeon] || task[:pixelflut] || task[:canvas]
                                 fifo_thread = Thread.new do
                                     fifo = File.open(File.join(dir, 'fifo'), 'r')
                                     fifo_closed = false
@@ -896,6 +924,8 @@ class Main < Sinatra::Base
                                                             if task[:dungeon]
                                                                 ws.send({:dungeon => data}.to_json)
                                                             elsif task[:pixelflut]
+                                                                ws.send(data.to_json)
+                                                            elsif task[:canvas]
                                                                 ws.send(data.to_json)
                                                             end
                                                             fifo_buffer = ''
@@ -1030,7 +1060,7 @@ class Main < Sinatra::Base
                                             end
                                         end
                                     else
-                                        if !task[:dungeon]
+                                        if task[:pixelflut]
                                             mark_script_passed = true
                                         end
                                     end
@@ -2230,6 +2260,7 @@ class Main < Sinatra::Base
                         task_has_screen = task[:screen] == true
                         task_has_dungeon = task[:dungeon] == true
                         task_has_pixelflut = task[:pixelflut] == true
+                        task_has_canvas = task[:canvas] == true
                         content.gsub!('#{TASK_TITLE}', task[:title])
                         content.gsub!('#{TASK_SLUG}', task[:slug])
                         content.gsub!('#{TASK_CONFIG}', task.to_json)
@@ -2239,9 +2270,23 @@ class Main < Sinatra::Base
                             content.gsub!('#{TASK_TEMPLATE}', task[:template].strip + "\n")
                         end
                         description = task[:description]
+                        if task[:target_image]
+                            description += StringIO.open do |io|
+                                io.puts "<p>Die Palette für dieses Bild hat #{task[:target_image][:palette].size} Farben:</p>"
+                                task[:target_image][:palette].each.with_index do |color, i|
+                                    io.puts "<div class='palette_swatch' style='background-color: #{color};'><span>#{i}</span></div>"
+                                end
+                                if task[:target_image][:encoded].size == task[:target_image][:raw].size
+                                    io.puts "<p style='margin-top: 0.5em;'>In dieser Aufgabe wurde das Bild nicht komprimiert, jedes Byte entspricht also genau einem Pixel.</p>"
+                                else
+                                    io.puts "<p style='margin-top: 0.5em;'>In dieser Aufgabe wurde das Bild auf <strong>#{task[:target_image][:encoded].size * 100 / task[:target_image][:raw].size}%</strong> der ursprünglichen Größe komprimiert.</p>"
+                                end
+                                io.string
+                            end
+                        end
                         cat_slug = task[:cat_slug]
                         cat = @@cat_config[cat_slug]
-                        if cat[:config]['dungeon']
+                        if cat[:config]['dungeon'] || cat[:config]['canvas']
                             description += "\n<hr />\n" + cat[:description]
                         end
                         unless task[:hints].empty?

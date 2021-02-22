@@ -4,6 +4,7 @@ difficulty: easy
 screen: true
 pixelflut: true
 --------
+
 Zeichne Pixel auf eine gemeinsame Zeichenfläche! Deine Pixel bleiben so lange stehen, bis jemand anderes etwas darüber zeichnet.
 
 Die Zeichenfläche ist 256 Pixel breit und 144 Pixel hoch. Der Pixel links oben hat die Koordinaten (0, 0), der Pixel rechts unten hat die Koordinaten (255, 143). Verwende die Methode `self.set_pixel(x, y, r, g, b)`, um einen Pixel zu setzen, wobei `r`, `g` und `b` jeweils die Intensität von rot, grün und blau im Bereich von 0 bis 255 angeben.

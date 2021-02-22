@@ -733,6 +733,12 @@ class Main < Sinatra::Base
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
                                 MERGE (sc:Script {sha1: {sha1}})
                             END_OF_QUERY
+                            if task[:slug] == 'pixelflut'
+                                neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1)
+                                    MERGE (n:LatestPixelflut)
+                                    SET n.sha1 = {sha1}
+                                END_OF_QUERY
+                            end
                             timestamp = DateTime.now.new_offset(0).to_s
                             result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1)
                                 MATCH (u:User {email: {email}})
@@ -914,9 +920,10 @@ class Main < Sinatra::Base
                                                     break
                                                 end
                                                 if buffer
-                                                    STDERR.puts "FIFO: Received #{buffer.size} bytes."
+                                                    STDERR.puts "FIFO: Received #{buffer.size} bytes: #{buffer}"
                                                     buffer.each_char do |c|
                                                         if c == "\n"
+                                                            STDERR.puts ">>> PARSE [#{fifo_buffer}]"
                                                             data = JSON.parse(fifo_buffer)
                                                             if data['status'] == 'passed'
                                                                 mark_script_passed = true
@@ -978,11 +985,13 @@ class Main < Sinatra::Base
                                                 break
                                             end
                                             if buffer
-                                                STDERR.puts "Received #{buffer.size} bytes."
+                                                STDERR.puts "Received #{buffer.size} bytes: [#{buffer}]"
                                                 if stream == @@clients[client_id][:stdout]
+                                                    STDERR.puts "(from stdout)"
                                                     ws.send({:stdout => buffer}.to_json)
                                                     result += buffer
                                                 elsif stream == @@clients[client_id][:stderr]
+                                                    STDERR.puts "(from stderr)"
                                                     accumulator = ''
                                                     buffer.each_char do |c|
                                                         if c == strip_from_stderr[strip_from_stderr_length]
@@ -1002,6 +1011,7 @@ class Main < Sinatra::Base
                                                     end
                                                     ws.send({:stderr => accumulator}.to_json) unless accumulator.empty?
                                                 elsif stream == fifo
+                                                    STDERR.puts "(from fifo)"
                                                     buffer.each_char do |c|
                                                         if c == "\n"
                                                             ws.send({:dungeon => JSON.parse(fifo_buffer)}.to_json)
@@ -1060,7 +1070,7 @@ class Main < Sinatra::Base
                                             end
                                         end
                                     else
-                                        if task[:pixelflut]
+                                        if !(task[:dungeon] || task[:canvas])
                                             mark_script_passed = true
                                         end
                                     end
@@ -1861,6 +1871,22 @@ class Main < Sinatra::Base
                 end
             end
             io.puts "</div></div>"
+            io.puts "</div>"
+            io.puts "<div class='row'>"
+            io.puts "<div class='col-md-8 offset-md-2'>"
+            io.puts "<div class='pixelflut-poster'>"
+            io.puts "<img class='pixelflut-poster' src='http://localhost:8025/pixelflut/?#{Time.now.to_i}' />"
+            link = "/task/pixelflut"
+            temp = neo4j_query(<<~END_OF_QUERY)
+                MATCH (n:LatestPixelflut)
+                RETURN n.sha1;
+            END_OF_QUERY
+            if temp.size > 0
+                link += "/#{temp.first['n.sha1']}"
+            end
+            io.puts "<a type='button' href='#{link}' class='btn btn-sm btn-primary'><i class='fa fa-pen'></i> &nbsp;&nbsp;Zur Pixelflut</a>"
+            io.puts "</div>"
+            io.puts "</div>"
             io.puts "</div>"
             io.string
         end

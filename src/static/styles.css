@@ -366,6 +366,29 @@ a:hover {
     position: absolute;
 }
 
+.pixelflut-poster {
+    width: 100%;
+    margin: 30px 0;
+    position: relative;
+}
+
+.pixelflut-poster img {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-color: #111;
+    padding: 15px;
+    border-radius: 15px;
+    width: 100%;
+}
+
+
+.pixelflut-poster a {
+    position: absolute;
+    bottom: 55px;
+    right: 25px;
+    box-shadow: 0 0 5px rgba(255, 255, 255,0.5);
+}
+
 #screen img.canvas {
     image-rendering: pixelated;
     image-rendering: crisp-edges;

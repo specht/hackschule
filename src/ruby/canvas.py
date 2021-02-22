@@ -1,6 +1,7 @@
 import json
 import urllib.request
 from data_stream import *
+import sys
 
 import os
 os.environ = {}
@@ -49,4 +50,3 @@ class Canvas:
         if self.pixels == self.target_pixels:
             self.pipe.write(json.dumps({'status': 'passed'}) + "\n")
             self.pipe.flush()
-            

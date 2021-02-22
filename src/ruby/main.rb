@@ -1875,7 +1875,7 @@ class Main < Sinatra::Base
             io.puts "<div class='row'>"
             io.puts "<div class='col-md-8 offset-md-2'>"
             io.puts "<div class='pixelflut-poster'>"
-            io.puts "<img class='pixelflut-poster' src='http://localhost:8025/pixelflut/?#{Time.now.to_i}' />"
+            io.puts "<img class='pixelflut-poster' src='#{WEB_ROOT}/pixelflut/?#{Time.now.to_i}' />"
             link = "/task/pixelflut"
             temp = neo4j_query(<<~END_OF_QUERY)
                 MATCH (n:LatestPixelflut)

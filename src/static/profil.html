@@ -25,34 +25,43 @@
                         </div>
                     </div>
                 </div>
+                <button type="submit" id='save' class="btn btn-primary" disabled>Speichern</button>
+                <hr />
                 <h4 style='margin-bottom: 30px;'>MySQL-Datenbank</h4>
+                <div class='alert alert-warning'>
+                In der Hackschule hast du deine eigene MySQL-Datenbank. Du findest hier die Zugangsdaten, mit denen du (nur aus der Hackschule) direkt auf deine Datenbank zugreifen kannst. Anstatt die Werte abzuschreiben, kannst du in deinen Programmen auch die bereits definierten Konstanten <code>MYSQL_HOST</code>, <code>MYSQL_USER</code> und <code>MYSQL_PASS</code> verwenden.
+                </div>
                 <div class='row'>
-                    <div class='col-md-6'>
-                        <div class="form-group">
-                            <label>phpMyAdmin</label>
-                            <input type="email" id='email' class="form-control" value='https://phpmyadmin.#{WEBSITE_HOST}' readonly />
-                        </div>
-                    </div>
-                    <div class='col-md-6'>
+                    <div class='col-md-4'>
                         <div class="form-group">
                             <label>Host (<code>MYSQL_HOST</code>)</label>
                             <input type='text' class='form-control' value='mysql' readonly />
                         </div>
                     </div>
-                    <div class='col-md-6'>
+                    <div class='col-md-4'>
                         <div class="form-group">
                             <label>User (<code>MYSQL_USER</code>)</label>
                             <input type="text" class='form-control' value='#{@session_user[:mysql_user]}' readonly />
                         </div>
                     </div>
-                    <div class='col-md-6'>
+                    <div class='col-md-4'>
                         <div class="form-group">
                             <label>Passwort (<code>MYSQL_PASS</code>)</label>
                             <input type="text" class='form-control' value='#{@session_user[:mysql_password]}' readonly />
                         </div>
                     </div>
                 </div>
-                <button type="submit" id='save' class="btn btn-primary" disabled>Speichern</button>
+                <div class='alert alert-warning'>
+                Über die folgende URL kannst du per phpMyAdmin auf deine Datenbank zugreifen. Verwende für die Anmeldung die oben angegeben Werte für »User« und »Passwort«.
+                </div>
+                <div class='row'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+                            <label>phpMyAdmin</label>
+                            <input type="email" id='email' class="form-control" value='https://phpmyadmin.#{WEBSITE_HOST}' readonly />
+                        </div>
+                    </div>
+                </div>
 <!--             </form> -->
                 
             <div class='api_messages' style='display: none;'></div>

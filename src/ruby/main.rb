@@ -522,19 +522,29 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
-        client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
-        @@invitations.keys.each do |email|
-            user = @@invitations[email][:mysql_user]
-            password = @@invitations[email][:mysql_password]
-            ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
-             "CREATE DATABASE IF NOT EXISTS `#{user}`;",
-             "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
-            ].each do |query|
-                STDERR.puts query
-                client.query(query)
+        delay = 1
+        10.times do
+            begin
+                client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
+                @@invitations.keys.each do |email|
+                    user = @@invitations[email][:mysql_user]
+                    password = @@invitations[email][:mysql_password]
+                    ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
+                    "CREATE DATABASE IF NOT EXISTS `#{user}`;",
+                    "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
+                    ].each do |query|
+                        STDERR.puts query
+                        client.query(query)
+                    end
+                end
+                client.query('FLUSH PRIVILEGES;')
+                break
+            rescue Mysql2::Error::ConnectionError => e
+                STDERR.puts "Can't connect to MySQL, retrying in #{delay} seconds..."
+                sleep delay
+                delay += 1
             end
         end
-        client.query('FLUSH PRIVILEGES;')
         STDERR.puts "Server is up and running!"
     end
     
@@ -826,6 +836,9 @@ class Main < Sinatra::Base
                             end
                             STDERR.puts "Launching process..."
                             script = ''
+                            script += "MYSQL_HOST = 'mysql'\n"
+                            script += "MYSQL_USER = '#{@session_user[:mysql_user]}'\n"
+                            script += "MYSQL_PASS = '#{@session_user[:mysql_password]}'\n"
                             script += submitted_script
                             dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
                             FileUtils.rm_rf(dir)
@@ -848,6 +861,7 @@ class Main < Sinatra::Base
                                         f.each_line do |line|
                                             line.strip!
                                             next if line.empty?
+                                            next if ['environ', 'getuid', 'getpid'].include?(line)
                                             io.puts "os.#{line} = None"
                                         end
                                     end

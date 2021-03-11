@@ -64,3 +64,4 @@ def run_tests():
 
 if USE_TASK_CLASS:
     run_tests()
+

@@ -427,6 +427,7 @@ class Main < Sinatra::Base
         @@user_groups = {}
         current_group = '(keine Gruppe)'
         group_admins = {}
+        used_mysql_logins = Set.new()
         File.open('invitations.txt') do |f|
             f.each_line do |line|
                 next if line.strip.empty?
@@ -446,7 +447,13 @@ class Main < Sinatra::Base
                     email = parts.last.delete_prefix('<').delete_suffix('>').downcase
                     @@user_groups[current_group] ||= Set.new()
                     @@user_groups[current_group] << email
-                    mysql_user = email[0, 32]
+                    mysql_user = email.split('@').first[0, 30]
+                    i = 0
+                    while used_mysql_logins.include?(mysql_user)
+                        i += 1
+                        mysql_user = "#{email.split('@').first[0, 30]}#{i}"
+                    end
+                    used_mysql_logins << mysql_user
                     @@invitations[email] = {:gender => gender,
                                             :group => current_group,
                                             :mysql_user => mysql_user,
@@ -520,8 +527,8 @@ class Main < Sinatra::Base
             user = @@invitations[email][:mysql_user]
             password = @@invitations[email][:mysql_password]
             ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
-             "CREATE DATABASE IF NOT EXISTS `#{email}`;",
-             "GRANT ALL ON `#{email}`.* TO '#{user}'@'%';",           
+             "CREATE DATABASE IF NOT EXISTS `#{user}`;",
+             "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
             ].each do |query|
                 STDERR.puts query
                 client.query(query)

@@ -13,6 +13,8 @@ require 'set'
 require 'digest/sha1'
 require 'htmlentities'
 require '/credentials.rb'
+require 'mysql2'
+require 'digest/sha2'
 
 def update_resolutions(use_tag = nil)
     tags = []
@@ -444,8 +446,11 @@ class Main < Sinatra::Base
                     email = parts.last.delete_prefix('<').delete_suffix('>').downcase
                     @@user_groups[current_group] ||= Set.new()
                     @@user_groups[current_group] << email
+                    mysql_user = email[0, 32]
                     @@invitations[email] = {:gender => gender,
-                                            :group => current_group}
+                                            :group => current_group,
+                                            :mysql_user => mysql_user,
+                                            :mysql_password => self.gen_password_for_email(email, MYSQL_PASSWORD_SALT)}
                     if parts.size > 1
                         name = parts[0, parts.size - 1].join(' ')
                         @@invitations[email][:name] = name
@@ -474,6 +479,27 @@ class Main < Sinatra::Base
             end
         end
     end
+                                   
+    def self.gen_password_for_email(email, salt)
+        chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
+        sha2 = Digest::SHA256.new()
+        sha2 << salt
+        sha2 << email
+        srand(sha2.hexdigest.to_i(16))
+        password = ''
+        8.times do 
+            c = chars.sample.dup
+            c.downcase! if [0, 1].sample == 1
+            password += c
+        end
+        password += '-'
+        4.times do 
+            c = chars.sample.dup
+            c.downcase! if [0, 1].sample == 1
+            password += c
+        end
+        password
+    end
     
     configure do
         set :show_exceptions, false
@@ -489,6 +515,19 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
+        client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
+        @@invitations.keys.each do |email|
+            user = @@invitations[email][:mysql_user]
+            password = @@invitations[email][:mysql_password]
+            ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
+             "CREATE DATABASE IF NOT EXISTS `#{email}`;",
+             "GRANT ALL ON `#{email}`.* TO '#{user}'@'%';",           
+            ].each do |query|
+                STDERR.puts query
+                client.query(query)
+            end
+        end
+        client.query('FLUSH PRIVILEGES;')
         STDERR.puts "Server is up and running!"
     end
     
@@ -654,6 +693,10 @@ class Main < Sinatra::Base
                         session_expiry = results.first['s'].props[:expires]
                         if DateTime.parse(session_expiry) > DateTime.now
                             @session_user = results.first['u'].props.reject {|k, v| k == :password }
+                            email = @session_user[:email]
+                            [:mysql_user, :mysql_password].each do |k|
+                                @session_user[k] = @@invitations[email][k]
+                            end
                         end
                     end
                 end

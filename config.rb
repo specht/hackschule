@@ -166,12 +166,14 @@ if PROFILE.include?(:dynamic)
     if PROFILE.include?(:neo4j)
         docker_compose[:services][:ruby][:depends_on] ||= []
         docker_compose[:services][:ruby][:depends_on] << :neo4j
-        docker_compose[:services][:ruby][:links] = ['neo4j:neo4j']
+        docker_compose[:services][:ruby][:links] ||= []
+        docker_compose[:services][:ruby][:links] << 'neo4j:neo4j'
     end
     if PROFILE.include?(:mysql)
         docker_compose[:services][:ruby][:depends_on] ||= []
         docker_compose[:services][:ruby][:depends_on] << :mysql
-        docker_compose[:services][:ruby][:links] = ['mysql:mysql']
+        docker_compose[:services][:ruby][:links] ||= []
+        docker_compose[:services][:ruby][:links] << 'mysql:mysql'
     end
     docker_compose[:services][:ruby][:depends_on] ||= []
     docker_compose[:services][:ruby][:depends_on] << :pysandbox
@@ -193,6 +195,7 @@ end
 if PROFILE.include?(:mysql)
     docker_compose[:services][:mysql] = {
         :image => 'mysql/mysql-server',
+        :command => ["--default-authentication-plugin=mysql_native_password"],
         :volumes => ["#{MYSQL_DATA_PATH}:/var/lib/mysql"],
         :restart => 'always',
         :environment => {

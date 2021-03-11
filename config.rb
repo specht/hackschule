@@ -5,7 +5,7 @@ require 'json'
 require 'yaml'
 require './credentials.rb'
 
-PROFILE = [:static, :dynamic, :neo4j]
+PROFILE = [:static, :dynamic, :neo4j, :mysql]
 
 # to get development mode, add the following to your ~/.bashrc:
 # export QTS_DEVELOPMENT=1
@@ -13,11 +13,13 @@ PROFILE = [:static, :dynamic, :neo4j]
 DEVELOPMENT    = !(ENV['QTS_DEVELOPMENT'].nil?)
 PROJECT_NAME = 'code' + (DEVELOPMENT ? 'dev' : '')
 DEV_NGINX_PORT = 8025
+DEV_PHPMYADMIN_PORT = 8026
 DEV_NEO4J_PORT = 8021
 LOGS_PATH = DEVELOPMENT ? './logs' : "/home/qts/logs/#{PROJECT_NAME}"
 DATA_PATH = DEVELOPMENT ? './data' : "/home/qts/data/#{PROJECT_NAME}"
 NEO4J_DATA_PATH = File::join(DATA_PATH, 'neo4j')
 NEO4J_LOGS_PATH = File::join(LOGS_PATH, 'neo4j')
+MYSQL_DATA_PATH = File::join(DATA_PATH, 'mysql')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
 
@@ -164,9 +166,15 @@ if PROFILE.include?(:dynamic)
     if PROFILE.include?(:neo4j)
         docker_compose[:services][:ruby][:depends_on] ||= []
         docker_compose[:services][:ruby][:depends_on] << :neo4j
-        docker_compose[:services][:ruby][:depends_on] << :pysandbox
         docker_compose[:services][:ruby][:links] = ['neo4j:neo4j']
     end
+    if PROFILE.include?(:mysql)
+        docker_compose[:services][:ruby][:depends_on] ||= []
+        docker_compose[:services][:ruby][:depends_on] << :mysql
+        docker_compose[:services][:ruby][:links] = ['mysql:mysql']
+    end
+    docker_compose[:services][:ruby][:depends_on] ||= []
+    docker_compose[:services][:ruby][:depends_on] << :pysandbox
 end
 
 if PROFILE.include?(:neo4j)
@@ -182,12 +190,41 @@ if PROFILE.include?(:neo4j)
     docker_compose[:services][:neo4j][:user] = "#{UID}"
 end
 
+if PROFILE.include?(:mysql)
+    docker_compose[:services][:mysql] = {
+        :image => 'mysql/mysql-server',
+        :volumes => ["#{MYSQL_DATA_PATH}:/var/lib/mysql"],
+        :restart => 'always',
+        :environment => {
+            'MYSQL_ROOT_HOST' => '%',
+            'MYSQL_ROOT_PASSWORD' => MYSQL_ROOT_PASSWORD
+        }
+    }
+    docker_compose[:services][:phpmyadmin] = {
+        :image => 'phpmyadmin/phpmyadmin',
+        :volumes => ["#{MYSQL_DATA_PATH}:/var/lib/mysql"],
+        :restart => 'always',
+        :expose => ['80']
+    }
+    docker_compose[:services][:phpmyadmin][:depends_on] ||= []
+    docker_compose[:services][:phpmyadmin][:depends_on] << :mysql
+    docker_compose[:services][:phpmyadmin][:links] = ['mysql:mysql']
+    docker_compose[:services][:phpmyadmin][:environment] = [
+        'PMA_HOST=mysql',
+        "VIRTUAL_HOST=phpmyadmin.#{WEBSITE_HOST}",
+        "LETSENCRYPT_HOST=phpmyadmin.#{WEBSITE_HOST}",
+        "LETSENCRYPT_EMAIL=#{LETSENCRYPT_EMAIL}"
+    ]
+    docker_compose[:services][:neo4j][:user] = "#{UID}"
+end
+
 docker_compose[:services].values.each do |x|
     x[:network_mode] = 'default'
 end
 
 if DEVELOPMENT
     docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
+    docker_compose[:services][:phpmyadmin][:ports] = ["127.0.0.1:#{DEV_PHPMYADMIN_PORT}:80"]
     if PROFILE.include?(:neo4j)
         docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
                                                      "127.0.0.1:7687:7687"]
@@ -223,6 +260,9 @@ end
 if PROFILE.include?(:neo4j)
     FileUtils::mkpath(NEO4J_DATA_PATH)
     FileUtils::mkpath(NEO4J_LOGS_PATH)
+end
+if PROFILE.include?(:mysql)
+    FileUtils::mkpath(MYSQL_DATA_PATH)
 end
 
 system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.join(' ')}")

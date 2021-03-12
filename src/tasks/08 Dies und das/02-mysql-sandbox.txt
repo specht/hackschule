@@ -1,0 +1,34 @@
+title: MySQL-Sandbox
+enabled: true
+count_score: no
+difficulty: easy
+--------
+In dieser Sandbox kannst du mit deiner MySQL-Datenbank interagieren. 
+--------
+[template]
+with mysql_connect() as db:
+    # hole alle Tabellen in der Datenbank
+    
+    rows = db.query("SHOW TABLES")
+    
+    # jede Tabelle durchlaufen
+    for row in rows:
+        
+        # Tabellennamen ermitteln
+        table = [*row.values()][0]
+        print('-' * 40)
+        print(f"> {table}")
+        print('-' * 40)
+        
+        # ein paar Einträge aus der Tabelle holen (max. 5)
+        entries = db.query(f"SELECT * FROM {table} LIMIT 5;")
+        
+        # Einträge ausgeben
+        for entry in entries:
+            print(entry)
+            
+        # Leerzeile ausgeben
+        print()
+--------
+[verify]
+false

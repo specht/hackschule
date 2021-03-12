@@ -839,6 +839,7 @@ class Main < Sinatra::Base
                             script += "MYSQL_HOST = 'mysql'\n"
                             script += "MYSQL_USER = '#{@session_user[:mysql_user]}'\n"
                             script += "MYSQL_PASS = '#{@session_user[:mysql_password]}'\n"
+                            script += File.read('db.py')
                             script += submitted_script
                             dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
                             FileUtils.rm_rf(dir)
@@ -864,6 +865,7 @@ class Main < Sinatra::Base
                                             next if ['environ', 'getuid', 'getpid'].include?(line)
                                             io.puts "os.#{line} = None"
                                         end
+                                        io.puts "os.environ.clear()"
                                     end
                                     io.string
                                 end
@@ -1719,7 +1721,9 @@ class Main < Sinatra::Base
 
     post '/api/store_script' do
         require_user!
-        data = parse_request_data(:required_keys => [:script, :slug])
+        data = parse_request_data(:required_keys => [:script, :slug],
+                                  :max_body_length => 1024 * 1024,
+                                  :max_string_length => 1024 * 1024)
         sha1, script = store_script(data[:script])
         # fetch name if available
         result = neo4j_query(<<~END_OF_QUERY, :sha1 => sha1, :slug => data[:slug], :email => @session_user[:email])
@@ -1736,7 +1740,9 @@ class Main < Sinatra::Base
     
     post '/api/save_script_as' do
         require_user!
-        data = parse_request_data(:required_keys => [:slug, :sha1, :name])
+        data = parse_request_data(:required_keys => [:slug, :sha1, :name],
+                                  :max_body_length => 1024 * 1024,
+                                  :max_string_length => 1024 * 1024)
         neo4j_query(<<~END_OF_QUERY, :sha1 => data[:sha1], :slug => data[:slug], :email => @session_user[:email], :name => data[:name])
             MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
             MATCH (u:User {email: {email}})

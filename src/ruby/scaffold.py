@@ -36,7 +36,7 @@ def add_input(expected_result, *input):
     
 def DISABLE_FUNCTION(*argv):
     pass
-    
+
 #{INPUT}
 
 #{IMPORTS}

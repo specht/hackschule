@@ -862,7 +862,7 @@ class Main < Sinatra::Base
                                         f.each_line do |line|
                                             line.strip!
                                             next if line.empty?
-                                            next if ['path', 'fspath', 'name', 'uname', 'environ', 'getuid', 'getpid'].include?(line)
+                                            next if ['open', 'path', 'fspath', 'name', 'uname', 'environ', 'getuid', 'getpid'].include?(line)
                                             io.puts "os.#{line} = None"
                                         end
                                         io.puts "os.environ.clear()"

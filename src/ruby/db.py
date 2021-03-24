@@ -1,4 +1,5 @@
 import pymysql.cursors
+from pymysql.constants import CLIENT
 
 class mysql_connect():
     def __init__(self):
@@ -7,6 +8,7 @@ class mysql_connect():
             user = MYSQL_USER,
             password = MYSQL_PASS,
             database = MYSQL_USER,
+            client_flag = CLIENT.MULTI_STATEMENTS,
             cursorclass = pymysql.cursors.DictCursor
         )
         

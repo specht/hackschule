@@ -877,3 +877,15 @@ table.framed td, table.framed th {
 table.framed th {
     background-color: #eee;
 }
+
+tr.click-row:hover {
+    cursor: pointer;
+    outline: 1px solid #aaa;
+    background-color: #ddd;
+}
+
+tr.open-script-row:hover {
+    cursor: pointer;
+    outline: 1px solid #aaa;
+    background-color: #ddd;
+}

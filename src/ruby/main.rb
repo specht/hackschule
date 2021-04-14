@@ -16,6 +16,8 @@ require '/credentials.rb'
 require 'mysql2'
 require 'digest/sha2'
 
+WEEK_DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+
 def update_resolutions(use_tag = nil)
     tags = []
     if use_tag.nil?
@@ -523,26 +525,28 @@ class Main < Sinatra::Base
         setup = SetupDatabase.new()
         setup.setup()
         delay = 1
-        10.times do
-            begin
-                client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
-                @@invitations.keys.each do |email|
-                    user = @@invitations[email][:mysql_user]
-                    password = @@invitations[email][:mysql_password]
-                    ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
-                    "CREATE DATABASE IF NOT EXISTS `#{user}`;",
-                    "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
-                    ].each do |query|
-                        STDERR.puts query
-                        client.query(query)
+        unless ENV['DEVELOPMENT']
+            10.times do
+                begin
+                    client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
+                    @@invitations.keys.each do |email|
+                        user = @@invitations[email][:mysql_user]
+                        password = @@invitations[email][:mysql_password]
+                        ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
+                        "CREATE DATABASE IF NOT EXISTS `#{user}`;",
+                        "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
+                        ].each do |query|
+                            STDERR.puts query
+                            client.query(query)
+                        end
                     end
+                    client.query('FLUSH PRIVILEGES;')
+                    break
+                rescue Mysql2::Error::ConnectionError => e
+                    STDERR.puts "Can't connect to MySQL, retrying in #{delay} seconds..."
+                    sleep delay
+                    delay += 1
                 end
-                client.query('FLUSH PRIVILEGES;')
-                break
-            rescue Mysql2::Error::ConnectionError => e
-                STDERR.puts "Can't connect to MySQL, retrying in #{delay} seconds..."
-                sleep delay
-                delay += 1
             end
         end
         STDERR.puts "Server is up and running!"
@@ -1789,6 +1793,7 @@ class Main < Sinatra::Base
                     if teacher_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/users'><div class='icon'><i class='fa fa-users'></i></div><span class='label'>Nutzer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/live_signin'><div class='icon'><i class='fa fa-clipboard-list'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/scratch'><div class='icon'><i class='fa fa-pen'></i></div><span class='label'>Scratchpad</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/camera'><div class='icon'><i class='fa fa-camera'></i></div><span class='label'>Dokumentenkamera</span></a>"
@@ -2287,6 +2292,96 @@ class Main < Sinatra::Base
 #             STDERR.puts timestamps.to_yaml
             io.string
         end
+    end
+    
+    def show_user_list()
+        require_teacher!
+        StringIO.open do |io|
+            users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u'].props }
+                MATCH (u:User)
+                RETURN u
+                ORDER BY u.name;
+            END_OF_QUERY
+            user_for_email = {}
+            users.each do |user|
+                next unless is_teacher_for_user?(user[:email])
+                user_for_email[user[:email]] = user
+            end
+            io.puts "<table class='table table-striped table-sm narrow table-responsive'>"
+            io.puts '<tbody>'
+            io.puts '<thead>'
+            io.puts '<tr>'
+            io.puts '<th>Name</th>'
+            io.puts '<th>E-Mail</th>'
+            io.puts '</tr>'
+            io.puts '</thead>'
+            last_group = nil
+            @@user_groups.keys.sort.each do |group|
+                @@user_groups[group].select do |email|
+                    user_for_email.include?(email) && is_teacher_for_user?(email)
+                end.sort do |a, b|
+                    (user_for_email[a][:name] || '') <=> (user_for_email[b][:name] || '')
+                end.each do |email|
+                    user = user_for_email[email]
+                    next unless user[:name]
+                    if last_group != @@invitations[email][:group]
+                        last_group = @@invitations[email][:group]
+                        io.puts "<tr><th style='background-color: #ddd;' colspan='2'>#{group}</th></tr>"
+                    end
+                    io.puts "<tr class='click-row' data-email='#{email}'>"
+                    io.puts "<td style='max-width: 300px; overflow: hidden; text-overflow: ellipsis;'>"
+                    io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
+                    io.puts "#{user[:name]}"
+                    io.puts "</td>"
+                    io.puts "<td style='max-width: 300px; overflow: hidden; text-overflow: ellipsis;'>#{email}</td>"
+                    io.puts "</tr>"
+                end
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+    end
+    
+    post '/api/get_user_info' do
+        require_user!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email]
+        submissions = neo4j_query(<<~END_OF_QUERY, {:email => email}).map { |x| {:sb => x['sb'].props, :sc => x['sc'].props, :t => x['t'].props } }
+            MATCH (u:User {email: {email}})<-[:SUBMITTED_BY]-(sb:Submission)-[:USING]->(sc:Script)
+            MATCH (sb)-[:FOR]->(t:Task)
+            RETURN sb, sc, t ORDER BY sb.t0 DESC;
+        END_OF_QUERY
+        html = StringIO.open do |io|
+            io.puts "<h3>#{@@invitations[email][:name]}</h3>"
+
+            io.puts "<table class='table table-sm narrow table-striped'>"
+            io.puts "<thead>"
+            io.puts "<th>Datum</th>"
+            io.puts "<th>Zeit</th>"
+            io.puts "<th>Aufgabe</th>"
+            io.puts "<th>Skript</th>"
+            io.puts "<th>Zeilen</th>"
+            io.puts "<th>Größe</th>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            submissions.each do |entry|
+                io.puts "<tr class='open-script-row' data-href='/task/#{entry[:t][:slug]}/#{entry[:sc][:sha1]}'>"
+                d = DateTime.parse(entry[:sb][:t0])
+                io.puts "<td>#{WEEK_DAYS[d.wday]}, #{d.strftime('%d.%m.%Y')}</td>"
+                io.puts "<td>#{d.strftime('%H:%M:%S')}</td>"
+                io.puts "<td>#{(@@tasks[entry[:t][:slug]] || {})[:title] || entry[:t][:slug]}</td>"
+                link = entry[:sb][:correct] ? "<i class='fa fa-medal text-success'></i>" : "<i class='fa fa-pen text-warning'></i>"
+                io.puts "<td>#{link}</td>"
+                io.puts "<td>#{entry[:sc][:lines]}</td>"
+                io.puts "<td>#{bytes_to_str(entry[:sc][:size])}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.string
+        end
+        respond(:html => html)
     end
     
     def list_all_lego_icons

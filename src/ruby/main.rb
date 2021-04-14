@@ -2354,7 +2354,35 @@ class Main < Sinatra::Base
         END_OF_QUERY
         html = StringIO.open do |io|
             io.puts "<h3>#{@@invitations[email][:name]}</h3>"
-
+            
+            io.puts "<table class='table table-sm narrow table-striped' style='position: absolute; right: 15px; width: 400px;'>"
+            io.puts "<thead>"
+            io.puts "<tr><th>Aufgabe</th><th>Status</th><th>Subs</th></tr>"
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            tasks = {}
+            submissions.each do |entry|
+                slug = entry[:t][:slug]
+                tasks[slug] ||= {
+                    :solved => false,
+                    :tries => 0
+                }
+                tasks[slug][:tries] += 1
+                if entry[:sb][:correct]
+                    tasks[slug][:solved] = true
+                end
+            end
+            @@task_keys_sorted.each do |k|
+                task = @@tasks[k]
+                io.puts "<tr>"
+                io.puts "<td>#{task[:title]}</td>"
+                io.puts "<td>#{(tasks[k] || {})[:solved]}</td>"
+                io.puts "<td>#{(tasks[k] || {})[:tries]}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "<div style='position: absolute; left: 15px; right: 15px; padding-right: 420px;'>"
             io.puts "<table class='table table-sm narrow table-striped'>"
             io.puts "<thead>"
             io.puts "<th>Datum</th>"
@@ -2379,6 +2407,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody>"
             io.puts "</table>"
+            io.puts "</div>"
             io.string
         end
         respond(:html => html)

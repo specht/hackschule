@@ -2307,7 +2307,7 @@ class Main < Sinatra::Base
                 next unless is_teacher_for_user?(user[:email])
                 user_for_email[user[:email]] = user
             end
-            io.puts "<table class='table table-striped table-sm narrow table-responsive'>"
+            io.puts "<table class='table table-striped table-sm narrow table-responsive' style='font-size: 80%;'>"
             io.puts '<tbody>'
             io.puts '<thead>'
             io.puts '<tr>'
@@ -2330,11 +2330,11 @@ class Main < Sinatra::Base
                         io.puts "<tr class='click-row' data-group='#{group}'><th style='background-color: #ddd;' colspan='2'>#{group}</th></tr>"
                     end
                     io.puts "<tr class='click-row' data-email='#{email}'>"
-                    io.puts "<td style='max-width: 300px; overflow: hidden; text-overflow: ellipsis;'>"
+                    io.puts "<td style='max-width: 150px; overflow: hidden; text-overflow: ellipsis;'>"
                     io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
                     io.puts "#{user[:name]}"
                     io.puts "</td>"
-                    io.puts "<td style='max-width: 300px; overflow: hidden; text-overflow: ellipsis;'>#{email}</td>"
+                    io.puts "<td style='max-width: 150px; overflow: hidden; text-overflow: ellipsis;'>#{email}</td>"
                     io.puts "</tr>"
                 end
             end
@@ -2441,6 +2441,7 @@ class Main < Sinatra::Base
             RETURN u.email AS email, sb.t0 AS t0, sb.correct AS correct, sc.sha1 AS sha1, t.slug AS slug ORDER BY sb.t0 DESC;
         END_OF_QUERY
         stats = {}
+        stats_max = 0
         submissions.each do |entry|
             email = entry['email']
             t0 = entry['t0']
@@ -2451,12 +2452,13 @@ class Main < Sinatra::Base
             yw = Date.parse(t0).strftime('%Y-%V')
             stats[email][yw] ||= {}
             stats[email][yw][sha1] = true
+            stats_max = stats[email][yw].size if stats[email][yw].size > stats_max
         end
-        p = Date.today
+        p = Date.parse('2020-08-10')
         while p.wday != 1
             p -= 1
         end
-        yw0 = p - 20 * 7
+        yw0 = p #- 20 * 7
         yw_list = []
         p = yw0
         monday_for_yw = {}
@@ -2469,12 +2471,12 @@ class Main < Sinatra::Base
         html = StringIO.open do |io|
             io.puts "<h3>#{group}</h3>"
             
-            io.puts "<table class='table table-sm narrow table-striped'>"
+            io.puts "<table class='table table-sm narrow' style='font-size: 80%;'>"
             io.puts "<thead>"
             io.puts "<th>Name</th>"
             yw_list.each do |yw|
                 ds = monday_for_yw[yw] || 'X'
-                io.puts "<th>#{ds}</th>"
+                io.puts "<th style='text-align: center;'>#{ds}</th>"
             end
             io.puts "</thead>"
             io.puts "<tbody>"
@@ -2492,14 +2494,21 @@ class Main < Sinatra::Base
                 io.puts "#{user[:name]}"
                 io.puts "</td>"
                 yw_list.each do |yw|
-                    io.puts "<td stlye='text-align: center;'>"
                     count = (((stats[email] || {})[yw]) || {}).size
-                    if count > 0
-                        io.puts count
-                    else
-                        io.puts '&ndash;'
+                    f = 0
+                    if stats_max > 0
+                        f = (count.to_f / stats_max) ** 0.5
                     end
-                    io.puts "</td>"
+                    r = 0xff - (0xff - 0x4a) * f
+                    g = 0xff - (0xff - 0xa0) * f
+                    b = 0xff - (0xff - 0x3f) * f
+                    if count > 0
+                        io.puts sprintf("<td style='text-align: center; background-color: #%02x%02x%02x;'>", r, g, b)
+                        io.puts count
+                        io.puts "</td>"
+                    else
+                        io.puts "<td style='text-align: center;'>&ndash;</td>"
+                    end
                 end
             end
             io.puts "</tbody>"

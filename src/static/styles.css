@@ -881,11 +881,11 @@ table.framed th {
 tr.click-row:hover {
     cursor: pointer;
     outline: 1px solid #aaa;
-    background-color: #ddd;
+    background-color: #eee;
 }
 
 tr.open-script-row:hover {
     cursor: pointer;
     outline: 1px solid #aaa;
-    background-color: #ddd;
+    background-color: #eee;
 }

@@ -2323,10 +2323,11 @@ class Main < Sinatra::Base
                     (user_for_email[a][:name] || '') <=> (user_for_email[b][:name] || '')
                 end.each do |email|
                     user = user_for_email[email]
+                    group = @@invitations[email][:group]
                     next unless user[:name]
-                    if last_group != @@invitations[email][:group]
-                        last_group = @@invitations[email][:group]
-                        io.puts "<tr><th style='background-color: #ddd;' colspan='2'>#{group}</th></tr>"
+                    if last_group != group
+                        last_group = group
+                        io.puts "<tr class='click-row' data-group='#{group}'><th style='background-color: #ddd;' colspan='2'>#{group}</th></tr>"
                     end
                     io.puts "<tr class='click-row' data-email='#{email}'>"
                     io.puts "<td style='max-width: 300px; overflow: hidden; text-overflow: ellipsis;'>"
@@ -2404,6 +2405,102 @@ class Main < Sinatra::Base
                 io.puts "<td>#{entry[:sc][:lines]}</td>"
                 io.puts "<td>#{bytes_to_str(entry[:sc][:size])}</td>"
                 io.puts "</tr>"
+            end
+            io.puts "</tbody>"
+            io.puts "</table>"
+            io.puts "</div>"
+            io.string
+        end
+        respond(:html => html)
+    end
+    
+    post '/api/get_group_info' do
+        require_user!
+        data = parse_request_data(:required_keys => [:group])
+        group = data[:group]
+        users = neo4j_query(<<~END_OF_QUERY).map { |x| x['u'].props }
+            MATCH (u:User)
+            RETURN u
+            ORDER BY u.name;
+        END_OF_QUERY
+        user_for_email = {}
+        users.each do |user|
+            next unless is_teacher_for_user?(user[:email])
+            user_for_email[user[:email]] = user
+        end
+        emails = []
+        @@user_groups[group].select do |email|
+            user_for_email.include?(email) && is_teacher_for_user?(email)
+        end.each do | email|
+            emails << email
+        end
+        submissions = neo4j_query(<<~END_OF_QUERY, {:emails => emails})
+            MATCH (u:User)<-[:SUBMITTED_BY]-(sb:Submission)-[:USING]->(sc:Script)
+            WHERE u.email IN {emails}
+            MATCH (sb)-[:FOR]->(t:Task)
+            RETURN u.email AS email, sb.t0 AS t0, sb.correct AS correct, sc.sha1 AS sha1, t.slug AS slug ORDER BY sb.t0 DESC;
+        END_OF_QUERY
+        stats = {}
+        submissions.each do |entry|
+            email = entry['email']
+            t0 = entry['t0']
+            correct = entry['correct'] || false
+            sha1 = entry['sha1']
+            slug = entry['slug']
+            stats[email] ||= {}
+            yw = Date.parse(t0).strftime('%Y-%V')
+            stats[email][yw] ||= {}
+            stats[email][yw][sha1] = true
+        end
+        p = Date.today
+        while p.wday != 1
+            p -= 1
+        end
+        yw0 = p - 20 * 7
+        yw_list = []
+        p = yw0
+        monday_for_yw = {}
+        while p <= Date.today do
+            yw = p.strftime('%Y-%V')
+            yw_list << yw 
+            monday_for_yw[yw] = p.strftime('%d.%m.')
+            p += 7
+        end
+        html = StringIO.open do |io|
+            io.puts "<h3>#{group}</h3>"
+            
+            io.puts "<table class='table table-sm narrow table-striped'>"
+            io.puts "<thead>"
+            io.puts "<th>Name</th>"
+            yw_list.each do |yw|
+                ds = monday_for_yw[yw] || 'X'
+                io.puts "<th>#{ds}</th>"
+            end
+            io.puts "</thead>"
+            io.puts "<tbody>"
+            @@user_groups[group].select do |email|
+                user_for_email.include?(email) && is_teacher_for_user?(email)
+            end.sort do |a, b|
+                (user_for_email[a][:name] || '') <=> (user_for_email[b][:name] || '')
+            end.each do |email|
+                user = user_for_email[email]
+                group = @@invitations[email][:group]
+                next unless user[:name]
+                io.puts "<tr class='click-row' data-email='#{email}'>"
+                io.puts "<td style='max-width: 100px; overflow: hidden; text-overflow: ellipsis;'>"
+                io.puts "<img class='menu-avatar' src='/gen/#{user[:avatar]}-48.png' style='width: 20px; height: 20px; position: relative; top: -2px;' />&nbsp;"
+                io.puts "#{user[:name]}"
+                io.puts "</td>"
+                yw_list.each do |yw|
+                    io.puts "<td stlye='text-align: center;'>"
+                    count = (((stats[email] || {})[yw]) || {}).size
+                    if count > 0
+                        io.puts count
+                    else
+                        io.puts '&ndash;'
+                    end
+                    io.puts "</td>"
+                end
             end
             io.puts "</tbody>"
             io.puts "</table>"

@@ -11,18 +11,32 @@
     </div>
 </div>
 <script>
-window.addEventListener('load', function() {
-    $('.click-row').click(function(e) {
+function install_click_handler(selector) {
+    $(`${selector} .click-row`).click(function(e) {
         let email = $(e.target).closest('tr').data('email');
-        api_call('/api/get_user_info', {email: email}, function(data) {
-            if (data.success) {
-                $('#user_info').html(data.html);
-                $('#user_info .open-script-row').click(function(e) {
-                    let link = $(e.target).closest('tr').data('href');
-                    window.open(link, '_blank');
-                });
-            }
-        });
+        if (typeof(email) !== 'undefined') {
+            api_call('/api/get_user_info', {email: email}, function(data) {
+                if (data.success) {
+                    $('#user_info').html(data.html);
+                    $('#user_info .open-script-row').click(function(e) {
+                        let link = $(e.target).closest('tr').data('href');
+                        window.open(link, '_blank');
+                    });
+                }
+            });
+        } else {
+            let group = $(e.target).closest('tr').data('group');
+            api_call('/api/get_group_info', {group: group}, function(data) {
+                if (data.success) {
+                    $('#user_info').html(data.html);
+                    install_click_handler('#user_info');
+                }
+            });
+        }
     });
+}
+
+window.addEventListener('load', function() {
+    install_click_handler('');
 });
 </script>

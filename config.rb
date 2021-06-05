@@ -143,11 +143,6 @@ if PROFILE.include?(:dynamic)
         :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"],
         :links => ['pixelflut:pixelflut', 'canvas:canvas', 'mysql:mysql']
     }
-    docker_compose[:services][:mirasandbox] = {
-        :build => './docker/mirasandbox',
-        :entrypoint =>  '/usr/bin/tail -f /dev/null',
-        :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"]
-    }
     docker_compose[:services][:pixelflut] = {
         :build => './docker/pixelflut',
         :volumes => ['./src/pixelflut:/app:ro',
@@ -182,7 +177,6 @@ if PROFILE.include?(:dynamic)
     end
     docker_compose[:services][:ruby][:depends_on] ||= []
     docker_compose[:services][:ruby][:depends_on] << :pysandbox
-    docker_compose[:services][:ruby][:depends_on] << :mirasandbox
 end
 
 if PROFILE.include?(:neo4j)

@@ -946,23 +946,12 @@ class Main < Sinatra::Base
                                 system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
                             end
                                 
-                            stdin = nil
-                            stdout = nil
-                            stderr = nil
-                            thread = nil
-                            if task[:slug] == 'mira-sandbox'
-                                stdin, stdout, stderr, thread = 
-                                        Open3.popen3('docker', 'exec', '-i', 
-                                                    "#{PYSANDBOX}".sub('py', 'mira'), 
-                                                    'mira')
-                            else
-                                # first kill all processes from this user
-                                system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
-                                stdin, stdout, stderr, thread = 
-                                        Open3.popen3('docker', 'exec', '-i', 
-                                                    PYSANDBOX, 
-                                                    "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
-                            end
+                            # first kill all processes from this user
+                            system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                            stdin, stdout, stderr, thread = 
+                                    Open3.popen3('docker', 'exec', '-i', 
+                                                PYSANDBOX, 
+                                                "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
                             @@clients[client_id] = {:stdin => stdin,
                                                     :stdout => stdout,
                                                     :stderr => stderr,

@@ -532,7 +532,7 @@ class Main < Sinatra::Base
         setup = SetupDatabase.new()
         setup.setup()
         delay = 1
-        unless DEVELOPMENT
+        # unless DEVELOPMENT
             10.times do
                 begin
                     client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
@@ -555,7 +555,7 @@ class Main < Sinatra::Base
                     delay += 1
                 end
             end
-        end
+        # end
         STDERR.puts "Server is up and running!"
     end
     

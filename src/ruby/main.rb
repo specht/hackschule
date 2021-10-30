@@ -18,6 +18,8 @@ require 'digest/sha2'
 
 WEEK_DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
+DEVELOPMENT = ENV['DEVELOPMENT']
+
 def update_resolutions(use_tag = nil)
     tags = []
     if use_tag.nil?
@@ -172,7 +174,12 @@ def deliver_mail(&block)
     mail = Mail.new do
         self.instance_eval(&block)
     end
-    mail.deliver!
+    if DEVELOPMENT
+        STDERR.puts "Not sending e-mail in development mode:"
+        STDERR.puts mail.to_s
+    else
+        mail.deliver!
+    end
 
 #     mail.subject("[WEB] #{mail.subject}")
 # 
@@ -525,7 +532,7 @@ class Main < Sinatra::Base
         setup = SetupDatabase.new()
         setup.setup()
         delay = 1
-        unless ENV['DEVELOPMENT']
+        unless DEVELOPMENT
             10.times do
                 begin
                     client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
@@ -693,7 +700,7 @@ class Main < Sinatra::Base
     end
     
     before '*' do
-        if ENV['DEVELOPMENT']
+        if DEVELOPMENT
             self.class.load_tasks
         end
         @latest_request_body = nil
@@ -1252,7 +1259,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         end
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
-        if data[:email] == 'fs@hackschule.de'
+        if data[:email] == 'fs@hackschule.de' || DEVELOPMENT
             random_code = '123456'
         end
         STDERR.puts ">>> #{data[:email]} #{random_code}"
@@ -1492,7 +1499,7 @@ class Main < Sinatra::Base
     def dungeon_for_task(slug)
         cache_key = "#{slug}"
         @@dungeon_for_task_cache ||= {}
-        unless ENV['DEVELOPMENT']
+        unless DEVELOPMENT
             if @@dungeon_for_task_cache.include?(cache_key)
                 return @@dungeon_for_task_cache[cache_key]
             end

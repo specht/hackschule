@@ -7,10 +7,11 @@ require './credentials.rb'
 
 PROFILE = [:static, :dynamic, :neo4j, :mysql]
 
-# to get development mode, add the following to your ~/.bashrc:
-# export QTS_DEVELOPMENT=1
+# This runs in development mode by default. To switch to production,
+# place a file called deployment.production in this directory.
 
-DEVELOPMENT    = !(ENV['QTS_DEVELOPMENT'].nil?)
+is_production = File.exists?('deployment.production')
+DEVELOPMENT    = !is_production
 PROJECT_NAME = 'code' + (DEVELOPMENT ? 'dev' : '')
 DEV_NGINX_PORT = 8025
 DEV_PHPMYADMIN_PORT = 8026
@@ -266,6 +267,12 @@ if PROFILE.include?(:neo4j)
 end
 if PROFILE.include?(:mysql)
     FileUtils::mkpath(MYSQL_DATA_PATH)
+end
+
+unless File.exists?('src/ruby/invitations.txt')
+    File.open('src/ruby/invitations.txt', 'w') do |f|
+        f.puts "m Mallory <mallory>"
+    end
 end
 
 system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.join(' ')}")

@@ -916,6 +916,7 @@ class Main < Sinatra::Base
                                 f.puts
                                 if task[:dungeon]
                                     File.mkfifo(File.join(dir, 'fifo'))
+                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
                                     f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                     dungeon = dungeon_for_task(task[:slug])
                                     f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json}, #{dungeon[:demons].to_json})"
@@ -927,6 +928,7 @@ class Main < Sinatra::Base
                                 end
                                 if task[:pixelflut]
                                     File.mkfifo(File.join(dir, 'fifo'))
+                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
                                     f.puts "pixelflut_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                     f.puts "task = Task(pixelflut_out)"
                                     f.puts "task.run()"
@@ -937,6 +939,7 @@ class Main < Sinatra::Base
                                 end
                                 if task[:canvas]
                                     File.mkfifo(File.join(dir, 'fifo'))
+                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
                                     f.puts "canvas_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                     f.puts "task = Task(canvas_out, '#{@session_user[:email]}', 128, 128, #{task[:target_image][:palette]}, #{task[:target_image][:encoded]}, #{task[:target_image][:raw]})"
                                     f.puts "task.run(task.in_data_stream, 128, 128)"

@@ -16,4 +16,5 @@ ADD credentials.rb /
 RUN bundle install
 RUN useradd -u 1000 michael
 RUN usermod -aG docker michael
-USER michael
+RUN touch /var/run/docker.sock && chmod 666 /var/run/docker.sock
+#USER michael

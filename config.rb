@@ -253,8 +253,12 @@ if PROFILE.include?(:dynamic)
     FileUtils::cp('credentials.rb', 'docker/ruby/')
     FileUtils::cp('src/pixelflut/Gemfile', 'docker/pixelflut/')
     FileUtils::cp('src/canvas/Gemfile', 'docker/canvas/')
+    FileUtils::mkpath(RAW_FILES_PATH)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
-    system("cp -purv src/static/avatars/* #{File::join(RAW_FILES_PATH, 'uploads')}")
+    Dir['src/static/avatars/*'].each do |path|
+        destination = File::join(RAW_FILES_PATH, 'uploads', File.basename(path))
+        FileUtils.cp(path, destination) unless FileUtils.uptodate?(destination, [path])
+    end
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'code'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'sandbox'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'pixelflut'))

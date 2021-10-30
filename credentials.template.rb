@@ -41,7 +41,7 @@ WEBSITE_HOST = 'HIER_LIVE_HOST_EINFÜGEN' # z. B. hackschule.de
 # E-Mail für Letsencrypt
 LETSENCRYPT_EMAIL = 'HIER_EMAIL_EINFÜGEN'
 
-WEB_ROOT = ENV['DEVELOPMENT'] ? 'http://localhost:8020' : "https://#{WEBSITE_HOST}"
+WEB_ROOT = ENV['DEVELOPMENT'] ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
 PYSANDBOX = ENV['DEVELOPMENT'] ? 'codedev_pysandbox_1' : 'code_pysandbox_1'
 
 MYSQL_ROOT_PASSWORD = 'PLEASE_CHOOSE_A_LONG_RANDOM_PASSWORD'

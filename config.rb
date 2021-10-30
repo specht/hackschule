@@ -48,9 +48,9 @@ if PROFILE.include?(:static)
         docker_compose[:services][:nginx][:expose] = ['80']
     end
     if PROFILE.include?(:dynamic)
-        docker_compose[:services][:nginx][:links] = ["ruby:#{PROJECT_NAME}_ruby_1",
-                                                     "pixelflut:#{PROJECT_NAME}_pixelflut_1",
-                                                     "canvas:#{PROJECT_NAME}_canvas_1"]
+        docker_compose[:services][:nginx][:links] = ["ruby:ruby",
+                                                     "pixelflut:pixelflut",
+                                                     "canvas:canvas"]
     end
     nginx_config = <<~eos
         log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
@@ -85,13 +85,13 @@ if PROFILE.include?(:static)
             }
 
             location @pixelflut {
-                proxy_pass http://#{PROJECT_NAME}_pixelflut_1:9292;
+                proxy_pass http://pixelflut:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
             }
         
             location @canvas {
-                proxy_pass http://#{PROJECT_NAME}_canvas_1:9292;
+                proxy_pass http://canvas:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
             }
@@ -102,7 +102,7 @@ if PROFILE.include?(:static)
             }
 
             location @ruby {
-                proxy_pass http://#{PROJECT_NAME}_ruby_1:9292;
+                proxy_pass http://ruby:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;

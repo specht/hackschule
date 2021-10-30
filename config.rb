@@ -223,7 +223,8 @@ if PROFILE.include?(:mysql)
 end
 
 docker_compose[:services].values.each do |x|
-    x[:network_mode] = 'default'
+#     x[:network_mode] = 'default'
+    x[:networks] = ['hackschule']
 end
 
 if DEVELOPMENT
@@ -238,6 +239,8 @@ else
         x[:restart] = :always
     end
 end
+
+docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
 
 File::open('docker-compose.yaml', 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"

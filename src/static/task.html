@@ -297,7 +297,7 @@ window.addEventListener('load', function () {
         $('#run').prop('disabled', (script.length === 0) || no_user_logged_in);
     });
    
-    term = new Terminal({fontFamily: 'Inconsolata, monospace', fontSize: 16, convertEol: true});
+    term = new Terminal({fontFamily: 'Inconsolata, monospace', fontSize: 16, convertEol: true, scrollback: 9999999});
     fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('terminal'));

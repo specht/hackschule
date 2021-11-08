@@ -535,8 +535,7 @@ class Main < Sinatra::Base
         STDERR.puts __FILE__
         STDERR.puts $0
         STDERR.puts ARGV.to_yaml
-        return
-        if ENV['HACKSCHULE_SERVICE'] == 'ruby'
+        if false && ENV['HACKSCHULE_SERVICE'] == 'ruby'
             delay = 1
             # unless DEVELOPMENT
                 10.times do

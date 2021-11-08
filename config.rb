@@ -242,6 +242,11 @@ end
 
 docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
 
+docker_compose[:services].keys.each do |service|
+    docker_compose[:services][service][:environment] ||= []
+    docker_compose[:services][service][:environment] << "HACKSCHULE_SERVICE=#{service}"
+end
+
 File::open('docker-compose.yaml', 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"
     f.write(JSON::parse(docker_compose.to_json).to_yaml)

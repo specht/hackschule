@@ -40,7 +40,7 @@ if PROFILE.include?(:static)
         ]
     }
     if !DEVELOPMENT
-        docker_compose[:services][:nginx][:environment] = 
+        docker_compose[:services][:nginx][:environment] = {
             "VIRTUAL_HOST" => "#{WEBSITE_HOST}",
             "LETSENCRYPT_HOST" => "#{WEBSITE_HOST}",
             "LETSENCRYPT_EMAIL" => "#{LETSENCRYPT_EMAIL}"

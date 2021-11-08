@@ -534,7 +534,7 @@ class Main < Sinatra::Base
         STDERR.puts ENV.to_h.to_yaml
         STDERR.puts __FILE__
         STDERR.puts $0
-        STDERR.putS ARGV.to_yaml
+        STDERR.puts ARGV.to_yaml
         return
         if ENV['HACKSCHULE_SERVICE'] == 'ruby'
             delay = 1

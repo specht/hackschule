@@ -120,8 +120,8 @@ if PROFILE.include?(:static)
 end
 
 if PROFILE.include?(:dynamic)
-    env = []
-    env << 'DEVELOPMENT=1' if DEVELOPMENT
+    env = {}
+    env['DEVELOPMENT'] = 1 if DEVELOPMENT
     docker_compose[:services][:ruby] = {
         :build => './docker/ruby',
         :volumes => ['./src/ruby:/app:ro',
@@ -186,10 +186,10 @@ if PROFILE.include?(:neo4j)
         :volumes => ["#{NEO4J_DATA_PATH}:/data",
                      "#{NEO4J_LOGS_PATH}:/logs"]
     }
-    docker_compose[:services][:neo4j][:environment] = [
-        'NEO4J_AUTH=none',
-        'NEO4J_dbms_logs__timezone=SYSTEM',
-    ]
+    docker_compose[:services][:neo4j][:environment] = {
+        'NEO4J_AUTH' => 'none',
+        'NEO4J_dbms_logs__timezone' => 'SYSTEM'
+    }
     docker_compose[:services][:neo4j][:user] = "#{UID}"
 end
 
@@ -213,12 +213,12 @@ if PROFILE.include?(:mysql)
     docker_compose[:services][:phpmyadmin][:depends_on] ||= []
     docker_compose[:services][:phpmyadmin][:depends_on] << :mysql
     docker_compose[:services][:phpmyadmin][:links] = ['mysql:mysql']
-    docker_compose[:services][:phpmyadmin][:environment] = [
-        'PMA_HOST=mysql',
-        "VIRTUAL_HOST=phpmyadmin.#{WEBSITE_HOST}",
-        "LETSENCRYPT_HOST=phpmyadmin.#{WEBSITE_HOST}",
-        "LETSENCRYPT_EMAIL=#{LETSENCRYPT_EMAIL}"
-    ]
+    docker_compose[:services][:phpmyadmin][:environment] = {
+        'PMA_HOST' => 'mysql',
+        "VIRTUAL_HOST" => "phpmyadmin.#{WEBSITE_HOST}",
+        "LETSENCRYPT_HOST" => "phpmyadmin.#{WEBSITE_HOST}",
+        "LETSENCRYPT_EMAIL" => "#{LETSENCRYPT_EMAIL}"
+    }
     docker_compose[:services][:neo4j][:user] = "#{UID}"
 end
 
@@ -243,8 +243,8 @@ end
 docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
 
 docker_compose[:services].keys.each do |service|
-    docker_compose[:services][service][:environment] ||= []
-    docker_compose[:services][service][:environment] << "HACKSCHULE_SERVICE=#{service}"
+    docker_compose[:services][service][:environment] ||= {}
+    docker_compose[:services][service][:environment]["HACKSCHULE_SERVICE"] = "#{service}"
 end
 
 File::open('docker-compose.yaml', 'w') do |f|

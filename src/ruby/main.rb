@@ -531,35 +531,34 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
-        STDERR.puts __FILE__
-        STDERR.puts $0
-        exit(0)
-        delay = 1
-        # unless DEVELOPMENT
-            10.times do
-                begin
-                    client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
-                    @@invitations.keys.each do |email|
-                        user = @@invitations[email][:mysql_user]
-                        password = @@invitations[email][:mysql_password]
-                        ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
-                        "CREATE DATABASE IF NOT EXISTS `#{user}`;",
-                        "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
-                        ].each do |query|
-                            STDERR.puts query
-                            client.query(query)
+        if File.basename(__FILE__) == 'main.rb'
+            delay = 1
+            # unless DEVELOPMENT
+                10.times do
+                    begin
+                        client = Mysql2::Client.new(:host => "mysql", :username => "root", :password => MYSQL_ROOT_PASSWORD)
+                        @@invitations.keys.each do |email|
+                            user = @@invitations[email][:mysql_user]
+                            password = @@invitations[email][:mysql_password]
+                            ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
+                            "CREATE DATABASE IF NOT EXISTS `#{user}`;",
+                            "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
+                            ].each do |query|
+                                STDERR.puts query
+                                client.query(query)
+                            end
                         end
+                        client.query('FLUSH PRIVILEGES;')
+                        break
+                    rescue Mysql2::Error::ConnectionError => e
+                        STDERR.puts "Can't connect to MySQL, retrying in #{delay} seconds..."
+                        sleep delay
+                        delay += 1
                     end
-                    client.query('FLUSH PRIVILEGES;')
-                    break
-                rescue Mysql2::Error::ConnectionError => e
-                    STDERR.puts "Can't connect to MySQL, retrying in #{delay} seconds..."
-                    sleep delay
-                    delay += 1
                 end
-            end
-        # end
-        STDERR.puts "Server is up and running!"
+            # end
+            STDERR.puts "Server is up and running!"
+        end
     end
     
     def assert(condition, message = 'assertion failed')

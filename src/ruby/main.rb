@@ -531,7 +531,7 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
-        STDERR.puts $0
+        STDERR.puts ENV.to_h.to_yaml
         exit
         if ENV['HACKSCHULE_SERVICE'] == 'ruby'
             delay = 1

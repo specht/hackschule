@@ -531,9 +531,7 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
-        STDERR.puts ARGV.to_yaml
-        exit
-        if File.basename(__FILE__) == 'main.rb'
+        if ENV['HACKSCHULE_SERVICE'] == 'ruby'
             delay = 1
             # unless DEVELOPMENT
                 10.times do

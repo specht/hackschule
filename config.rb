@@ -223,8 +223,8 @@ if PROFILE.include?(:mysql)
 end
 
 docker_compose[:services].values.each do |x|
-#     x[:network_mode] = 'default'
-    x[:networks] = ['hackschule']
+    x[:network_mode] = 'default'
+    # x[:networks] = ['hackschule']
 end
 
 if DEVELOPMENT
@@ -240,7 +240,7 @@ else
     end
 end
 
-docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
+# docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
 
 docker_compose[:services].keys.each do |service|
     e = docker_compose[:services][service][:environment] || {}

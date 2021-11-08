@@ -531,6 +531,8 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
+        STDERR.puts ARGV.to_yaml
+        exit
         if File.basename(__FILE__) == 'main.rb'
             delay = 1
             # unless DEVELOPMENT

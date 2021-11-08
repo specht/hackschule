@@ -532,7 +532,10 @@ class Main < Sinatra::Base
         setup = SetupDatabase.new()
         setup.setup()
         STDERR.puts ENV.to_h.to_yaml
-        exit
+        STDERR.puts __FILE__
+        STDERR.puts $0
+        STDERR.putS ARGV.to_yaml
+        return
         if ENV['HACKSCHULE_SERVICE'] == 'ruby'
             delay = 1
             # unless DEVELOPMENT

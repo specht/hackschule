@@ -243,7 +243,9 @@ end
 docker_compose[:networks] = {:hackschule => {:driver => 'bridge'}}
 
 docker_compose[:services].keys.each do |service|
-    docker_compose[:services][service][:environment] ||= {}
+    e = docker_compose[:services][service][:environment] || {}
+    e = e.to_json
+    docker_compose[:services][service][:environment] = JSON.parse(e)
     docker_compose[:services][service][:environment]["HACKSCHULE_SERVICE"] = "#{service}"
 end
 

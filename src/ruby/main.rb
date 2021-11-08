@@ -531,6 +531,9 @@ class Main < Sinatra::Base
         self.load_invitations
         setup = SetupDatabase.new()
         setup.setup()
+        STDERR.puts __FILE__
+        STDERR.puts $0
+        exit(0)
         delay = 1
         # unless DEVELOPMENT
             10.times do

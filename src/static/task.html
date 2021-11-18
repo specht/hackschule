@@ -4,6 +4,12 @@
         display: none;
     }
 }
+.widget .screen {
+  width: 336px;
+  border-radius: 8px;
+  image-rendering: pixelated;
+  border: 8px solid #444;
+}
 </style>
 
 <div class='container-fluid'>
@@ -34,7 +40,56 @@
                 </div>
                 <div class='dialog'></div>
             </div>
-            <div id='terminal' style="#{task_has_screen ? 'height: 40%;' : ''}"></div>
+            <div id='terminal' style="#{(task_has_screen || task_has_easy6502)? 'height: 40%;' : ''}"></div>
+            <div id='easy6502' style="#{task_has_easy6502 ? '' : 'display: none;'}">
+                <div class='widget row'>
+                    <div class='col-md-8' style='display: none;'>
+                        <div class="buttons">
+                            <input type="button" value="Assemble" class="btn btn-secondary assembleButton" />
+                            <input type="button" value="Run" class="btn btn-secondary runButton" />
+                            <input type="button" value="Reset" class="btn btn-secondary resetButton" />
+                            <input type="button" value="Hexdump" class="btn btn-secondary hexdumpButton" />
+                            <input type="button" value="Disassemble" class="btn btn-secondary disassembleButton" />
+                            <!-- <input type="button" value="Notes" class="btn btn-secondary notesButton" /> -->
+                        </div>
+    
+                        <textarea style='display: none;' rows='20' class="code form-control"></textarea>
+    
+                    </div>
+                    <div class='col-md-6'>
+                        <canvas class="screen" width="160" height="160"></canvas>
+    
+                    </div>
+                    <div class='col-md-6'>
+                        <div class="debugger" style='display: none;'>
+                            <input type="checkbox" class="debug" name="debug" />
+                            <label for="debug">Debugger</label>
+                            <div class="minidebugger"></div>
+                            <div class="buttons">
+                                <input type="button" value="Step" class="stepButton" />
+                                <input type="button" value="Jump to..." class="gotoButton" />
+                            </div>
+                        </div>
+                        <div class="messages" style='display: none;'>
+                            <pre><code></code></pre>
+                        </div>
+                        <div class="monitorControls" style='display: none;'>
+                            <label for="monitoring">Monitor</label>
+                            <input type="checkbox" class="monitoring" name="monitoring" />
+    
+                            <label for="start">Start: $</label>
+                            <input type="text" value="0" class="start" name="start" />
+                            <label for="length">Length: $</label>
+                            <input type="text" value="ff" class="length" name="length" />
+                        </div>
+                        <div class="monitor" style='width: 100%;'>
+                            <pre><code></code></pre>
+                        </div>
+    
+                    </div>
+                </div>
+    
+            </div>
         </div>
     </div>
 </div>
@@ -346,7 +401,12 @@ window.addEventListener('load', function () {
             term.clear();
             if (#{task_has_dungeon})
                 load_dungeon(window.slug);
-            launch_script(editor.getValue());
+            if (#{task_has_easy6502}) {
+                $('textarea.code').val(editor.getValue());
+                $('.assembleButton').click();
+            } else {
+                launch_script(editor.getValue());
+            }
             if ($('#screen').is(':visible'))
             {
                 $('html, body').animate({
@@ -359,6 +419,7 @@ window.addEventListener('load', function () {
                     scrollTop: $("#terminal").offset().top - 59
                 }, 1000);
             }
+
         }
         else
         {

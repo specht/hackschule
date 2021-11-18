@@ -27,7 +27,7 @@ function SimulatorWidget(node) {
     simulator.reset();
 
     $node.find('.assembleButton').click(function () {
-      assembler.assembleCode();
+      assembler.assembleCode(function() {simulator.runBinary();});
     });
     $node.find('.runButton').click(simulator.runBinary);
     $node.find('.runButton').click(simulator.stopDebugger);
@@ -1535,6 +1535,7 @@ function SimulatorWidget(node) {
 
     // Executes the assembled code
     function runBinary() {
+      console.log('hello');
       if (codeRunning) {
         // Switch OFF everything
         stop();
@@ -1892,7 +1893,7 @@ function SimulatorWidget(node) {
     ];
     
     // Assembles the code into memory
-    function assembleCode() {
+    function assembleCode(f) {
       var BOOTSTRAP_ADDRESS = 0x600;
 
       wasOutOfRangeBranch = false;
@@ -1951,6 +1952,7 @@ function SimulatorWidget(node) {
       }
 
       message("Code assembled successfully, " + codeLen + " bytes.");
+      f();
       return true;
     }
 
@@ -2659,9 +2661,11 @@ function SimulatorWidget(node) {
 
   // Prints text in the message window
   function message(text) {
+    console.log(text);
     if (text.length>1)
       text += '\n'; // allow putc operations from the simulator (WDM opcode)
     $node.find('.messages code').append(text).scrollTop(10000);
+    term.write(text);
   }
 
   initialize();

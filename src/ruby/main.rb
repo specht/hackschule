@@ -2599,6 +2599,7 @@ class Main < Sinatra::Base
                         content.gsub!('#{cat_slug}', cat_slug)
                     elsif original_path == 'task'
                         task_has_screen = task[:screen] == true
+                        task_has_easy6502 = task[:easy6502] == true
                         task_has_dungeon = task[:dungeon] == true
                         task_has_pixelflut = task[:pixelflut] == true
                         task_has_canvas = task[:canvas] == true

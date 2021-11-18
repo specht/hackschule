@@ -225,6 +225,7 @@ function handle_started() {
 }
 
 function handle_stopped() {
+    console.log('handle_stopped');
     $('#run').removeClass('btn-danger').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen");
     $('#editor').prop('disabled', false);
     process_running = false;

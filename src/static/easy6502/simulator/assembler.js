@@ -27,8 +27,9 @@ function SimulatorWidget(node) {
     simulator.reset();
 
     $node.find('.assembleButton').click(function () {
+      console.log('assembling');
       let result = assembler.assembleCode();
-      if (result) {
+      if (result === true) {
         handle_started();
         simulator.runBinary();
       } else {        
@@ -1541,7 +1542,6 @@ function SimulatorWidget(node) {
 
     // Executes the assembled code
     function runBinary() {
-      console.log('hello');
       if (codeRunning) {
         // Switch OFF everything
         stop();

@@ -1717,9 +1717,9 @@ class Main < Sinatra::Base
             '/xterm/xterm-addon-fit.js',
             '/xterm/xterm-addon-attach.js',
             '/code.js',
-            'easy6502/simulator/es5-shim.js',
-            'easy6502/simulator/assembler.js',
-            'easy6502/javascripts/scale.fix.js'
+            '/easy6502/simulator/es5-shim.js',
+            '/easy6502/simulator/assembler.js',
+            '/easy6502/javascripts/scale.fix.js'
         ]
         
         key = :js

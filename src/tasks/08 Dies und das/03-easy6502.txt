@@ -1,0 +1,20 @@
+title: 6502 Sandbox
+enabled: true
+easy6502: true
+count_score: no
+--------
+Programmiere eine 6502-CPU mit Assembler-Code.
+
+Der Code beginnt an Adresse `$600` und an den Speicherstellen `$200` bis `$5ff` befindet sich der Bildschirmspeicher für 32x32 Pixel mit <a href='https://moddingwiki.shikadi.net/wiki/EGA_Palette' target='_blank'>16 EGA-Farben</a>.
+
+Eine Übersicht der 6502-Befehle findest du z. B. <a href='https://www.c64-wiki.de/wiki/%C3%9Cbersicht_6502-Assemblerbefehle' target='_blank'>hier</a>.
+
+<a href='https://raw.githubusercontent.com/peaBerberian/Steve6502/master/steve.asm' target='_blank'>Hier</a> gibt es den Quelltext für ein Snake-Spiel, das du einfach kopieren und ausprobieren kannst.
+--------
+[template]
+LDA #$04
+STA $0200
+LDA #$0d
+STA $0201
+LDA #$0f
+STA $0202

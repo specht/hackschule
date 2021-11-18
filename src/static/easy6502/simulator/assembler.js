@@ -27,10 +27,16 @@ function SimulatorWidget(node) {
     simulator.reset();
 
     $node.find('.assembleButton').click(function () {
-      assembler.assembleCode(function() {simulator.runBinary();});
+      let result = assembler.assembleCode();
+      if (result) {
+        handle_started();
+        simulator.runBinary();
+      } else {        
+        handle_stopped();
+      }
     });
     $node.find('.runButton').click(simulator.runBinary);
-    $node.find('.runButton').click(simulator.stopDebugger);
+    $node.find('.stopButton').click(simulator.stop);
     $node.find('.resetButton').click(simulator.reset);
     $node.find('.hexdumpButton').click(assembler.hexdump);
     $node.find('.disassembleButton').click(assembler.disassemble);
@@ -1638,13 +1644,19 @@ function SimulatorWidget(node) {
     }
 
     function updateDebugInfo() {
-      var html = "A=$" + num2hex(regA) + " X=$" + num2hex(regX) + " Y=$" + num2hex(regY) + "<br />";
-      html += "SP=$" + num2hex(regSP) + " PC=$" + addr2hex(regPC);
-      html += "<br />";
-      html += "NV-BDIZC<br />";
+      var html = '';
+      html += "<div style='text-align: center; font-family: monospace;'>";
+      html += "<b>A</b>: $" + num2hex(regA) + "&nbsp;&nbsp;<b>X</b>: $" + num2hex(regX) + "&nbsp;&nbsp;<b>Y</b>: $" + num2hex(regY) + "&nbsp;&nbsp;";
+      html += "<b>SP</b>: $" + num2hex(regSP) + "&nbsp;&nbsp;<b>PC</b>: $" + addr2hex(regPC) + "&nbsp;&nbsp;<b>Flags</b>: ";
       for (var i = 7; i >=0; i--) {
-        html += regP >> i & 1;
+        let flag = regP >> i & 1;
+        html += "<span style='padding: 0 2px;'>"
+        if (flag == 1) html += "<b>";
+        html += 'CZIDB-VN'.charAt(i);
+        if (flag == 1) html += "</b>";
+        html += "</span>";
       }
+      html += '</div>';
       $node.find('.minidebugger').html(html);
       updateMonitor();
     }
@@ -1701,6 +1713,7 @@ function SimulatorWidget(node) {
       codeRunning = false;
       clearInterval(executeId);
       message("\nStopped\n");
+      handle_stopped();
     }
 
     function toggleMonitor (state) {
@@ -1893,7 +1906,7 @@ function SimulatorWidget(node) {
     ];
     
     // Assembles the code into memory
-    function assembleCode(f) {
+    function assembleCode() {
       var BOOTSTRAP_ADDRESS = 0x600;
 
       wasOutOfRangeBranch = false;
@@ -1952,7 +1965,7 @@ function SimulatorWidget(node) {
       }
 
       message("Code assembled successfully, " + codeLen + " bytes.");
-      f();
+      // f();
       return true;
     }
 

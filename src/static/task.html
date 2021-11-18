@@ -40,13 +40,14 @@
                 </div>
                 <div class='dialog'></div>
             </div>
-            <div id='terminal' style="#{(task_has_screen || task_has_easy6502)? 'height: 40%;' : ''}"></div>
+            <div id='terminal' style="#{task_has_screen ? 'height: 40%;' : (task_has_easy6502 ? 'height: calc(100vh - 480px);' : '')}"></div>
             <div id='easy6502' style="#{task_has_easy6502 ? '' : 'display: none;'}">
-                <div class='widget row'>
-                    <div class='col-md-8' style='display: none;'>
+                <div class='widget row' style='background-color: #042326; color: #fff; padding-bottom: 20px; padding-top: 10px; margin-left: 0; margin: 0; margin-top: -10px;'>
+                    <div style='display: none;'>
                         <div class="buttons">
                             <input type="button" value="Assemble" class="btn btn-secondary assembleButton" />
                             <input type="button" value="Run" class="btn btn-secondary runButton" />
+                            <input type="button" value="Stop" class="btn btn-secondary stopButton" />
                             <input type="button" value="Reset" class="btn btn-secondary resetButton" />
                             <input type="button" value="Hexdump" class="btn btn-secondary hexdumpButton" />
                             <input type="button" value="Disassemble" class="btn btn-secondary disassembleButton" />
@@ -54,21 +55,16 @@
                         </div>
     
                         <textarea style='display: none;' rows='20' class="code form-control"></textarea>
-    
                     </div>
-                    <div class='col-md-6'>
-                        <canvas class="screen" width="160" height="160"></canvas>
-    
-                    </div>
-                    <div class='col-md-6'>
-                        <div class="debugger" style='display: none;'>
-                            <input type="checkbox" class="debug" name="debug" />
-                            <label for="debug">Debugger</label>
-                            <div class="minidebugger"></div>
-                            <div class="buttons">
+                    <div class='col-md-12'>
+                        <div class="debugger" style='display: block;'>
+                            <!-- <input type="checkbox" class="debug" name="debug" /> -->
+                            <!-- <label for="debug">Debugger</label> -->
+                            <div class="minidebugger">&nbsp;</div>
+                            <!-- <div class="buttons">
                                 <input type="button" value="Step" class="stepButton" />
                                 <input type="button" value="Jump to..." class="gotoButton" />
-                            </div>
+                            </div> -->
                         </div>
                         <div class="messages" style='display: none;'>
                             <pre><code></code></pre>
@@ -86,6 +82,9 @@
                             <pre><code></code></pre>
                         </div>
     
+                    </div>
+                    <div class='col-md-6 offset-md-3'>
+                        <canvas class="screen" width="160" height="160"></canvas>
                     </div>
                 </div>
     
@@ -401,9 +400,15 @@ window.addEventListener('load', function () {
             term.clear();
             if (#{task_has_dungeon})
                 load_dungeon(window.slug);
+
             if (#{task_has_easy6502}) {
+                store_script(editor.getValue());
                 $('textarea.code').val(editor.getValue());
                 $('.assembleButton').click();
+
+                // $('#run').prop('disabled', true);
+                $('#editor').prop('disabled', true);
+                editor.setReadOnly(true);
             } else {
                 launch_script(editor.getValue());
             }
@@ -423,7 +428,11 @@ window.addEventListener('load', function () {
         }
         else
         {
-            kill_script();
+            if (#{task_has_easy6502}) {
+                $('.stopButton').click();
+            } else {
+                kill_script();
+            }
         }
     });
     window.onresize = function() {

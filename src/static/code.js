@@ -215,6 +215,28 @@ function push_message(s, color, delay) {
         $('.info').delay(delay).slideUp();
 }
 
+function handle_started() {
+    $('#run').removeClass('btn-success').addClass('btn-danger').html("<i class='fa fa-stop'></i>&nbsp;&nbsp;Abbrechen").prop('disabled', false);
+    process_running = true;
+    if (!$('#easy6502').is(':visible')) {
+        if (!$('#screen').is(':visible'))
+            term.focus();
+    }
+}
+
+function handle_stopped() {
+    $('#run').removeClass('btn-danger').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen");
+    $('#editor').prop('disabled', false);
+    process_running = false;
+    editor.setReadOnly(false);
+    term.write("\r\n");
+    term.blur();
+    if ($('body').width() >= 768)
+        editor.focus();
+    $('#screen img.pixelflut').removeAttr('src').attr('src', '/pixelflut/?' + Date.now());
+    $('#screen img.canvas').removeAttr('src').attr('src', '/canvas/' + session_user_email + '/?' + Date.now());
+}
+
 function setup_ws(ws)
 {
     ws.onopen = function () {
@@ -238,23 +260,11 @@ function setup_ws(ws)
         }
         else if (data.status === 'started')
         {
-            $('#run').removeClass('btn-success').addClass('btn-danger').html("<i class='fa fa-stop'></i>&nbsp;&nbsp;Abbrechen").prop('disabled', false);
-            process_running = true;
-            if (!$('#screen').is(':visible'))
-                term.focus();
+            handle_started();
         }
         else if (data.status === 'stopped')
         {
-            $('#run').removeClass('btn-danger').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen");
-            $('#editor').prop('disabled', false);
-            process_running = false;
-            editor.setReadOnly(false);
-            term.write("\r\n");
-            term.blur();
-            if ($('body').width() >= 768)
-                editor.focus();
-            $('#screen img.pixelflut').removeAttr('src').attr('src', '/pixelflut/?' + Date.now());
-            $('#screen img.canvas').removeAttr('src').attr('src', '/canvas/' + session_user_email + '/?' + Date.now());
+            handle_stopped();
         }
         else if (data.status === 'passed')
         {
@@ -312,6 +322,15 @@ function launch_script(script)
     setup_ws(ws);
     window.launch_this_script = script;
     $('.mi-load-latest-draft').removeClass('disabled');
+}
+
+function store_script(script) 
+{
+    api_call('/api/store_script', {
+        slug: window.slug,
+        script: script}, function(data) {
+            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1); 
+        });
 }
 
 function kill_script()

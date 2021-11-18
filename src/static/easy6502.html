@@ -1,0 +1,69 @@
+<!-- <link rel="stylesheet" href="easy6502/stylesheets/styles.css"> -->
+<link rel="stylesheet" href="easy6502/simulator/style.css">
+<link rel="stylesheet" href="easy6502/stylesheets/pygment_trac.css">
+<div class='container' style='padding-top: 30px;'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <div class='widget row'>
+                <div class='col-md-8'>
+                    <div class="buttons">
+                        <input type="button" value="Assemble" class="btn btn-secondary assembleButton" />
+                        <input type="button" value="Run" class="btn btn-secondary runButton" />
+                        <input type="button" value="Reset" class="btn btn-secondary resetButton" />
+                        <input type="button" value="Hexdump" class="btn btn-secondary hexdumpButton" />
+                        <input type="button" value="Disassemble" class="btn btn-secondary disassembleButton" />
+                        <!-- <input type="button" value="Notes" class="btn btn-secondary notesButton" /> -->
+                    </div>
+
+                    <textarea rows='20' class="code form-control">LDA #$04
+STA $0200
+LDA #$0d
+STA $0201
+LDA #$0f
+STA $0202</textarea>
+
+                </div>
+                <div class='col-md-4'>
+                    <canvas class="screen" width="160" height="160"></canvas>
+                    <div class="debugger">
+                        <input type="checkbox" class="debug" name="debug" />
+                        <label for="debug">Debugger</label>
+                        <div class="minidebugger"></div>
+                        <div class="buttons">
+                            <input type="button" value="Step" class="stepButton" />
+                            <input type="button" value="Jump to..." class="gotoButton" />
+                        </div>
+                    </div>
+
+                </div>
+                <div class='col-md-12'>
+                    <div class="messages" style='width: 100%;'>
+                        <pre><code></code></pre>
+                    </div>
+                    <div class="monitorControls">
+                        <label for="monitoring">Monitor</label>
+                        <input type="checkbox" class="monitoring" name="monitoring" />
+
+                        <label for="start">Start: $</label>
+                        <input type="text" value="0" class="start" name="start" />
+                        <label for="length">Length: $</label>
+                        <input type="text" value="ff" class="length" name="length" />
+                    </div>
+                    <div class="monitor" style='width: 100%;'>
+                        <pre><code></code></pre>
+                    </div>
+
+                </div>
+            </div>
+
+
+
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script defer src="easy6502/simulator/es5-shim.js"></script>
+<script defer src="easy6502/simulator/assembler.js"></script>
+<script defer src="easy6502/javascripts/scale.fix.js"></script>

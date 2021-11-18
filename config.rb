@@ -98,6 +98,7 @@ if PROFILE.include?(:static)
         
             location / {
                 root /usr/share/nginx/html;
+                include /etc/nginx/mime.types;
                 try_files $uri @ruby;
             }
 

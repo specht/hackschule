@@ -36,6 +36,8 @@ function SimulatorWidget(node) {
         handle_stopped();
       }
     });
+    $node.data('simulator', simulator);
+    $node.data('assembler', assembler);
     $node.find('.runButton').click(simulator.runBinary);
     $node.find('.stopButton').click(simulator.stop);
     $node.find('.resetButton').click(simulator.reset);
@@ -291,7 +293,12 @@ function SimulatorWidget(node) {
           html += num2hex((n & 0xff));
           html += ": ";
         }
-        html += num2hex(memory.get(start + x));
+        let a = memory.get(start + x);
+        if (a > 0)
+            html += "<span class='h'>";
+        html += num2hex(a);
+        if (a > 0)
+            html += "</span>";
         html += " ";
       }
       return html;
@@ -1598,6 +1605,17 @@ function SimulatorWidget(node) {
     }
 
     function updateMonitor() {
+      var monitorNode = $($('.monitor code')[0]);
+      let dumps = '';
+      dumps += "<p>Zero page:</p>";
+      dumps += memory.format(0, 0x100) + "<hr />";
+      dumps += "<p>Stack:</p>";
+      dumps += memory.format(0x100, 0x100) + "<hr />";
+      dumps += "<p>Display:</p>";
+      dumps += memory.format(0x200, 0x400) + "<hr />";
+      dumps += "<p>Code:</p>";
+      dumps += memory.format(0x600, 0x100) + "<hr />";
+      monitorNode.html(dumps);
       if (monitoring) {
         var start = parseInt($node.find('.start').val(), 16);
         var length = parseInt($node.find('.length').val(), 16);
@@ -2646,7 +2664,8 @@ function SimulatorWidget(node) {
       var html = 'Address  Hexdump   Dissassembly\n';
       html +=    '-------------------------------\n';
       html += instructions.join('\n');
-      openPopup(html, 'Disassembly');
+      return html;
+      // openPopup(html, 'Disassembly');
     }
 
     return {

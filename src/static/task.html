@@ -10,11 +10,24 @@
   image-rendering: pixelated;
   border: 8px solid #444;
 }
+.disassembly code, .monitor code { font-size: 12px; }
+.disassembly pre, .monitor pre { border: none; padding: 0; }
+
+@media (max-width: 1279px) { .disassembly code, .monitor code { font-size: 11px; } }
+@media (max-width: 1190px) { .disassembly code, .monitor code { font-size: 10px; } }
+@media (max-width: 1100px) { .disassembly code, .monitor code { font-size: 9px; } }
+@media (max-width: 1000px) { .disassembly code, .monitor code { font-size: 8px; } }
+
+.monitor code span.h {
+    background-color: #fce94f;
+    padding: 2 4px;
+    margin: -2px -4px;
+}
 </style>
 
 <div class='container-fluid'>
     <div class='row h-100'>
-        <div class='col-md-3 container-task'>
+        <div class='#{task_has_easy6502 ? 'col-md-4' : 'col-md-3'} container-task'>
             <h3 style='margin-top: 15px; margin-bottom: 15px;'>#{TASK_TITLE}</h3>
             <div id='already-solved' style='display: #{current_user_solved_this_task(@task_slug) ? 'block' : 'none'};'>
             <i class='fa fa-medal text-success' style='font-size: 250%; position: absolute; top: -1px; right: 15px;'></i>
@@ -24,11 +37,20 @@
             <hr />
             </div>
             #{TASK_DESCRIPTION}
+            <div style="#{task_has_easy6502 ? '' : 'display: none;'}">
+                <div class="monitor" style='width: 100%;'>
+                    <pre><code></code></pre>
+                </div>
+                <div class="disassembly" style='width: 100%;'>
+                    <pre><code></code></pre>
+                </div>
+            </div>
+
             <div class='hide-task-sidebar'>
                 <button class='btn btn-secondary bu-hide-sidebar'><i class='fa fa-angle-double-left'></i>&nbsp;&nbsp;Seitenleiste ausblenden</button>
             </div>
         </div>
-        <div class='col-md-4 container-editor'>
+        <div class='#{task_has_easy6502 ? 'col-md-3' : 'col-md-4'} container-editor'>
             <pre id="editor">#{TASK_TEMPLATE}</pre>
             <div class='show-task-sidebar'>
                 <button class='btn btn-secondary bu-show-sidebar'><i class='fa fa-angle-double-right'></i></button>
@@ -78,10 +100,6 @@
                             <label for="length">Length: $</label>
                             <input type="text" value="ff" class="length" name="length" />
                         </div>
-                        <div class="monitor" style='width: 100%;'>
-                            <pre><code></code></pre>
-                        </div>
-    
                     </div>
                     <div class='col-md-6 offset-md-3'>
                         <canvas class="screen" width="160" height="160"></canvas>
@@ -405,6 +423,13 @@ window.addEventListener('load', function () {
                 store_script(editor.getValue());
                 $('textarea.code').val(editor.getValue());
                 $('.assembleButton').click();
+                
+                // $('.disassembleButton').click();
+                let dump = $('.widget').data('assembler').disassemble();
+                $('.disassembly code').text(dump);
+                // term.write("\n");
+                // term.write(dump);
+                // term.write("\n");
 
                 // $('#run').prop('disabled', true);
                 // $('#editor').prop('disabled', true);

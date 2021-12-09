@@ -813,40 +813,7 @@ class Main < Sinatra::Base
                                 END_OF_QUERY
                             end
                             timestamp = DateTime.now.new_offset(0).to_s
-                            result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1)
-                                MATCH (u:User {email: {email}})
-                                MATCH (t:Task {slug: {slug}})
-                                MATCH (sc:Script {sha1: {sha1}})
-                                MATCH (sb:Submission)
-                                WHERE (sb)-[:SUBMITTED_BY]->(u)
-                                AND   (sb)-[:FOR]->(t)
-                                AND   (sb)-[:USING]->(sc)
-                                RETURN ID(sb)
-                            END_OF_QUERY
-                            submission_node_id = nil
-                            if result.empty?
-                                submission_node_id = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :slug => task[:slug], :sha1 => script_sha1, :timestamp => timestamp).values.first
-                                    MATCH  (u:User {email: {email}})
-                                    MATCH  (t:Task {slug: {slug}})
-                                    MATCH  (sc:Script {sha1: {sha1}})
-                                    CREATE (sb:Submission)
-                                    CREATE (sb)-[:SUBMITTED_BY]->(u)
-                                    CREATE (sb)-[:FOR]->(t)
-                                    CREATE (sb)-[:USING]->(sc)
-                                    SET sb.t0 = {timestamp}
-                                    SET sb.t1 = {timestamp}
-                                    RETURN ID(sb)
-                                END_OF_QUERY
-                            else
-                                submission_node_id = result.first.values.first
-                                # update submission timestamp
-                                r = neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id, :timestamp => timestamp)
-                                    MATCH (sb:Submission)
-                                    WHERE ID(sb) = {submission_node_id}
-                                    SET sb.t1 = {timestamp}
-                                    RETURN sb;
-                                END_OF_QUERY
-                            end
+                            submission_node_id = store_or_update_submission(task[:slug], script_sha1, timestamp)
                             STDERR.puts "Launching process..."
                             script = ''
                             script += "MYSQL_HOST = 'mysql'\n"
@@ -1738,12 +1705,55 @@ class Main < Sinatra::Base
         compile_files(key, 'text/css', files)
     end
 
+    def store_or_update_submission(slug, script_sha1, timestamp)
+        result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug, :sha1 => script_sha1)
+            MERGE (u:User {email: {email}})
+            MERGE (t:Task {slug: {slug}})
+            WITH u, t
+            MATCH (sc:Script {sha1: {sha1}})
+            MATCH (sb:Submission)
+            WHERE (sb)-[:SUBMITTED_BY]->(u)
+            AND   (sb)-[:FOR]->(t)
+            AND   (sb)-[:USING]->(sc)
+            RETURN ID(sb)
+        END_OF_QUERY
+        submission_node_id = nil
+        if result.empty?
+            submission_node_id = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug, :sha1 => script_sha1, :timestamp => timestamp).values.first
+                MERGE  (u:User {email: {email}})
+                MERGE  (t:Task {slug: {slug}})
+                WITH u, t
+                MATCH  (sc:Script {sha1: {sha1}})
+                CREATE (sb:Submission)
+                CREATE (sb)-[:SUBMITTED_BY]->(u)
+                CREATE (sb)-[:FOR]->(t)
+                CREATE (sb)-[:USING]->(sc)
+                SET sb.t0 = {timestamp}
+                SET sb.t1 = {timestamp}
+                RETURN ID(sb)
+            END_OF_QUERY
+        else
+            submission_node_id = result.first.values.first
+            # update submission timestamp
+            r = neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id, :timestamp => timestamp)
+                MATCH (sb:Submission)
+                WHERE ID(sb) = {submission_node_id}
+                SET sb.t1 = {timestamp}
+                RETURN sb;
+            END_OF_QUERY
+        end
+        return submission_node_id
+    end
+
     post '/api/store_script' do
         require_user!
         data = parse_request_data(:required_keys => [:script, :slug],
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
         sha1, script = store_script(data[:script])
+        if data[:slug] == 'easy6502'
+            store_or_update_submission(data[:slug], sha1, DateTime.now.new_offset(0).to_s)
+        end
         # fetch name if available
         result = neo4j_query(<<~END_OF_QUERY, :sha1 => sha1, :slug => data[:slug], :email => @session_user[:email])
             MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
@@ -1751,6 +1761,7 @@ class Main < Sinatra::Base
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             RETURN COALESCE(sb.name, '') AS name;
         END_OF_QUERY
+        
         if result.size > 0
             name = result.first['name']
         end

@@ -1,0 +1,44 @@
+title: Test-Sandbox
+enabled: true
+count_score: no
+difficulty: easy
+--------
+Hier kannst du mit Unit-Tests experimentieren.
+--------
+[template]
+# =========================================================
+# Diese Funktion bekommt eine Liste von Zahlen und soll den 
+# »Vorsprung« der größten Zahl gegenüber der zweigrößten
+# Zahl berechnen und zurückgeben.
+# =========================================================
+# Eingabe: Liste von Zahlen
+# Ausgabe: Verhältnis aus größtem und zweitgrößtem Wert
+# =========================================================
+def vorsprung(l):
+    return 0
+
+# =========================================================
+# Diese Funktion testet die Funktion »vorsprung«, indem
+# sie diese mit verschiedenen Parametern aufruft und 
+# überprüft, ob das zurückgegebene Ergebnis mit dem
+# erwarteten Ergebnis übereinstimmt.
+# =========================================================
+def test_vorsprung():
+    assert(vorsprung([2, 4, 1, 7]) == 7/4)
+    assert(vorsprung([1, 2, 3, 4]) == 4/3)
+    assert(vorsprung([4, 3, 2, 1]) == 4/3)
+    
+run_unit_tests(test_vorsprung)
+--------
+[verify]
+false
+--------
+[custom_main_pre]
+import traceback
+def run_unit_tests(f):
+    try:
+        f()
+        print("\u001b[42;37;1m[ OK ]\u001b[0m Alle Unit-Tests wurden erfolgreich abgeschlossen.")
+    except Exception as e:
+        print(traceback.format_exc())
+        print("\u001b[41;37;1m[ Fehler ]\u001b[0m Es wurden nicht alle Unit-Tests erfolgreich abgeschlossen.")

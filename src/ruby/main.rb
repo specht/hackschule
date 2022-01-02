@@ -342,6 +342,9 @@ class Main < Sinatra::Base
                     elsif part.strip.index('[custom_pre]') == 0
                         task[:custom_pre] = part.sub('[custom_pre]', '').strip
                         true
+                    elsif part.strip.index('[custom_main_pre]') == 0
+                        task[:custom_main_pre] = part.sub('[custom_main_pre]', '').strip
+                        true
                     elsif part.strip.index('[custom_file') == 0
                         task[:custom_files] ||= {}
                         cfpath = part.strip.match(/\[custom_file\s+(.+)\]/)[1]
@@ -826,6 +829,9 @@ class Main < Sinatra::Base
                             FileUtils.mkpath(dir)
                             script_path = File.join(dir, 'main.py')
                             File.open(script_path, 'w') do |f|
+                                if task[:custom_main_pre]
+                                    f.puts(task[:custom_main_pre])
+                                end
                                 f.write(script)
                             end
                             script_path = File.join(dir, 'scaffold.py')

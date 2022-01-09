@@ -41,18 +41,18 @@ false
 --------
 [custom_main_pre]
 import traceback
-import sys
+#import sys
 def run_unit_tests(f):
     try:
         f()
         print("\u001b[42;37;1m[ OK ]\u001b[0m Alle Unit-Tests wurden erfolgreich abgeschlossen.")
     except Exception as e:
-        tb = sys.exc_info()[2]
-        line = traceback.format_tb(tb)[-1]
-        lines = line.split("\n")
-        lines = [x.strip() for x in lines if len(x.strip()) > 0]
-        line = lines[-1]
+        #tb = sys.exc_info()[2]
+        #line = traceback.format_tb(tb)[-1]
+        #lines = line.split("\n")
+        #lines = [x.strip() for x in lines if len(x.strip()) > 0]
+        #line = lines[-1]
         print(traceback.format_exc())
-        print()
-        print(f"Mindestens ein Test ist fehlgeschlagen:\n\n\u001b[1m{line}\u001b[0m\n")
+        #print()
+        #print(f"Mindestens ein Test ist fehlgeschlagen:\n\n\u001b[1m{line}\u001b[0m\n")
         print("\u001b[41;37;1m[ Fehler ]\u001b[0m Es wurden nicht alle Unit-Tests erfolgreich abgeschlossen.")

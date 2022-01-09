@@ -8,7 +8,7 @@ Hier kannst du mit Unit-Tests experimentieren.
 [template]
 # =========================================================
 # Diese Funktion bekommt eine Liste von Zahlen und soll den 
-# »Vorsprung« der größten Zahl gegenüber der zweigrößten
+# »Vorsprung« der größten Zahl gegenüber der zweitgrößten
 # Zahl berechnen und zurückgeben.
 # =========================================================
 # Eingabe: Liste von Zahlen

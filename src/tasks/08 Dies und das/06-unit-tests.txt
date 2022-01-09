@@ -4,6 +4,12 @@ count_score: no
 difficulty: easy
 --------
 Hier kannst du mit Unit-Tests experimentieren.
+
+Implementiere zuerst die Funktion `vorsprung`, so dass
+alle Tests fehlerfrei durchlaufen. 
+
+Finde anschließend weitere Tests, um die Robustheit der
+Funktion zu erhöhen.
 --------
 [template]
 # =========================================================

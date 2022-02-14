@@ -143,8 +143,7 @@ if PROFILE.include?(:dynamic)
         :build => './docker/pysandbox',
         :entrypoint =>  '/usr/bin/tail -f /dev/null',
         :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"],
-        :links => ['pixelflut:pixelflut', 'canvas:canvas', 'mysql:mysql'],
-        :ports => ['22300:22399']
+        :links => ['pixelflut:pixelflut', 'canvas:canvas', 'mysql:mysql']
     }
     docker_compose[:services][:pixelflut] = {
         :build => './docker/pixelflut',

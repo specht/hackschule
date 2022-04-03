@@ -223,8 +223,10 @@ class SetupDatabase
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Task) ASSERT n.slug IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Script) ASSERT n.sha1 IS UNIQUE")
+                    neo4j_query("CREATE CONSTRAINT ON (n:LabelPrintRequest) ASSERT n.tag IS UNIQUE")
                     neo4j_query("CREATE INDEX ON :Submission(correct)")
                     neo4j_query("CREATE INDEX ON :Submission(t0)")
+                    neo4j_query("CREATE INDEX ON :LabelPrintRequest(ts)")
                 end
                 transaction do
                     # give admin rights to admin
@@ -1893,6 +1895,8 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/live_signin'><div class='icon'><i class='fa fa-clipboard-list'></i></div><span class='label'>Live-Anmeldungen</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/scratch'><div class='icon'><i class='fa fa-pen'></i></div><span class='label'>Scratchpad</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/camera'><div class='icon'><i class='fa fa-camera'></i></div><span class='label'>Dokumentenkamera</span></a>"
+                        io.puts "<div class='dropdown-divider'></div>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/label_queue'><div class='icon'><i class='fa fa-print'></i></div><span class='label'>Label-Warteschlange</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"
@@ -2613,6 +2617,46 @@ class Main < Sinatra::Base
             io.string
         end
         respond(:html => html)
+    end
+    
+    post '/api/print_label' do
+        require_user!
+        data = parse_request_data(:required_keys => [:tag])
+        ts = Time.now.to_i
+        ptag = RandomTag.generate()
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :tag => data[:tag], :ts => ts, :ptag => ptag)
+            MATCH (u:User {email: {email}}), (s:Script {sha1: {tag}})
+            CREATE (r:LabelPrintRequest {ts: {ts}, tag: {ptag}})
+            CREATE (r)-[:BELONGS_TO]->(u)
+            CREATE (r)-[:BELONGS_TO]->(s);
+        END_OF_QUERY
+        respond(:ok => 'yay')
+    end
+
+    post '/api/delete_label_print_request' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:tag])
+        neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
+            MATCH (r:LabelPrintRequest {tag: {tag}})
+            DETACH DELETE r;
+        END_OF_QUERY
+        respond(:ok => 'yay')
+    end
+
+    post '/api/get_label_queue' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:from], :types => {:from => Integer})
+        rows = neo4j_query(<<~END_OF_QUERY, {:from => data[:from]})
+            MATCH (u:User)--(p:LabelPrintRequest)--(s:Script)
+            WHERE p.ts >= {from}
+            RETURN u.email AS email, s.sha1 AS sha1, p.tag AS tag
+            ORDER BY p.ts;
+        END_OF_QUERY
+        rows.map! do |row|
+            row['code'] = File.read("/raw/code/#{row['sha1']}.py").sub('^XA', '^XA^LT0^LS-189^LH0,0').strip
+            row
+        end
+        respond(:queue => rows, :new_from => Time.now.to_i)
     end
     
     def list_all_lego_icons

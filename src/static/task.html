@@ -53,6 +53,12 @@
     width: 100%;
     object-fit: contain;
 }
+
+.bu-print-label {
+    position: absolute;
+    right: 0;
+    bottom: -40px;
+}
 </style>
 
 <div class='container-fluid'>
@@ -77,7 +83,7 @@
             </div>
 
             <div class='hide-task-sidebar'>
-                <button class='btn btn-secondary bu-hide-sidebar'><i class='fa fa-angle-double-left'></i>&nbsp;&nbsp;Seitenleiste ausblenden</button>
+                <button class='btn btn-sm btn-secondary bu-hide-sidebar'><i class='fa fa-angle-double-left'></i>&nbsp;&nbsp;Seitenleiste ausblenden</button>
             </div>
         </div>
         <div class='#{task_has_easy6502 ? 'col-md-3' : 'col-md-4'} container-editor'>
@@ -143,6 +149,7 @@
                         <div id='zpl_png'>
                             <img width='#{task[:zpl_wpx]}' height='#{task[:zpl_hpx]}' />
                             <div id='zpl_safe_frame'></div>
+                            <button disabled class='bu-print-label btn btn-sm btn-outline-secondary'>Label drucken…</button>
                         </div>
                     </div>
                 </div>
@@ -243,6 +250,20 @@
       </div>
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="printLabelModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+        <div class="modal-body">
+            <div style='margin: auto;'>Bist du sicher, dass du dieses Label drucken möchtest?</div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="bu-do-print-label btn btn-success" data-dismiss="modal"><i class='fa fa-print'></i>&nbsp;&nbsp;Label drucken</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen</button>
+        </div>
+        </div>
+    </div>
 </div>
 
 <div class='alert alert-warning top-pane' role='alert' style='display: #{@session_user.nil? ? 'block' : 'none'};'>
@@ -574,6 +595,13 @@ window.addEventListener('load', function () {
         $('.container-terminal').removeClass('col-md-6').addClass('col-md-5');
         $('.show-task-sidebar').hide();
         $(window).trigger('resize');
+    });
+    $('.bu-do-print-label').click(function() {
+        api_call('/api/print_label', {tag: window.print_label_tag}, function(data) {
+        });
+    });
+    $('.bu-print-label').click(function() {
+        $('#printLabelModal').modal('show');
     });
 });
 window.slug = '#{TASK_SLUG}';

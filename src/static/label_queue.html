@@ -1,0 +1,88 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+@media (max-width: 440px) {
+    .brand-brand {
+        display: none;
+    }
+}
+
+#queue_here img.preview {
+    float: left;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-right: 1em;
+    width: 100%;
+}
+#queue_here .btn {
+    margin-top: 0.5em;
+    width: 100%;
+}
+#queue_here textarea {
+    height: 132px;
+    border: 1px solid #ddd;
+    width: 100%;
+}
+#queue_here p {
+    margin: 0;
+}
+</style>
+
+<div class='container'>
+    <div class='row' style='padding-top: 30px;'>
+        <div class='col-md-12'>
+            <h2>Label-Druckerwarteschlange</h2>
+            <div id='queue_here'>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type='text/javascript'>
+
+var queue_from = 0;
+
+function refresh_queue() {
+    api_call('/api/get_label_queue', {from: queue_from}, function(data) {
+        if (data.success) {
+            queue_from = data.new_from;
+            for (let row of data.queue) {
+                let c0 = $('<div>').addClass('row');
+                let c1 = $('<div>').addClass('col-md-4');
+                c0.append(c1);
+                let c2 = $('<div>').addClass('col-md-8');
+                c0.append(c2);
+                let name = $('<p>').text(row.email);
+                let img = $('<img>').attr('src', `/raw/zpl/${row.sha1}.png`).addClass('preview');
+                let bu_delete = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen");
+                bu_delete.data('tag', row.tag);
+                bu_delete.click(function(e) {
+                    let button = $(e.target).closest('button');
+                    let tag = button.data('tag');
+                    api_call('/api/delete_label_print_request', {tag: tag}, function(data) {
+                        if (data.success) {
+                            let row = $(e.target).closest('div.row');
+                            row.detach();
+                        }
+                    });
+                });
+                c1.append(img);
+                c2.append(name);
+                c1.append(bu_delete);
+                let code = $('<textarea>').attr('readonly', '1').text(row.code);
+                c2.append(code);
+                $('#queue_here').append(c0);
+                $('#queue_here').append($('<hr />'));
+            }
+        }
+    });
+}
+
+window.addEventListener('load', function () {
+    refresh_queue();
+    setInterval(function() { 
+        refresh_queue();
+    }, 5000);
+    console.log('hey');
+});
+</script>

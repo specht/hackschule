@@ -305,6 +305,10 @@ function setup_ws(ws)
         else if (typeof(data.zpl_png) !== 'undefined')
         {
             $('#zpl_png img').attr('src', data.zpl_png);
+            $('.bu-print-label').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-outline-success');
+            let parts = data.zpl_png.split('/');
+            window.print_label_tag = parts[parts.length - 1].replace('.png', '');
+
         }
     }
 }
@@ -330,6 +334,7 @@ function launch_script(script)
     setup_ws(ws);
     window.launch_this_script = script;
     $('.mi-load-latest-draft').removeClass('disabled');
+    $('.bu-print-label').prop('disabled', true).removeClass('btn-outline-success').addClass('btn-outline-secondary');
 }
 
 function store_script(script) 

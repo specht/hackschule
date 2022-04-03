@@ -507,7 +507,7 @@ class Main < Sinatra::Base
             end
         end
     end
-                                   
+
     def self.gen_password_for_email(email, salt)
         chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
         sha2 = Digest::SHA256.new()
@@ -772,7 +772,7 @@ class Main < Sinatra::Base
         @html_entities_coder ||= HTMLEntities.new
         @html_entities_coder.encode(s)
     end
-    
+
     def store_script(script)
         require_user!
         script = script.rstrip + "\n"

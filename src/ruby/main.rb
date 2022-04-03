@@ -5,6 +5,7 @@ require 'date'
 require 'kramdown'
 require 'neography'
 require 'open3'
+require 'http'
 require 'timeout'
 require 'yaml'
 require 'mail'
@@ -432,6 +433,12 @@ class Main < Sinatra::Base
             @@cat_info[task[:cat]] ||= []
             @@cat_info[task[:cat]] << k
         end
+        if @@tasks['zpl-sandbox']
+            @@tasks['zpl-sandbox'][:zpl_win] = (@@tasks['zpl-sandbox'][:zpl_width] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) / 25.4
+            @@tasks['zpl-sandbox'][:zpl_hin] = (@@tasks['zpl-sandbox'][:zpl_height] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) / 25.4
+            @@tasks['zpl-sandbox'][:zpl_wpx] = ((@@tasks['zpl-sandbox'][:zpl_width] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) * @@tasks['zpl-sandbox'][:zpl_dpmm].to_f).to_i
+            @@tasks['zpl-sandbox'][:zpl_hpx] = ((@@tasks['zpl-sandbox'][:zpl_height] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) * @@tasks['zpl-sandbox'][:zpl_dpmm].to_f).to_i
+        end
     end
     
     def self.load_invitations
@@ -562,6 +569,7 @@ class Main < Sinatra::Base
             # end
             STDERR.puts "Server is up and running!"
         end
+        @@labelary_last_time = 0
     end
     
     def assert(condition, message = 'assertion failed')
@@ -817,144 +825,256 @@ class Main < Sinatra::Base
                             end
                             timestamp = DateTime.now.new_offset(0).to_s
                             submission_node_id = store_or_update_submission(task[:slug], script_sha1, timestamp)
-                            STDERR.puts "Launching process..."
-                            script = ''
-                            script += "MYSQL_HOST = 'mysql'\n"
-                            script += "MYSQL_USER = '#{@session_user[:mysql_user]}'\n"
-                            script += "MYSQL_PASS = '#{@session_user[:mysql_password]}'\n"
-                            script += File.read('db.py')
-                            script += submitted_script
-                            dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
-                            FileUtils.rm_rf(dir)
-                            FileUtils.mkpath(dir)
-                            script_path = File.join(dir, 'main.py')
-                            File.open(script_path, 'w') do |f|
-                                if task[:custom_main_pre]
-                                    f.puts(task[:custom_main_pre])
-                                end
-                                f.write(script)
-                            end
-                            script_path = File.join(dir, 'scaffold.py')
-                            # TODO: Speed this up, do this once at startup
-                            (task[:custom_files] || {}).each_pair do |path, contents|
-                                File.open(File.join(dir, path), 'w') do |f|
-                                    f.write(contents)
-                                end
-                            end
-                            File.open(script_path, 'w') do |f|
-                                scaffold = File.read('scaffold.py')
-                                code = StringIO.open do |io|
-                                    File.open('os-functions.txt') do |f|
-                                        f.each_line do |line|
-                                            line.strip!
-                                            next if line.empty?
-                                            next if ['open', 'path', 'fspath', 'name', 'uname', 'environ', 'getuid', 'getpid', 'stat'].include?(line)
-                                            io.puts "os.#{line} = None"
+                            if task[:slug] == 'zpl-sandbox'
+                                png_path = "/raw/zpl/#{script_sha1}.png"
+                                lint_path = "/raw/zpl/#{script_sha1}.txt"
+                                ws.send({:status => 'started'}.to_json)
+                                zpl = request['script'].gsub(/^\s*#.*$/, '')
+                                unless File.exists?(png_path)
+                                    # use labelary to render the label
+                                    ws.send({:stderr => "Sending ZPL to http://api.labelary.com...\n"}.to_json)
+
+                                    w_in = task[:zpl_win]
+                                    h_in = task[:zpl_hin]
+                                    url = "http://api.labelary.com/v1/printers/#{task[:zpl_dpmm]}dpmm/labels/#{sprintf('%1.3f', w_in)}x#{sprintf('%1.3f', h_in)}/0"
+                                    response = HTTP.headers(:accept => 'image/png', 'X-Linter' => 'On').post(url, :body => zpl)
+                                    time = Time.now.to_f
+                                    rate_limit = 0.2
+                                    if (time - @@labelary_last_time < rate_limit)
+                                        sleep rate_limit - (time - @@labelary_last_time)
+                                    end
+                                    @@labelary_last_time = time
+                                    
+                                    if response.content_type.mime_type == 'image/png'
+                                        File.open(png_path, 'w') do |f|
+                                            f.write(response.body)
                                         end
-                                        io.puts "os.environ.clear()"
-                                    end
-                                    io.string
-                                end
-                                scaffold.sub!('#{DISABLE_OS_FUNCTIONS}', code)
-                                scaffold.sub!('#{USE_TASK_CLASS}', task[:input] ? 'True' : 'False')
-                                scaffold.sub!('#{INPUT}', task[:input] || '')
-                                scaffold.sub!('#{CUSTOM_PRE}', task[:custom_pre] || '')
-                                scaffold.sub!('#{CUSTOM_IMPORT_MAIN}', task[:custom_import_main] || '')
-                                scaffold.sub!('#{CUSTOM_POST}', task[:custom_post] || '')
-                                scaffold.sub!('#{THE_FUNCTION_NAME}', task[:function_name] || '')
-                                imports = ''
-                                if task[:dungeon]
-                                    imports = 'import wizard'
-                                end
-                                scaffold.sub!('#{IMPORTS}', imports)
-                                
-                                disable_functions_code = ''
-                                disable_functions_patch_code = ''
-                                scaffold.scan(/^DISABLE_FUNCTION.*$/).each do |x|
-                                    STDERR.puts "Disabling #{x}"
-                                    x = x.sub('DISABLE_FUNCTION', '').strip
-                                    x = x[1, x.size - 2].strip
-                                    x = x.split(',').map do |y|
-                                        y.strip!
-                                        y[1, y.size - 2]
-                                    end
-                                    key = x[0]
-                                    name = x[1]
-                                    disable_functions_code += "def disable_#{name}(*argv):\n"
-                                    disable_functions_code += "    sys.stderr.write(\"Die Funktion #{name}() wäre hier normalerweise eine gute Lösung. Allerdings soll diese Aufgabe 'zu Fuß' erledigt werden, weshalb diese Funktion hier nicht erlaubt ist.\")\n"
-                                    disable_functions_code += "    exit(2)\n"
-                                    disable_functions_patch_code += "@patch('#{key}', disable_#{name})\n"
-                                end
-                                scaffold.sub!('#{DISABLE_FUNCTIONS}', disable_functions_code + disable_functions_patch_code)
-                                f.write(scaffold)
-#                                 STDERR.puts scaffold
-                                f.puts
-                                if task[:dungeon]
-                                    File.mkfifo(File.join(dir, 'fifo'))
-                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
-                                    f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
-                                    dungeon = dungeon_for_task(task[:slug])
-                                    f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json}, #{dungeon[:demons].to_json})"
-                                    f.puts task[:dungeon_init] || ''
-                                    f.puts "fili.run_it()"
-                                    File.open(File.join(dir, 'wizard.py'), 'w') do |f2|
-                                        f2.write(File.read('wizard.py'))
+                                        lint_warning = response.headers.to_h['X-Warnings']
+                                        if lint_warning
+                                            File.open(lint_path, 'w') do |f|
+                                                f.write(lint_warning)
+                                            end
+                                        end
+                                    else
+                                        ws.send({:stderr => response.to_s}.to_json)
                                     end
                                 end
-                                if task[:pixelflut]
-                                    File.mkfifo(File.join(dir, 'fifo'))
-                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
-                                    f.puts "pixelflut_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
-                                    f.puts "task = Task(pixelflut_out)"
-                                    f.puts "task.run()"
-                                    f.puts "task.finalize()"
-                                    File.open(File.join(dir, 'pixelflut.py'), 'w') do |f2|
-                                        f2.write(File.read('pixelflut.py'))
+                                if (File.exists?(png_path))
+                                    ws.send({:stderr => "Rendering finished.\n"}.to_json)
+                                    ws.send({:zpl_png => png_path}.to_json)
+                                end
+                                if (File.exists?(lint_path))
+                                    ws.send({:stderr => "ZPL Linter warnings:\n"}.to_json)
+                                    lint = File.read(lint_path).split('|')
+                                    lint.each_slice(5) do |parts|
+                                        offset = parts[0].to_i
+                                        length = parts[1].to_i
+                                        command = parts[2].strip
+                                        param = parts[3].to_i
+                                        message = parts[4]
+                                        line = zpl[0, offset].count("\n") + 1
+                                        error_message = "Line #{line}#{command.empty? ? '' : ' (' + command + ')'}: #{message}\n"
+                                        ws.send({:stderr => error_message}.to_json)
                                     end
                                 end
-                                if task[:canvas]
-                                    File.mkfifo(File.join(dir, 'fifo'))
-                                    FileUtils.chmod(0x666, File.join(dir, 'fifo'))
-                                    f.puts "canvas_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
-                                    f.puts "task = Task(canvas_out, '#{@session_user[:email]}', 128, 128, #{task[:target_image][:palette]}, #{task[:target_image][:encoded]}, #{task[:target_image][:raw]})"
-                                    f.puts "task.run(task.in_data_stream, 128, 128)"
-                                    f.puts "task.finalize()"
-                                    File.open(File.join(dir, 'canvas.py'), 'w') do |f2|
-                                        f2.write(File.read('canvas.py'))
+                                ws.send({:status => 'stopped'}.to_json)
+                                ws.close
+                            else
+                                STDERR.puts "Launching process..."
+                                script = ''
+                                script += "MYSQL_HOST = 'mysql'\n"
+                                script += "MYSQL_USER = '#{@session_user[:mysql_user]}'\n"
+                                script += "MYSQL_PASS = '#{@session_user[:mysql_password]}'\n"
+                                script += File.read('db.py')
+                                script += submitted_script
+                                dir = File.join("/raw/sandbox/#{@session_user[:email]}/")
+                                FileUtils.rm_rf(dir)
+                                FileUtils.mkpath(dir)
+                                script_path = File.join(dir, 'main.py')
+                                File.open(script_path, 'w') do |f|
+                                    if task[:custom_main_pre]
+                                        f.puts(task[:custom_main_pre])
                                     end
-                                    File.open(File.join(dir, 'data_stream.py'), 'w') do |f2|
-                                        f2.write(File.read('data_stream.py'))
+                                    f.write(script)
+                                end
+                                script_path = File.join(dir, 'scaffold.py')
+                                # TODO: Speed this up, do this once at startup
+                                (task[:custom_files] || {}).each_pair do |path, contents|
+                                    File.open(File.join(dir, path), 'w') do |f|
+                                        f.write(contents)
                                     end
                                 end
-                            end
-                            Thread.new do
-                                system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
-                            end
-                                
-                            # first kill all processes from this user
-                            system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
-                            stdin, stdout, stderr, thread = 
-                                    Open3.popen3('docker', 'exec', '-i', 
-                                                PYSANDBOX, 
-                                                "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
-                            @@clients[client_id] = {:stdin => stdin,
-                                                    :stdout => stdout,
-                                                    :stderr => stderr,
-                                                    :thread => thread,
-                                                    :process => $?}
-                            STDERR.puts "Launched process..."
-                            ws.send({:status => 'started'}.to_json)
-                            fifo_thread = nil
-                            mark_script_passed = false
-                            if task[:dungeon] || task[:pixelflut] || task[:canvas]
-                                fifo_thread = Thread.new do
-                                    fifo = File.open(File.join(dir, 'fifo'), 'r')
-                                    fifo_closed = false
+                                File.open(script_path, 'w') do |f|
+                                    scaffold = File.read('scaffold.py')
+                                    code = StringIO.open do |io|
+                                        File.open('os-functions.txt') do |f|
+                                            f.each_line do |line|
+                                                line.strip!
+                                                next if line.empty?
+                                                next if ['open', 'path', 'fspath', 'name', 'uname', 'environ', 'getuid', 'getpid', 'stat'].include?(line)
+                                                io.puts "os.#{line} = None"
+                                            end
+                                            io.puts "os.environ.clear()"
+                                        end
+                                        io.string
+                                    end
+                                    scaffold.sub!('#{DISABLE_OS_FUNCTIONS}', code)
+                                    scaffold.sub!('#{USE_TASK_CLASS}', task[:input] ? 'True' : 'False')
+                                    scaffold.sub!('#{INPUT}', task[:input] || '')
+                                    scaffold.sub!('#{CUSTOM_PRE}', task[:custom_pre] || '')
+                                    scaffold.sub!('#{CUSTOM_IMPORT_MAIN}', task[:custom_import_main] || '')
+                                    scaffold.sub!('#{CUSTOM_POST}', task[:custom_post] || '')
+                                    scaffold.sub!('#{THE_FUNCTION_NAME}', task[:function_name] || '')
+                                    imports = ''
+                                    if task[:dungeon]
+                                        imports = 'import wizard'
+                                    end
+                                    scaffold.sub!('#{IMPORTS}', imports)
+                                    
+                                    disable_functions_code = ''
+                                    disable_functions_patch_code = ''
+                                    scaffold.scan(/^DISABLE_FUNCTION.*$/).each do |x|
+                                        STDERR.puts "Disabling #{x}"
+                                        x = x.sub('DISABLE_FUNCTION', '').strip
+                                        x = x[1, x.size - 2].strip
+                                        x = x.split(',').map do |y|
+                                            y.strip!
+                                            y[1, y.size - 2]
+                                        end
+                                        key = x[0]
+                                        name = x[1]
+                                        disable_functions_code += "def disable_#{name}(*argv):\n"
+                                        disable_functions_code += "    sys.stderr.write(\"Die Funktion #{name}() wäre hier normalerweise eine gute Lösung. Allerdings soll diese Aufgabe 'zu Fuß' erledigt werden, weshalb diese Funktion hier nicht erlaubt ist.\")\n"
+                                        disable_functions_code += "    exit(2)\n"
+                                        disable_functions_patch_code += "@patch('#{key}', disable_#{name})\n"
+                                    end
+                                    scaffold.sub!('#{DISABLE_FUNCTIONS}', disable_functions_code + disable_functions_patch_code)
+                                    f.write(scaffold)
+    #                                 STDERR.puts scaffold
+                                    f.puts
+                                    if task[:dungeon]
+                                        File.mkfifo(File.join(dir, 'fifo'))
+                                        FileUtils.chmod(0x666, File.join(dir, 'fifo'))
+                                        f.puts "dungeon_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                        dungeon = dungeon_for_task(task[:slug])
+                                        f.puts "fili = Fili(dungeon_out, #{dungeon[:map].to_json}, #{dungeon[:hero].to_json}, #{dungeon[:demons].to_json})"
+                                        f.puts task[:dungeon_init] || ''
+                                        f.puts "fili.run_it()"
+                                        File.open(File.join(dir, 'wizard.py'), 'w') do |f2|
+                                            f2.write(File.read('wizard.py'))
+                                        end
+                                    end
+                                    if task[:pixelflut]
+                                        File.mkfifo(File.join(dir, 'fifo'))
+                                        FileUtils.chmod(0x666, File.join(dir, 'fifo'))
+                                        f.puts "pixelflut_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                        f.puts "task = Task(pixelflut_out)"
+                                        f.puts "task.run()"
+                                        f.puts "task.finalize()"
+                                        File.open(File.join(dir, 'pixelflut.py'), 'w') do |f2|
+                                            f2.write(File.read('pixelflut.py'))
+                                        end
+                                    end
+                                    if task[:canvas]
+                                        File.mkfifo(File.join(dir, 'fifo'))
+                                        FileUtils.chmod(0x666, File.join(dir, 'fifo'))
+                                        f.puts "canvas_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                        f.puts "task = Task(canvas_out, '#{@session_user[:email]}', 128, 128, #{task[:target_image][:palette]}, #{task[:target_image][:encoded]}, #{task[:target_image][:raw]})"
+                                        f.puts "task.run(task.in_data_stream, 128, 128)"
+                                        f.puts "task.finalize()"
+                                        File.open(File.join(dir, 'canvas.py'), 'w') do |f2|
+                                            f2.write(File.read('canvas.py'))
+                                        end
+                                        File.open(File.join(dir, 'data_stream.py'), 'w') do |f2|
+                                            f2.write(File.read('data_stream.py'))
+                                        end
+                                    end
+                                end
+                                Thread.new do
+                                    system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
+                                end
+                                    
+                                # first kill all processes from this user
+                                system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
+                                stdin, stdout, stderr, thread = 
+                                        Open3.popen3('docker', 'exec', '-i', 
+                                                    PYSANDBOX, 
+                                                    "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                @@clients[client_id] = {:stdin => stdin,
+                                                        :stdout => stdout,
+                                                        :stderr => stderr,
+                                                        :thread => thread,
+                                                        :process => $?}
+                                STDERR.puts "Launched process..."
+                                ws.send({:status => 'started'}.to_json)
+                                fifo_thread = nil
+                                mark_script_passed = false
+                                if task[:dungeon] || task[:pixelflut] || task[:canvas]
+                                    fifo_thread = Thread.new do
+                                        fifo = File.open(File.join(dir, 'fifo'), 'r')
+                                        fifo_closed = false
+                                        result = ''
+                                        fifo_buffer = ''
+                                        while true do
+                                            break if fifo_closed
+                                            reads = [fifo]
+                                            streams = IO.select(reads)
+                                            streams.first.each do |stream|
+                                                t = Time.now.to_f
+                                                bytes_read = 0
+                                                while true do
+                                                    buffer = nil
+                                                    begin
+                                                        buffer = stream.read_nonblock(4096)
+                                                        buffer.force_encoding(Encoding::UTF_8)
+                                                        buffer.encode!(Encoding::UTF_16LE, invalid: :replace, replace: "\uFFFD")
+                                                        buffer.encode!(Encoding::UTF_8)
+                                                    rescue EOFError => e
+                                                        STDERR.puts e
+                                                        fifo_closed = true
+                                                        break
+                                                    rescue StandardError => e
+                                                        STDERR.puts e
+                                                        break
+                                                    end
+                                                    if buffer
+                                                        STDERR.puts "FIFO: Received #{buffer.size} bytes: #{buffer}"
+                                                        buffer.each_char do |c|
+                                                            if c == "\n"
+                                                                STDERR.puts ">>> PARSE [#{fifo_buffer}]"
+                                                                data = JSON.parse(fifo_buffer)
+                                                                if data['status'] == 'passed'
+                                                                    mark_script_passed = true
+                                                                end
+                                                                if task[:dungeon]
+                                                                    ws.send({:dungeon => data}.to_json)
+                                                                elsif task[:pixelflut]
+                                                                    ws.send(data.to_json)
+                                                                elsif task[:canvas]
+                                                                    ws.send(data.to_json)
+                                                                end
+                                                                fifo_buffer = ''
+                                                            else
+                                                                fifo_buffer += c
+                                                            end
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                        end
+                                        STDERR.puts "Finished fifo thread"
+                                    end
+                                end
+                                Thread.new do 
                                     result = ''
+                                    strip_from_stderr = "  File \"/sandbox/#{@session_user[:email]}/scaffold.py\", line 249, in <module>\n    from main import *\n"
+                                    strip_from_stderr_length = 0
+                                    streams_closed = false
                                     fifo_buffer = ''
                                     while true do
-                                        break if fifo_closed
-                                        reads = [fifo]
+                                        break if streams_closed
+                                        reads = [@@clients[client_id][:stdout], @@clients[client_id][:stderr]]
+                                        reads << fifo if fifo
                                         streams = IO.select(reads)
                                         streams.first.each do |stream|
                                             t = Time.now.to_f
@@ -962,190 +1082,134 @@ class Main < Sinatra::Base
                                             while true do
                                                 buffer = nil
                                                 begin
-                                                    buffer = stream.read_nonblock(4096)
+                                                    if RATE_LIMIT == 0
+                                                        buffer = stream.read_nonblock(4096)
+                                                    else
+                                                        while Time.now.to_f < t + bytes_read.to_f / RATE_LIMIT
+                                                            sleep 0.1
+                                                        end
+                                                        buffer = stream.read_nonblock(RATE_LIMIT)
+                                                        bytes_read += buffer.size
+                                                    end
                                                     buffer.force_encoding(Encoding::UTF_8)
                                                     buffer.encode!(Encoding::UTF_16LE, invalid: :replace, replace: "\uFFFD")
                                                     buffer.encode!(Encoding::UTF_8)
                                                 rescue EOFError => e
                                                     STDERR.puts e
-                                                    fifo_closed = true
+                                                    streams_closed = true
                                                     break
                                                 rescue StandardError => e
                                                     STDERR.puts e
                                                     break
                                                 end
                                                 if buffer
-                                                    STDERR.puts "FIFO: Received #{buffer.size} bytes: #{buffer}"
-                                                    buffer.each_char do |c|
-                                                        if c == "\n"
-                                                            STDERR.puts ">>> PARSE [#{fifo_buffer}]"
-                                                            data = JSON.parse(fifo_buffer)
-                                                            if data['status'] == 'passed'
-                                                                mark_script_passed = true
+                                                    STDERR.puts "Received #{buffer.size} bytes: [#{buffer}]"
+                                                    if stream == @@clients[client_id][:stdout]
+                                                        STDERR.puts "(from stdout)"
+                                                        ws.send({:stdout => buffer}.to_json)
+                                                        result += buffer
+                                                    elsif stream == @@clients[client_id][:stderr]
+                                                        STDERR.puts "(from stderr)"
+                                                        accumulator = ''
+                                                        buffer.each_char do |c|
+                                                            if c == strip_from_stderr[strip_from_stderr_length]
+                                                                ws.send({:stderr => accumulator}.to_json) unless accumulator.empty?
+                                                                accumulator = ''
+                                                                strip_from_stderr_length += 1
+                                                                if strip_from_stderr_length == strip_from_stderr.size
+                                                                    strip_from_stderr_length = 0
+                                                                end
+                                                            else
+                                                                if strip_from_stderr_length > 0
+                                                                    accumulator += strip_from_stderr[0, strip_from_stderr_length]
+                                                                    strip_from_stderr_length = 0
+                                                                end
+                                                                accumulator += c
                                                             end
-                                                            if task[:dungeon]
-                                                                ws.send({:dungeon => data}.to_json)
-                                                            elsif task[:pixelflut]
-                                                                ws.send(data.to_json)
-                                                            elsif task[:canvas]
-                                                                ws.send(data.to_json)
+                                                        end
+                                                        ws.send({:stderr => accumulator}.to_json) unless accumulator.empty?
+                                                    elsif stream == fifo
+                                                        STDERR.puts "(from fifo)"
+                                                        buffer.each_char do |c|
+                                                            if c == "\n"
+                                                                ws.send({:dungeon => JSON.parse(fifo_buffer)}.to_json)
+                                                                fifo_buffer = ''
+                                                            else
+                                                                fifo_buffer += c
                                                             end
-                                                            fifo_buffer = ''
-                                                        else
-                                                            fifo_buffer += c
                                                         end
                                                     end
                                                 end
                                             end
                                         end
                                     end
-                                    STDERR.puts "Finished fifo thread"
-                                end
-                            end
-                            Thread.new do 
-                                result = ''
-                                strip_from_stderr = "  File \"/sandbox/#{@session_user[:email]}/scaffold.py\", line 249, in <module>\n    from main import *\n"
-                                strip_from_stderr_length = 0
-                                streams_closed = false
-                                fifo_buffer = ''
-                                while true do
-                                    break if streams_closed
-                                    reads = [@@clients[client_id][:stdout], @@clients[client_id][:stderr]]
-                                    reads << fifo if fifo
-                                    streams = IO.select(reads)
-                                    streams.first.each do |stream|
-                                        t = Time.now.to_f
-                                        bytes_read = 0
-                                        while true do
-                                            buffer = nil
-                                            begin
-                                                if RATE_LIMIT == 0
-                                                    buffer = stream.read_nonblock(4096)
-                                                else
-                                                    while Time.now.to_f < t + bytes_read.to_f / RATE_LIMIT
-                                                        sleep 0.1
-                                                    end
-                                                    buffer = stream.read_nonblock(RATE_LIMIT)
-                                                    bytes_read += buffer.size
-                                                end
-                                                buffer.force_encoding(Encoding::UTF_8)
-                                                buffer.encode!(Encoding::UTF_16LE, invalid: :replace, replace: "\uFFFD")
-                                                buffer.encode!(Encoding::UTF_8)
-                                            rescue EOFError => e
-                                                STDERR.puts e
-                                                streams_closed = true
-                                                break
-                                            rescue StandardError => e
-                                                STDERR.puts e
-                                                break
-                                            end
-                                            if buffer
-                                                STDERR.puts "Received #{buffer.size} bytes: [#{buffer}]"
-                                                if stream == @@clients[client_id][:stdout]
-                                                    STDERR.puts "(from stdout)"
-                                                    ws.send({:stdout => buffer}.to_json)
-                                                    result += buffer
-                                                elsif stream == @@clients[client_id][:stderr]
-                                                    STDERR.puts "(from stderr)"
-                                                    accumulator = ''
-                                                    buffer.each_char do |c|
-                                                        if c == strip_from_stderr[strip_from_stderr_length]
-                                                            ws.send({:stderr => accumulator}.to_json) unless accumulator.empty?
-                                                            accumulator = ''
-                                                            strip_from_stderr_length += 1
-                                                            if strip_from_stderr_length == strip_from_stderr.size
-                                                                strip_from_stderr_length = 0
-                                                            end
-                                                        else
-                                                            if strip_from_stderr_length > 0
-                                                                accumulator += strip_from_stderr[0, strip_from_stderr_length]
-                                                                strip_from_stderr_length = 0
-                                                            end
-                                                            accumulator += c
-                                                        end
-                                                    end
-                                                    ws.send({:stderr => accumulator}.to_json) unless accumulator.empty?
-                                                elsif stream == fifo
-                                                    STDERR.puts "(from fifo)"
-                                                    buffer.each_char do |c|
-                                                        if c == "\n"
-                                                            ws.send({:dungeon => JSON.parse(fifo_buffer)}.to_json)
-                                                            fifo_buffer = ''
-                                                        else
-                                                            fifo_buffer += c
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
+                                    exit_code = @@clients[client_id][:thread].value.exitstatus
+                                    STDERR.puts "Script ended with exit code #{exit_code}"
+                                    fifo_thread.kill unless fifo_thread.nil?
+                                    if exit_code == 124
+                                        timeout_message = "\u001b[46;1m[ Hinweis ]\u001b[0m Das Programm wurde nach #{SCRIPT_TIMEOUT} Sekunden abgebrochen."
+                                        ws.send({:stderr => timeout_message}.to_json)
                                     end
-                                end
-                                exit_code = @@clients[client_id][:thread].value.exitstatus
-                                STDERR.puts "Script ended with exit code #{exit_code}"
-                                fifo_thread.kill unless fifo_thread.nil?
-                                if exit_code == 124
-                                    timeout_message = "\u001b[46;1m[ Hinweis ]\u001b[0m Das Programm wurde nach #{SCRIPT_TIMEOUT} Sekunden abgebrochen."
-                                    ws.send({:stderr => timeout_message}.to_json)
-                                end
-                                if exit_code == 0
-                                    if task[:verify]
-                                        # run verification code to see if output is as expected
-                                        verify = eval(task[:verify])
-                                        if verify.is_a? Proc
-                                            if verify.call(result)
-                                                mark_script_passed = true
-                                            end
-                                        elsif verify.is_a? Hash
-                                            # test series of inputs with procs
-                                            ws.send({:stderr => "\r\n"}.to_json)
-                                            all_tests_passed = true
-                                            verify.keys.each.with_index do |input, i|
-                                                ws.send({:stderr => "\r\u001b[44;1m[ Test ]\u001b[0m "}.to_json)
-                                                ws.send({:stderr => "Durchlauf #{i + 1} von #{verify.size}..."}.to_json)
-                                                
-                                                
-                                                test_stdin, test_stdout, test_stderr, test_thread = 
-                                                        Open3.popen3('docker', 'exec', '-i', 
-                                                                     PYSANDBOX, "timeout", 
-                                                                     SCRIPT_TIMEOUT.to_s, 
-                                                                     'python3', '-u', 
-                                                                     script_path.sub('/raw', ''))
-                                                test_stdin.write(input)
-                                                test_stdin.close
-                                                
-                                                unless verify[input].call(test_stdout.read)
-                                                    all_tests_passed = false
-                                                    ws.send({:stderr => " fehlgeschlagen.\r\n"}.to_json)
-                                                    break
+                                    if exit_code == 0
+                                        if task[:verify]
+                                            # run verification code to see if output is as expected
+                                            verify = eval(task[:verify])
+                                            if verify.is_a? Proc
+                                                if verify.call(result)
+                                                    mark_script_passed = true
+                                                end
+                                            elsif verify.is_a? Hash
+                                                # test series of inputs with procs
+                                                ws.send({:stderr => "\r\n"}.to_json)
+                                                all_tests_passed = true
+                                                verify.keys.each.with_index do |input, i|
+                                                    ws.send({:stderr => "\r\u001b[44;1m[ Test ]\u001b[0m "}.to_json)
+                                                    ws.send({:stderr => "Durchlauf #{i + 1} von #{verify.size}..."}.to_json)
+                                                    
+                                                    
+                                                    test_stdin, test_stdout, test_stderr, test_thread = 
+                                                            Open3.popen3('docker', 'exec', '-i', 
+                                                                        PYSANDBOX, "timeout", 
+                                                                        SCRIPT_TIMEOUT.to_s, 
+                                                                        'python3', '-u', 
+                                                                        script_path.sub('/raw', ''))
+                                                    test_stdin.write(input)
+                                                    test_stdin.close
+                                                    
+                                                    unless verify[input].call(test_stdout.read)
+                                                        all_tests_passed = false
+                                                        ws.send({:stderr => " fehlgeschlagen.\r\n"}.to_json)
+                                                        break
+                                                    end
+                                                end
+                                                if all_tests_passed
+                                                    ws.send({:stderr => " ok.\r\n"})
+                                                    mark_script_passed = true
                                                 end
                                             end
-                                            if all_tests_passed
-                                                ws.send({:stderr => " ok.\r\n"})
+                                        else
+                                            if !(task[:dungeon] || task[:canvas])
                                                 mark_script_passed = true
                                             end
                                         end
-                                    else
-                                        if !(task[:dungeon] || task[:canvas])
-                                            mark_script_passed = true
+                                        if !mark_script_passed
+                                            if task[:count_score]
+                                                ws.send({:message => "Hinweis: Dein Programm läuft, aber die Aufgabe ist noch nicht erledigt."}.to_json)
+                                            end
                                         end
                                     end
-                                    if !mark_script_passed
-                                        if task[:count_score]
-                                            ws.send({:message => "Hinweis: Dein Programm läuft, aber die Aufgabe ist noch nicht erledigt."}.to_json)
-                                        end
+                                    STDERR.puts "mark_script_passed: #{mark_script_passed}"
+                                    ws.send({:status => 'stopped', :exit_code => exit_code}.to_json)
+                                    if mark_script_passed
+                                        ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
+                                        neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
+                                            MATCH (sb:Submission)
+                                            WHERE ID(sb) = {submission_node_id}
+                                            SET sb.correct = true;
+                                        END_OF_QUERY
                                     end
+                                    ws.close
                                 end
-                                STDERR.puts "mark_script_passed: #{mark_script_passed}"
-                                ws.send({:status => 'stopped', :exit_code => exit_code}.to_json)
-                                if mark_script_passed
-                                    ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
-                                    neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
-                                        MATCH (sb:Submission)
-                                        WHERE ID(sb) = {submission_node_id}
-                                        SET sb.correct = true;
-                                    END_OF_QUERY
-                                end
-                                ws.close
                             end
                         end
                     elsif request['action'] == 'kill'
@@ -2617,6 +2681,7 @@ class Main < Sinatra::Base
                     elsif original_path == 'task'
                         task_has_screen = task[:screen] == true
                         task_has_easy6502 = task[:easy6502] == true
+                        task_has_zpl = task[:zpl] == true
                         task_has_dungeon = task[:dungeon] == true
                         task_has_pixelflut = task[:pixelflut] == true
                         task_has_canvas = task[:canvas] == true
@@ -2624,7 +2689,8 @@ class Main < Sinatra::Base
                         content.gsub!('#{TASK_SLUG}', task[:slug])
                         content.gsub!('#{TASK_CONFIG}', task.to_json)
                         if sha1
-                            content.gsub!('#{TASK_TEMPLATE}', read_script_for_sha1(sha1).strip + "\n")
+                            temp = read_script_for_sha1(sha1).strip + "\n"
+                            content.gsub!('#{TASK_TEMPLATE}') { |x| temp }
                         else
                             content.gsub!('#{TASK_TEMPLATE}', task[:template].strip + "\n")
                         end
@@ -2641,6 +2707,17 @@ class Main < Sinatra::Base
                                     io.puts "<p style='margin-top: 0.5em;'>In dieser Aufgabe wurde das Bild auf <strong>#{task[:target_image][:encoded].size * 100 / task[:target_image][:raw].size}%</strong> der ursprünglichen Größe komprimiert.</p>"
                                 end
                                 io.string
+                            end
+                        end
+                        if task[:slug] == 'zpl-sandbox'
+                            description.gsub!('CURRENT_LABEL_SPECS') do |x|
+                                StringIO.open do |io|
+                                    io.puts "<p><strong>Maße des Labels:</strong></p>"
+                                    io.puts "#{task[:zpl_width]} mm &times; #{task[:zpl_height]} mm<br />"
+                                    io.puts "#{task[:zpl_wpx]}  &times; #{task[:zpl_hpx]} Pixel (#{task[:zpl_dpmm]} dpmm)<br />"
+                                    io.puts "Safe Area: #{(task[:zpl_extra_margin] + task[:zpl_safe_margin]) * task[:zpl_dpmm]} Pixel"
+                                    io.string
+                                end
                             end
                         end
                         cat_slug = task[:cat_slug]
@@ -2674,7 +2751,7 @@ class Main < Sinatra::Base
                     @template[template_path] ||= File::read(template_path, :encoding => 'utf-8')
                     
                     s = @template[template_path].dup
-                    s.sub!('#{CONTENT}', content)
+                    s.sub!('#{CONTENT}') { content }
                     s.gsub!('{BRAND}', brand);
                     purge_deleted_sids_code = ''
                     existing_sids = purge_missing_sessions()

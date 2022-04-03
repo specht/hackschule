@@ -1,0 +1,219 @@
+title: Labeldrucker-Sandbox
+enabled: true
+count_score: no
+zpl: true
+zpl_width: 57.0
+zpl_height: 31.5
+zpl_dpmm: 8
+zpl_extra_margin: 1
+zpl_safe_margin: 1
+zpl_home: "^LT0^LS-189^LH0,0"
+difficulty: easy
+--------
+Hier kannst du mit einem Label&shy;drucker experi&shy;men&shy;tieren, indem du Label in ZPL (Zebra Programming Language) erstellst.
+
+<div style='border: 1px solid #aaa; border-radius: 1em; padding: 0.5em;'>
+CURRENT_LABEL_SPECS
+</div>
+<style>
+dt {
+    float: left;
+    width: 3em;
+}
+dt:after {
+    content: ' – ';
+}
+dd {
+    padding-left: 3em;
+}
+.example {
+    font-family: mono;
+    font-size: 80%;
+    background-color: #eee;
+    padding: 0.5em;
+    border: 1px solid #ddd;
+    white-space: pre-line;
+}
+</style>
+
+<h4 style='margin-top: 1em;'>Befehlsübersicht</h4>
+
+<p>
+Ein Label muss immer mit <code>^XA</code> beginnen und mit <code>^XZ</code>
+enden. Dazwischen befinden sich ein oder mehrere Felder (Fields) – dies
+können z. B. Texte, Barcodes oder grafische Elemente sein. Einzelne Felder werden
+mit <code>^FS</code> (Field Seperator) voneinander getrennt.
+</p>
+<p>
+<em>Hinweis: Obwohl es nicht Teil der ZPL-Spezifikation ist, können in der Hackschule einzelne Zeilen mit <code>#</code> auskommentiert werden.</em>
+</p>
+
+<dl>
+
+<dt>^BC</dt>
+<dd>
+<strong>Code 128 Bar Code</strong> (Barcode drucken)<br />
+<code>^BCo,h,f,g,e,m</code><br />
+o – <em>orientation (N, R, I, B)</em><br/>
+h – <em>bar code height (1-32000)</em><br/>
+f – <em>print interpretation line (Y, N)</em><br/>
+g – <em>print interpretation line above code (Y, N)</em><br/>
+e – <em>UCC check digit (Y, N)</em><br/>
+m – <em>mode (N, U)</em><br/>
+<div class='example'>^XA
+^BCN,60^FDHello^FS
+^XZ</div>
+</dd>
+
+<dt>^BQ</dt>
+<dd>
+<strong>QR Code Bar Code</strong> (QR-Code drucken)<br />
+<code>^BQa,b,c</code><br />
+a – <em>field position (N)</em><br/>
+b – <em>model</em> (2)<br/>
+c – <em>magnification factor</em> (1-10)<br/>
+Achtung: das Fehlerkorrektur-Level wird hierbei in ^FD angegeben!<br/>
+<code>^FDa,bc</code><br />
+a – <em>error correction</em> (H, Q, M, L)<br/>
+b – <em>character mode</em> (A, M)<br/>
+c – <em>barcode data</em><br/>
+<div class='example'>^XA
+^BQN,,4^FDM,AHello^FS
+^XZ</div>
+</dd>
+
+<dt>^CF</dt>
+<dd>
+<strong>Change Alphanumeric Default Font</strong> (Schriftart ändern)<br />
+<code>^CFf,h,w</code><br />
+f – <em>specified default font (A-Z, 0-9)</em><br/>
+h – <em>character height</em><br/>
+w – <em>character width</em><br/>
+<div class='example'>^XA
+^CFE,30
+^FDHello^FS
+^XZ</div>
+</dd>
+
+<dt>^FD</dt>
+<dd>
+<strong>Field Data</strong> (Daten, die gedruckt werden sollen)<br />
+<code>^FDa</code><br />
+a – <em>data to be printed</em><br/>
+</dd>
+
+<dt>^FO</dt>
+<dd>
+<strong>Set Field Origin</strong> (linke obere Ecke verschieben)<br />
+<code>^FOx,y</code><br />
+x – <em>x-axis location</em><br/>
+y – <em>y-axis location</em><br/>
+<div class='example'>^XA
+^FO100,100
+^FDHello^FS
+^XZ</div>
+</dd>
+
+<dt>^FR</dt>
+<dd>
+<strong>Field Reverse Print</strong> (Feld invers drucken)<br />
+Hierbei wird jeder durch die Zeichenoperation betroffene Pixel invertiert.
+<div class='example'>^XA
+^CF0,60
+^GB 100,100,10^FS
+^FR^FDHello^FS
+^XZ</div>
+</dd>
+
+<dt>^GB</dt>
+<dd>
+<strong>Graphic Box</strong> (Rechteck zeichnen)<br />
+<code>^GBw,h,t,c,r</code><br />
+w – <em>box width</em><br/>
+h – <em>box height</em><br/>
+t – <em>border thickness</em><br/>
+c – <em>line color (B, W)</em><br/>
+r – <em>degree of corner-rounding (0-8)</em><br/>
+<div class='example'>^XA
+^GB100,100,10^FS
+^FO120,0^GB100,100,20,B,3^FS
+^FO240,0^GB100,100,30,B,6^FS
+^XZ</div>
+</dd>
+
+<dt>^GC</dt>
+<dd>
+<strong>Graphic Circle</strong> (Kreis zeichnen)<br />
+<code>^GCd,t,c</code><br />
+d – <em>circle diameter</em><br/>
+t – <em>border thickness</em><br/>
+c – <em>line color (B, W)</em><br/>
+<div class='example'>^XA
+^GC100,5
+^XZ</div>
+</dd>
+
+<dt>^GD</dt>
+<dd>
+<strong>Graphic Diagonal Line</strong> (Linie zeichnen)<br />
+<code>^GDw,h,t,c,o</code><br />
+w – <em>box width</em><br/>
+h – <em>box height</em><br/>
+t – <em>border thickness</em><br/>
+c – <em>line color (B, W)</em><br/>
+o – <em>orientation (L, R)</em><br/>
+<div class='example'>^XA
+^GD70,100,5,B,R^FS
+^FO70,0^GD140,100,1,B,L^FS
+^XZ</div>
+</dd>
+
+<dt>^GE</dt>
+<dd>
+<strong>Graphic Ellipse</strong> (Ellipse zeichnen)<br />
+<code>^GEw,h,t,c</code><br />
+w – <em>ellipse width</em><br/>
+h – <em>ellipse height</em><br/>
+t – <em>border thickness</em><br/>
+c – <em>line color (B, W)</em><br/>
+<div class='example'>^XA
+^GE160,90,10
+^XZ</div>
+</dd>
+
+<dt>^GF</dt>
+<dd>
+<strong>Graphic Field</strong> (Grafik zeichnen)<br />
+<code>^GFa,b,c,d,data</code><br />
+a – <em>compression type</em><br/>
+b – <em>binary byte count</em><br/>
+c – <em>graphic field count</em><br/>
+d – <em>bytes per row</em><br/>
+<div class='example'>^XA
+^GFA,8,8,1,55AA55AA55AA55AA^FS
+^XZ</div>
+Ein komplexeres Beispiel findest du <a href='/gf-example.zpl' target='_blank'>hier</a>.
+</dd>
+
+<dt>^FS</dt><dd><strong>Field Separator</strong> (Feldende)</dd>
+
+<dt>^XA</dt><dd><strong>Start Format</strong> (Labelbeginn)</dd>
+
+<dt>^XZ</dt><dd><strong>End Format</strong> (Labelende)</dd>
+
+</dl>
+
+Eine vollständige Übersicht über alle ZPL-Befehle gibt es hier:
+<a href='https://www.zebra.com/content/dam/zebra_new_ia/en-us/manuals/printers/common/programming/zplii-pm-vol1.pdf' target='_blank'>ZPL II Programming Guide</a>.
+--------
+[template]
+^XA
+
+^CF0,60
+^FO10,10^FDHello, world!^FS
+^FO10,70^BQN,,4^FDM,Ahttps://hackschule.de^FS
+
+^XZ
+--------
+[verify]
+false

@@ -241,20 +241,23 @@ function handle_stopped() {
 function setup_ws(ws)
 {
     ws.onopen = function () {
+        console.log('ws.onopen');
         keepAlive();
         ws.send(JSON.stringify({
-            action: 'run', 
+            action: 'run',
             slug: window.slug,
             script: window.launch_this_script
         }));
     }
-    
+
     ws.onclose = function () {
+        console.log('ws.onclose');
         clearTimeout(timerId);
     }
-    
+
     ws.onmessage = function (msg) {
         data = JSON.parse(msg.data);
+        console.log(data);
         if (data.hello === 'world')
         {
             window.rate_limit = data.rate_limit;
@@ -297,7 +300,11 @@ function setup_ws(ws)
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.script_sha1); 
+            history.replaceState({}, null, '/task/' + window.slug + '/' + data.script_sha1);
+        }
+        else if (typeof(data.zpl_png) !== 'undefined')
+        {
+            $('#zpl_png img').attr('src', data.zpl_png);
         }
     }
 }

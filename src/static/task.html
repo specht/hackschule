@@ -23,6 +23,36 @@
     padding: 2 4px;
     margin: -2px -4px;
 }
+
+#zpl_png {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  max-width: 95%;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+  width: #{task[:zpl_wpx]}px;
+  height: #{task[:zpl_hpx]}px;
+  /* border: 1px solid red; */
+  /* padding-bottom: 56%; */
+
+}
+
+#zpl_safe_frame {
+    position: absolute;
+    border: 1px dashed #888;
+    border-radius: 8px;
+    top: #{(task[:zpl_extra_margin] || 0) * (task[:zpl_dpmm] || 0)}px;
+    left: #{(task[:zpl_extra_margin] || 0) * (task[:zpl_dpmm] || 0)}px;
+    bottom: #{(task[:zpl_extra_margin] || 0) * (task[:zpl_dpmm] || 0)}px;
+    right: #{(task[:zpl_extra_margin] || 0) * (task[:zpl_dpmm] || 0)}px;
+}
+
+#zpl_png img {
+    width: 100%;
+    object-fit: contain;
+}
 </style>
 
 <div class='container-fluid'>
@@ -62,7 +92,7 @@
                 </div>
                 <div class='dialog'></div>
             </div>
-            <div id='terminal' style="#{task_has_screen ? 'height: 40%;' : (task_has_easy6502 ? 'height: calc(100vh - 480px);' : '')}"></div>
+            <div id='terminal' style="#{task_has_screen ? 'height: 40%;' : ((task_has_easy6502 || task_has_zpl) ? 'height: calc(100vh - 480px);' : '')}"></div>
             <div id='easy6502' style="#{task_has_easy6502 ? '' : 'display: none;'}">
                 <div class='widget row' style='background-color: #042326; color: #fff; padding-bottom: 20px; padding-top: 10px; margin-left: 0; margin: 0; margin-top: -10px;'>
                     <div style='display: none;'>
@@ -106,6 +136,16 @@
                     </div>
                 </div>
     
+            </div>
+            <div id='zpl' style="#{task_has_zpl ? '' : 'display: none;'}">
+                <div class='row' style='background-color: #eee; height: 420px; padding-bottom: 20px; padding-top: 10px; margin-left: 0; margin: 0; margin-top: -10px;'>
+                    <div class='col-md-12'>
+                        <div id='zpl_png'>
+                            <img width='#{task[:zpl_wpx]}' height='#{task[:zpl_hpx]}' />
+                            <div id='zpl_safe_frame'></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -271,6 +271,7 @@ if PROFILE.include?(:dynamic)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'sandbox'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'pixelflut'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'canvas'))
+    FileUtils::mkpath(File::join(RAW_FILES_PATH, 'zpl'))
     FileUtils::mkpath(GEN_FILES_PATH)
 end
 if PROFILE.include?(:pysandbox)

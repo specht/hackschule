@@ -42,7 +42,7 @@ dd {
 Ein Label muss immer mit <code>^XA</code> beginnen und mit <code>^XZ</code>
 enden. Dazwischen befinden sich ein oder mehrere Felder (Fields) – dies
 können z. B. Texte, Barcodes oder grafische Elemente sein. Einzelne Felder werden
-mit <code>^FS</code> (Field Seperator) voneinander getrennt.
+mit <code>^FS</code> (Field Separator) voneinander getrennt.
 </p>
 <p>
 <em>Hinweis: Obwohl es nicht Teil der ZPL-Spezifikation ist, können in der Hackschule einzelne Zeilen mit <code>#</code> auskommentiert werden.</em>

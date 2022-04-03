@@ -95,6 +95,24 @@ w – <em>character width</em><br/>
 ^XZ</div>
 </dd>
 
+<dt>^FB</dt>
+<dd>
+<strong>Field Block</strong> (mehrzeiliger Text)<br />
+<code>^FBa,b,c,d,e</code><br />
+a – <em>width of text</em><br/>
+b – <em>maximum number of lines in text block</em><br/>
+c – <em>add or delete space between lines</em><br/>
+d – <em>text justification (L, C, R)</em><br/>
+e – <em>hanging indent</em><br/>
+<em>Hinweis: Einzelne Zeilen werden mit <code>&#92;&amp;</code> getrennt.</em>
+<div class='example'>^XA
+^CF0,40
+^FB472,4,0,L,0^FDLeft 1&#92;&amp;Left 2&#92;&amp;^FS
+^FB472,4,0,C,0^FDCenter 1&#92;&amp;Center 2&#92;&amp;Center 3&#92;&amp;^FS
+^FB472,4,0,R,0^FDRight 1&#92;&amp;Right 2&#92;&amp;^FS
+^XZ</div>
+</dd>
+
 <dt>^FD</dt>
 <dd>
 <strong>Field Data</strong> (Daten, die gedruckt werden sollen)<br />

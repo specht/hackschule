@@ -2554,7 +2554,7 @@ class Main < Sinatra::Base
             stats[email][yw][sha1] = true
             stats_max = stats[email][yw].size if stats[email][yw].size > stats_max
         end
-        p = Date.parse('2020-08-10')
+        p = Date.parse('2022-08-22')
         while p.wday != 1
             p -= 1
         end

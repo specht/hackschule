@@ -1858,6 +1858,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             nav_items = []
             if @original_path == 'task'
+                nav_items << :language
                 nav_items << :scripts
             end
             nav_items << ['/', 'Aufgaben', 'fa fa-map']
@@ -1902,6 +1903,18 @@ class Main < Sinatra::Base
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"
                     io.puts "</div>"
                     io.puts "</li>"
+                elsif x == :language
+                    if user_logged_in?
+                        io.puts "<li class='nav-item dropdown'>"
+                        io.puts "<a class='nav-icon nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownScripts' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
+                        io.puts "<div class='icon'><i class='fa fa-edit'></i></div>Sprache"
+                        io.puts "</a>"
+                        io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownScripts'>"
+                        io.puts "<a class='dropdown-item nav-icon' href='#'><span class='label'>Python</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='#'><span class='label'>Dart</span></a>"
+                        io.puts "</div>"
+                        io.puts "</li>"
+                    end
                 elsif x == :scripts
                     if user_logged_in?
                         latest_draft = latest_draft_sha1(@task_slug)

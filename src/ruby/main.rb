@@ -203,6 +203,18 @@ end
 class SetupDatabase
     include QtsNeo4j
 
+    CONSTRAINTS_LIST = [
+        'User/email',
+        'Task/slug',
+        'Script/sha1',
+        'LabelPrintRequest/tag'
+    ]
+    INDEX_LIST = [
+        'Submission/correct',
+        'Submission/t0',
+        'LabelPrintRequest/s'
+    ]
+
     def setup
         delay = 1
         10.times do
@@ -210,18 +222,7 @@ class SetupDatabase
                 wanted_constraints = Set.new()
                 wanted_indexes = Set.new()
                 STDERR.puts "Setting up constraints and indexes..."
-                constraints_list = [
-                    'User/email',
-                    'Task/slug',
-                    'Script/sha1',
-                    'LabelPrintRequest/tag'
-                ]
-                index_list = [
-                    'Submission/correct',
-                    'Submission/t0',
-                    'LabelPrintRequest/s'
-                ]
-                constraints_list.each do |constraint|
+                CONSTRAINTS_LIST.each do |constraint|
                     constraint_name = constraint.gsub('/', '_')
                     wanted_constraints << constraint_name
                     label = constraint.split('/').first
@@ -230,7 +231,7 @@ class SetupDatabase
                     STDERR.puts query
                     neo4j_query(query)
                 end
-                index_list.each do |index|
+                INDEX_LIST.each do |index|
                     index_name = index.gsub('/', '_')
                     wanted_indexes << index_name
                     label = index.split('/').first
@@ -271,7 +272,7 @@ class SetupDatabase
                         size = script.size
                         lines = script.count("\n") + 1
                         neo4j_query(<<~END_OF_QUERY, {:sha1 => sha1, :size => size, :lines => lines})
-                            MATCH (sc:Script {sha1: {sha1}})
+                            MATCH (sc:Script {sha1: $sha1})
                             SET sc.size = $size, sc.lines = $lines;
                         END_OF_QUERY
                         STDERR.puts "#{sha1} #{size} #{lines}"
@@ -804,7 +805,7 @@ class Main < Sinatra::Base
         unless File.exists?(script_path)
             File.open(script_path, 'w') { |f| f.write(script) }
             neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :size => script.size, :lines => script.count("\n") + 1)
-                MERGE (sc:Script {sha1: {sha1}, size: $size, lines: $lines})
+                MERGE (sc:Script {sha1: $sha1, size: $size, lines: $lines})
             END_OF_QUERY
         end
         return script_sha1, script
@@ -840,12 +841,12 @@ class Main < Sinatra::Base
                                 MERGE (t:Task {slug: $slug})
                             END_OF_QUERY
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
-                                MERGE (sc:Script {sha1: {sha1}})
+                                MERGE (sc:Script {sha1: $sha1})
                             END_OF_QUERY
                             if task[:slug] == 'pixelflut'
                                 neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1)
                                     MERGE (n:LatestPixelflut)
-                                    SET n.sha1 = {sha1}
+                                    SET n.sha1 = $sha1
                                 END_OF_QUERY
                             end
                             timestamp = DateTime.now.new_offset(0).to_s
@@ -1805,7 +1806,7 @@ class Main < Sinatra::Base
             MERGE (u:User {email: $email})
             MERGE (t:Task {slug: $slug})
             WITH u, t
-            MATCH (sc:Script {sha1: {sha1}})
+            MATCH (sc:Script {sha1: $sha1})
             MATCH (sb:Submission)
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             AND   (sb)-[:FOR]->(t)
@@ -1818,7 +1819,7 @@ class Main < Sinatra::Base
                 MERGE  (u:User {email: $email})
                 MERGE  (t:Task {slug: $slug})
                 WITH u, t
-                MATCH  (sc:Script {sha1: {sha1}})
+                MATCH  (sc:Script {sha1: $sha1})
                 CREATE (sb:Submission)
                 CREATE (sb)-[:SUBMITTED_BY]->(u)
                 CREATE (sb)-[:FOR]->(t)
@@ -1851,7 +1852,7 @@ class Main < Sinatra::Base
         end
         # fetch name if available
         result = neo4j_query(<<~END_OF_QUERY, :sha1 => sha1, :slug => data[:slug], :email => @session_user[:email])
-            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
+            MATCH (sc:Script {sha1: $sha1})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
             MATCH (u:User {email: $email})
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             RETURN COALESCE(sb.name, '') AS name;
@@ -1869,7 +1870,7 @@ class Main < Sinatra::Base
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
         neo4j_query(<<~END_OF_QUERY, :sha1 => data[:sha1], :slug => data[:slug], :email => @session_user[:email], :name => data[:name])
-            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
+            MATCH (sc:Script {sha1: $sha1})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
             MATCH (u:User {email: $email})
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             SET sb.name = $name;

@@ -1,5 +1,4 @@
 FROM ruby:3-buster
-MAINTAINER Dr. Michael Specht <specht@quelltextschmiede.de>
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release

@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require './main.rb'
+require './neo4j.rb'
 
 class ClearDatabase
     include QtsNeo4j

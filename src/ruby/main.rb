@@ -3,7 +3,6 @@ require 'faye/websocket'
 require 'json'
 require 'date'
 require 'kramdown'
-require 'neography'
 require 'open3'
 require 'http'
 require 'timeout'
@@ -16,6 +15,7 @@ require 'htmlentities'
 require '/credentials.rb'
 require 'mysql2'
 require 'digest/sha2'
+require './neo4j.rb'
 
 WEEK_DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
@@ -37,110 +37,6 @@ def update_resolutions(use_tag = nil)
                 STDERR.puts png_path
                 system("convert \"#{original_path}\" -resize #{width}x#{width}^\\> -strip \"#{png_path}\"")
             end
-        end
-    end
-end
-
-Neography.configure do |config|
-    config.protocol             = "http"
-    config.server               = "neo4j"
-    config.port                 = 7474
-    config.directory            = ""  # prefix this path with '/'
-    config.cypher_path          = "/cypher"
-    config.gremlin_path         = "/ext/GremlinPlugin/graphdb/execute_script"
-    config.log_file             = "/dev/shm/neography.log"
-    config.log_enabled          = false
-    config.slow_log_threshold   = 0    # time in ms for query logging
-    config.max_threads          = 20
-    config.authentication       = nil  # 'basic' or 'digest'
-    config.username             = nil
-    config.password             = nil
-    config.parser               = MultiJsonParser
-    config.http_send_timeout    = 1200
-    config.http_receive_timeout = 1200
-    config.persistent           = true
-end
-
-module QtsNeo4j
-
-    class CypherError < StandardError
-        def initialize(code, message)
-            @code = code
-            @message = message
-        end
-
-        def to_s
-            "Cypher Error\n#{@code}\n#{@message}"
-        end
-    end
-
-    def transaction(&block)
-        @neo4j ||= Neography::Rest.new
-        @tx ||= []
-        @tx << (@tx.empty? ? @neo4j.begin_transaction : nil)
-        begin
-            result = yield
-            item = @tx.pop
-            unless item.nil?
-                @neo4j.commit_transaction(item)
-            end
-            result
-        rescue
-            item = @tx.pop
-            unless item.nil?
-                begin
-                    @neo4j.rollback_transaction(item)
-                rescue
-                end
-            end
-            raise
-        end
-    end
-
-    class ResultRow
-        def initialize(v)
-            @v = Hash[v.map { |k, v| [k.to_sym, v] }]
-        end
-
-        def props
-            @v
-        end
-    end
-
-    def neo4j_query(query_str, options = {})
-        transaction do
-            temp_result = @neo4j.in_transaction(@tx.first, [query_str, options])
-            if temp_result['errors'] && !temp_result['errors'].empty?
-                STDERR.puts "This:"
-                STDERR.puts temp_result.to_yaml
-                raise CypherError.new(temp_result['errors'].first['code'], temp_result['errors'].first['message'])
-            end
-            result = []
-            temp_result['results'].first['data'].each_with_index do |row, row_index|
-                result << {}
-                temp_result['results'].first['columns'].each_with_index do |key, key_index|
-                    if row['row'][key_index].is_a? Hash
-                        result.last[key] = ResultRow.new(row['row'][key_index])
-                    else
-                        result.last[key] = row['row'][key_index]
-                    end
-                end
-            end
-            result
-        end
-    end
-
-    def neo4j_query_expect_one(query_str, options = {})
-        transaction do
-            result = neo4j_query(query_str, options).to_a
-            unless result.size == 1
-                STDERR.puts '-' * 40
-                STDERR.puts query_str
-                STDERR.puts options.to_json
-                STDERR.puts '-' * 40
-                raise "Expected one result but got #{result.size}"
-            end
-            result.first
         end
     end
 end
@@ -465,6 +361,7 @@ class Main < Sinatra::Base
             @@tasks['zpl-sandbox'][:zpl_wpx] = ((@@tasks['zpl-sandbox'][:zpl_width] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) * @@tasks['zpl-sandbox'][:zpl_dpmm].to_f).to_i
             @@tasks['zpl-sandbox'][:zpl_hpx] = ((@@tasks['zpl-sandbox'][:zpl_height] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) * @@tasks['zpl-sandbox'][:zpl_dpmm].to_f).to_i
         end
+        STDERR.puts "done"
     end
 
     def self.load_invitations

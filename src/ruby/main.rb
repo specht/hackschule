@@ -207,26 +207,49 @@ class SetupDatabase
         delay = 1
         10.times do
             begin
-                transaction do
-                    STDERR.puts "Removing all constraints and indexes..."
-                    indexes = []
-                    neo4j_query("CALL db.constraints").each do |constraint|
-                        query = "DROP #{constraint['description']}"
-                        neo4j_query(query)
-                    end
-                    neo4j_query("CALL db.indexes").each do |index|
-                        query = "DROP #{index['description']}"
-                        neo4j_query(query)
-                    end
-
-                    STDERR.puts "Setting up constraints and indexes..."
-                    neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Task) ASSERT n.slug IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:Script) ASSERT n.sha1 IS UNIQUE")
-                    neo4j_query("CREATE CONSTRAINT ON (n:LabelPrintRequest) ASSERT n.tag IS UNIQUE")
-                    neo4j_query("CREATE INDEX ON :Submission(correct)")
-                    neo4j_query("CREATE INDEX ON :Submission(t0)")
-                    neo4j_query("CREATE INDEX ON :LabelPrintRequest(ts)")
+                wanted_constraints = Set.new()
+                wanted_indexes = Set.new()
+                STDERR.puts "Setting up constraints and indexes..."
+                constraints_list = [
+                    'User/email',
+                    'Task/slug',
+                    'Script/sha1',
+                    'LabelPrintRequest/tag'
+                ]
+                index_list = [
+                    'Submission/correct',
+                    'Submission/t0',
+                    'LabelPrintRequest/s'
+                ]
+                constraints_list.each do |constraint|
+                    constraint_name = constraint.gsub('/', '_')
+                    wanted_constraints << constraint_name
+                    label = constraint.split('/').first
+                    property = constraint.split('/').last
+                    query = "CREATE CONSTRAINT #{constraint_name} IF NOT EXISTS FOR (n:#{label}) REQUIRE n.#{property} IS UNIQUE"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                index_list.each do |index|
+                    index_name = index.gsub('/', '_')
+                    wanted_indexes << index_name
+                    label = index.split('/').first
+                    property = index.split('/').last
+                    query = "CREATE INDEX #{index_name} IF NOT EXISTS FOR (n:#{label}) ON (n.#{property})"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                neo4j_query("SHOW ALL CONSTRAINTS").each do |row|
+                    next if wanted_constraints.include?(row['name'])
+                    query = "DROP CONSTRAINT #{row['name']}"
+                    STDERR.puts query
+                    neo4j_query(query)
+                end
+                neo4j_query("SHOW ALL INDEXES").each do |row|
+                    next if wanted_indexes.include?(row['name']) || wanted_constraints.include?(row['name'])
+                    query = "DROP INDEX #{row['name']}"
+                    STDERR.puts query
+                    neo4j_query(query)
                 end
                 transaction do
                     # give admin rights to admin

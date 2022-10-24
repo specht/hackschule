@@ -232,7 +232,7 @@ class SetupDatabase
                     # give admin rights to admin
                     ADMIN_MAIL_ADDRESSES.each do |email|
                         neo4j_query(<<~END_OF_QUERY, :email => email)
-                            MATCH (u:User {email: {email}})
+                            MATCH (u:User {email: $email})
                             SET u.admin = true;
                         END_OF_QUERY
                     end
@@ -249,7 +249,7 @@ class SetupDatabase
                         lines = script.count("\n") + 1
                         neo4j_query(<<~END_OF_QUERY, {:sha1 => sha1, :size => size, :lines => lines})
                             MATCH (sc:Script {sha1: {sha1}})
-                            SET sc.size = {size}, sc.lines = {lines};
+                            SET sc.size = $size, sc.lines = $lines;
                         END_OF_QUERY
                         STDERR.puts "#{sha1} #{size} #{lines}"
                     end
@@ -684,7 +684,7 @@ class Main < Sinatra::Base
             sids.split(',').each do |sid|
                 if sid =~ /^[0-9A-Za-z]+$/
                     results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| {:sid => x['sid'], :user => x['user'].props } }
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
                         RETURN s.sid AS sid, u AS user;
                     END_OF_QUERY
                     results.each do |entry|
@@ -704,7 +704,7 @@ class Main < Sinatra::Base
             sids.each do |sid|
                 if sid =~ /^[0-9A-Za-z]+$/
                     results = neo4j_query(<<~END_OF_QUERY, :sid => sid).map { |x| x['sid'] }
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
                         RETURN s.sid AS sid;
                     END_OF_QUERY
                     existing_sids << sid unless results.empty?
@@ -729,7 +729,7 @@ class Main < Sinatra::Base
                 first_sid = sid.split(',').first
                 if first_sid =~ /^[0-9A-Za-z]+$/
                     results = neo4j_query(<<~END_OF_QUERY, :sid => first_sid).to_a
-                        MATCH (s:Session {sid: {sid}})-[:BELONGS_TO]->(u:User)
+                        MATCH (s:Session {sid: $sid})-[:BELONGS_TO]->(u:User)
                         RETURN s, u;
                     END_OF_QUERY
                     if results.size == 1
@@ -781,7 +781,7 @@ class Main < Sinatra::Base
         unless File.exists?(script_path)
             File.open(script_path, 'w') { |f| f.write(script) }
             neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :size => script.size, :lines => script.count("\n") + 1)
-                MERGE (sc:Script {sha1: {sha1}, size: {size}, lines: {lines}})
+                MERGE (sc:Script {sha1: {sha1}, size: $size, lines: $lines})
             END_OF_QUERY
         end
         return script_sha1, script
@@ -814,7 +814,7 @@ class Main < Sinatra::Base
                             script_sha1, submitted_script = store_script(request['script'])
                             ws.send({:script_sha1 => script_sha1}.to_json)
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
-                                MERGE (t:Task {slug: {slug}})
+                                MERGE (t:Task {slug: $slug})
                             END_OF_QUERY
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
                                 MERGE (sc:Script {sha1: {sha1}})
@@ -1206,7 +1206,7 @@ class Main < Sinatra::Base
                                         ws.send({:status => 'passed', :slug => task[:slug]}.to_json)
                                         neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id)
                                             MATCH (sb:Submission)
-                                            WHERE ID(sb) = {submission_node_id}
+                                            WHERE ID(sb) = $submission_node_id
                                             SET sb.correct = true;
                                         END_OF_QUERY
                                     end
@@ -1247,8 +1247,8 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:name, :avatar])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :name => data[:name].strip, :avatar=> data[:avatar])
-            MATCH (u:User {email: {email}})
-            SET u.name = {name}, u.avatar = {avatar}
+            MATCH (u:User {email: $email})
+            SET u.name = $name, u.avatar = $avatar
             RETURN u;
         END_OF_QUERY
     end
@@ -1259,7 +1259,7 @@ class Main < Sinatra::Base
             current_sid = sid.split(',').first
             if current_sid =~ /^[0-9A-Za-z]+$/
                 result = neo4j_query(<<~END_OF_QUERY, :sid => current_sid)
-                    MATCH (s:Session {sid: {sid}})
+                    MATCH (s:Session {sid: $sid})
                     DETACH DELETE s;
                 END_OF_QUERY
             end
@@ -1283,22 +1283,22 @@ class Main < Sinatra::Base
         end
         # create user node if it doesn't already exist
         user = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email])['n'].props
-            MERGE (n:User {email: {email}})
+            MERGE (n:User {email: $email})
             RETURN n;
         END_OF_QUERY
         unless user[:avatar]
             avatar = @@lego_icons[@@invitations[data[:email]][:gender].to_sym].sample
             user = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :avatar => avatar)['n'].props
-                MATCH (n:User {email: {email}})
-                SET n.avatar = {avatar}
+                MATCH (n:User {email: $email})
+                SET n.avatar = $avatar
                 RETURN n;
             END_OF_QUERY
         end
         unless user[:name]
             name = @@invitations[data[:email]][:name]
             user = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :name => name)['n'].props
-                MATCH (n:User {email: {email}})
-                SET n.name = {name}
+                MATCH (n:User {email: $email})
+                SET n.name = $name
                 RETURN n;
             END_OF_QUERY
         end
@@ -1310,12 +1310,12 @@ class Main < Sinatra::Base
         tag = RandomTag::generate(8)
         valid_to = Time.now + 3600
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: {email}})
+            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: $email})
             DETACH DELETE l;
         END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :code => random_code, :valid_to => valid_to.to_i)
-            MATCH (n:User {email: {email}})
-            CREATE (l:LoginCode {tag: {tag}, code: {code}, valid_to: {valid_to}})-[:BELONGS_TO]->(n)
+            MATCH (n:User {email: $email})
+            CREATE (l:LoginCode {tag: $tag, code: $code, valid_to: $valid_to})-[:BELONGS_TO]->(n)
             RETURN n;
         END_OF_QUERY
         begin
@@ -1357,13 +1357,13 @@ class Main < Sinatra::Base
         all_sessions().each do |session|
             other_sid = session[:sid]
             result = neo4j_query(<<~END_OF_QUERY, :email => email, :other_sid => other_sid).map { |x| x['sid'] }
-                MATCH (s:Session {sid: {other_sid}})-[:BELONGS_TO]->(u:User {email: {email}})
+                MATCH (s:Session {sid: $other_sid})-[:BELONGS_TO]->(u:User {email: $email})
                 DETACH DELETE s;
             END_OF_QUERY
         end
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :data => data)
-            MATCH (u:User {email: {email}})
-            CREATE (s:Session {data})-[:BELONGS_TO]->(u)
+            MATCH (u:User {email: $email})
+            CREATE (s:Session $data)-[:BELONGS_TO]->(u)
             RETURN s; 
         END_OF_QUERY
         all_sids = all_sessions().map { |x| x[:sid] }
@@ -1376,7 +1376,7 @@ class Main < Sinatra::Base
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag], :code => data[:code])
-            MATCH (l:LoginCode {tag: {tag}, code: {code}})-[:BELONGS_TO]->(u:User)
+            MATCH (l:LoginCode {tag: $tag, code: $code})-[:BELONGS_TO]->(u:User)
             RETURN l, u;
         END_OF_QUERY
         user = result['u'].props
@@ -1389,7 +1389,7 @@ class Main < Sinatra::Base
         assert(Time.at(login_code[:valid_to]) >= Time.now)
         session_id = create_session(user[:email])
         result = neo4j_query(<<~END_OF_QUERY, :tag => data[:tag], :code => data[:code])
-            MATCH (l:LoginCode {tag: {tag}, code: {code}})
+            MATCH (l:LoginCode {tag: $tag, code: $code})
             DETACH DELETE l;
         END_OF_QUERY
         respond(:session_id => session_id)
@@ -1399,8 +1399,8 @@ class Main < Sinatra::Base
         return nil unless user_logged_in?
         require_user!
         own_submissions = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug)
-            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User {email: {email}}),
-            (sb)-[:FOR]->(t:Task {slug: {slug}}),
+            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User {email: $email}),
+            (sb)-[:FOR]->(t:Task {slug: $slug}),
             (sc:Script)<-[:USING]-(sb)
             WHERE NOT COALESCE(sb.correct, false)
             RETURN u.email AS email, sb.t0 AS timestamp, sc.sha1 AS sha1, sb AS submission
@@ -1414,8 +1414,8 @@ class Main < Sinatra::Base
         return nil unless user_logged_in?
         require_user!
         own_submissions = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug)
-            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
-            (sb)-[:FOR]->(t:Task {slug: {slug}}),
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: $email}),
+            (sb)-[:FOR]->(t:Task {slug: $slug}),
             (sc:Script)<-[:USING]-(sb)
             RETURN u.email AS email, sb.t0 AS timestamp, sc.sha1 AS sha1
             ORDER BY sb.t0 DESC
@@ -1433,8 +1433,8 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:slug])
         versions = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => data[:slug])
-            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User {email: {email}}),
-            (sb)-[:FOR]->(t:Task {slug: {slug}}),
+            MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User {email: $email}),
+            (sb)-[:FOR]->(t:Task {slug: $slug}),
             (sc:Script)<-[:USING]-(sb)
             RETURN sb.t0 AS t, sc.sha1 AS sha1, sb.correct AS correct, sc.size AS size, sc.lines AS lines, COALESCE(sb.name, '') AS name
             ORDER BY sb.t0 DESC;
@@ -1459,8 +1459,8 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:slug])
         solutions = []
         own_solution_count = neo4j_query_expect_one(<<~END_OF_QUERY, :slug => data[:slug], :email => @session_user[:email])['n']
-            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
-                    (sb)-[:FOR]->(t:Task {slug: {slug}})
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: $email}),
+                    (sb)-[:FOR]->(t:Task {slug: $slug})
             RETURN COUNT(sb) AS n;
         END_OF_QUERY
         
@@ -1469,7 +1469,7 @@ class Main < Sinatra::Base
         else
             versions = neo4j_query(<<~END_OF_QUERY, :slug => data[:slug])
                 MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User),
-                    (sb)-[:FOR]->(t:Task {slug: {slug}}),
+                    (sb)-[:FOR]->(t:Task {slug: $slug}),
                     (sc:Script)<-[:USING]-(sb)
                 WITH sc.sha1 AS sha1, min(sb.t0) AS t0
                 MATCH (sb2:Submission {correct: true, t0: t0})-[:USING]->(sc2:Script {sha1: sha1}),
@@ -1779,8 +1779,8 @@ class Main < Sinatra::Base
 
     def store_or_update_submission(slug, script_sha1, timestamp)
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug, :sha1 => script_sha1)
-            MERGE (u:User {email: {email}})
-            MERGE (t:Task {slug: {slug}})
+            MERGE (u:User {email: $email})
+            MERGE (t:Task {slug: $slug})
             WITH u, t
             MATCH (sc:Script {sha1: {sha1}})
             MATCH (sb:Submission)
@@ -1792,16 +1792,16 @@ class Main < Sinatra::Base
         submission_node_id = nil
         if result.empty?
             submission_node_id = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :slug => slug, :sha1 => script_sha1, :timestamp => timestamp).values.first
-                MERGE  (u:User {email: {email}})
-                MERGE  (t:Task {slug: {slug}})
+                MERGE  (u:User {email: $email})
+                MERGE  (t:Task {slug: $slug})
                 WITH u, t
                 MATCH  (sc:Script {sha1: {sha1}})
                 CREATE (sb:Submission)
                 CREATE (sb)-[:SUBMITTED_BY]->(u)
                 CREATE (sb)-[:FOR]->(t)
                 CREATE (sb)-[:USING]->(sc)
-                SET sb.t0 = {timestamp}
-                SET sb.t1 = {timestamp}
+                SET sb.t0 = $timestamp
+                SET sb.t1 = $timestamp
                 RETURN ID(sb)
             END_OF_QUERY
         else
@@ -1809,8 +1809,8 @@ class Main < Sinatra::Base
             # update submission timestamp
             r = neo4j_query(<<~END_OF_QUERY, :submission_node_id => submission_node_id, :timestamp => timestamp)
                 MATCH (sb:Submission)
-                WHERE ID(sb) = {submission_node_id}
-                SET sb.t1 = {timestamp}
+                WHERE ID(sb) = $submission_node_id
+                SET sb.t1 = $timestamp
                 RETURN sb;
             END_OF_QUERY
         end
@@ -1828,8 +1828,8 @@ class Main < Sinatra::Base
         end
         # fetch name if available
         result = neo4j_query(<<~END_OF_QUERY, :sha1 => sha1, :slug => data[:slug], :email => @session_user[:email])
-            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
-            MATCH (u:User {email: {email}})
+            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
+            MATCH (u:User {email: $email})
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             RETURN COALESCE(sb.name, '') AS name;
         END_OF_QUERY
@@ -1846,10 +1846,10 @@ class Main < Sinatra::Base
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
         neo4j_query(<<~END_OF_QUERY, :sha1 => data[:sha1], :slug => data[:slug], :email => @session_user[:email], :name => data[:name])
-            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: {slug}})
-            MATCH (u:User {email: {email}})
+            MATCH (sc:Script {sha1: {sha1}})<-[:USING]-(sb:Submission)-[:FOR]->(t:Task {slug: $slug})
+            MATCH (u:User {email: $email})
             WHERE (sb)-[:SUBMITTED_BY]->(u)
-            SET sb.name = {name};
+            SET sb.name = $name;
         END_OF_QUERY
         respond(:ok => 'yeah')
     end
@@ -1934,7 +1934,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             result = neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
                 MATCH (l:LoginCode)-[:BELONGS_TO]->(u:User)
-                WHERE l.valid_to > {timestamp}
+                WHERE l.valid_to > $timestamp
                 RETURN l.code, u.email, u.name
                 ORDER BY l.valid_to;
             END_OF_QUERY
@@ -1958,7 +1958,7 @@ class Main < Sinatra::Base
             else
                 # find all passed tasks
                 result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                    MATCH (u:User {email: {email}})<-[:SUBMITTED_BY]-(sb:Submission {correct: true})-[:FOR]->(t:Task) 
+                    MATCH (u:User {email: $email})<-[:SUBMITTED_BY]-(sb:Submission {correct: true})-[:FOR]->(t:Task) 
                     RETURN t.slug;            
                 END_OF_QUERY
                 solved_tasks = Set.new(result.map { |x| x.values.first })
@@ -2093,8 +2093,8 @@ class Main < Sinatra::Base
     def current_user_solved_this_task(slug)
         return false unless user_logged_in?
         solution = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :slug => slug})
-            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: {email}}),
-                  (sb)-[:FOR]->(t:Task {slug: {slug}}),
+            MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: $email}),
+                  (sb)-[:FOR]->(t:Task {slug: $slug}),
                   (sb)-[:USING]->(sc:Script)
             RETURN sb 
             LIMIT 1;
@@ -2110,7 +2110,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             results = neo4j_query(<<~END_OF_QUERY, {:date => date}).map { |x| {:submission => x['sb'].props, :user => x['u'].props} }
                 MATCH (sb:Submission)-[:SUBMITTED_BY]->(u:User)
-                WHERE sb.t0 >= {date} OR sb.t1 >= {date}
+                WHERE sb.t0 >= $date OR sb.t1 >= $date
                 RETURN sb, u
                 ORDER BY sb.t0, sb.t1;
             END_OF_QUERY
@@ -2449,7 +2449,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:email])
         email = data[:email]
         submissions = neo4j_query(<<~END_OF_QUERY, {:email => email}).map { |x| {:sb => x['sb'].props, :sc => x['sc'].props, :t => x['t'].props } }
-            MATCH (u:User {email: {email}})<-[:SUBMITTED_BY]-(sb:Submission)-[:USING]->(sc:Script)
+            MATCH (u:User {email: $email})<-[:SUBMITTED_BY]-(sb:Submission)-[:USING]->(sc:Script)
             MATCH (sb)-[:FOR]->(t:Task)
             RETURN sb, sc, t ORDER BY sb.t0 DESC;
         END_OF_QUERY
@@ -2536,7 +2536,7 @@ class Main < Sinatra::Base
         end
         submissions = neo4j_query(<<~END_OF_QUERY, {:emails => emails})
             MATCH (u:User)<-[:SUBMITTED_BY]-(sb:Submission)-[:USING]->(sc:Script)
-            WHERE u.email IN {emails}
+            WHERE u.email IN $emails
             MATCH (sb)-[:FOR]->(t:Task)
             RETURN u.email AS email, sb.t0 AS t0, sb.correct AS correct, sc.sha1 AS sha1, t.slug AS slug ORDER BY sb.t0 DESC;
         END_OF_QUERY
@@ -2625,8 +2625,8 @@ class Main < Sinatra::Base
         ts = Time.now.to_i
         ptag = RandomTag.generate()
         neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :tag => data[:tag], :ts => ts, :ptag => ptag)
-            MATCH (u:User {email: {email}}), (s:Script {sha1: {tag}})
-            CREATE (r:LabelPrintRequest {ts: {ts}, tag: {ptag}})
+            MATCH (u:User {email: $email}), (s:Script {sha1: $tag})
+            CREATE (r:LabelPrintRequest {ts: $ts, tag: $ptag})
             CREATE (r)-[:BELONGS_TO]->(u)
             CREATE (r)-[:BELONGS_TO]->(s);
         END_OF_QUERY
@@ -2637,7 +2637,7 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:tag])
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
-            MATCH (r:LabelPrintRequest {tag: {tag}})
+            MATCH (r:LabelPrintRequest {tag: $tag})
             DETACH DELETE r;
         END_OF_QUERY
         respond(:ok => 'yay')
@@ -2648,7 +2648,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:from], :types => {:from => Integer})
         rows = neo4j_query(<<~END_OF_QUERY, {:from => data[:from]})
             MATCH (u:User)--(p:LabelPrintRequest)--(s:Script)
-            WHERE p.ts >= {from}
+            WHERE p.ts >= $from
             RETURN u.email AS email, s.sha1 AS sha1, p.tag AS tag
             ORDER BY p.ts;
         END_OF_QUERY

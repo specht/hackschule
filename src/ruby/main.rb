@@ -68,7 +68,7 @@ module QtsNeo4j
             @code = code
             @message = message
         end
-        
+
         def to_s
             "Cypher Error\n#{@code}\n#{@message}"
         end
@@ -165,7 +165,7 @@ class RandomTag
     def self.generate(length = 12)
         self.to_base31(SecureRandom.hex(length).to_i(16))[0, length]
     end
-end    
+end
 
 def mail_html_to_plain_text(s)
     s.gsub('<p>', "\n\n").gsub(/<br\s*\/?>/, "\n").gsub(/<\/?[^>]*>/, '').strip
@@ -183,7 +183,7 @@ def deliver_mail(&block)
     end
 
 #     mail.subject("[WEB] #{mail.subject}")
-# 
+#
 #     # also store a copy in a special folder
 #     target_mailbox = 'Sent from Web'
 #     imap = Net::IMAP.new(IMAP_SERVER, :ssl => true)
@@ -202,7 +202,7 @@ end
 
 class SetupDatabase
     include QtsNeo4j
-    
+
     def setup
         delay = 1
         10.times do
@@ -218,7 +218,7 @@ class SetupDatabase
                         query = "DROP #{index['description']}"
                         neo4j_query(query)
                     end
-                    
+
                     STDERR.puts "Setting up constraints and indexes..."
                     neo4j_query("CREATE CONSTRAINT ON (n:User) ASSERT n.email IS UNIQUE")
                     neo4j_query("CREATE CONSTRAINT ON (n:Task) ASSERT n.slug IS UNIQUE")
@@ -254,11 +254,11 @@ class SetupDatabase
                         STDERR.puts "#{sha1} #{size} #{lines}"
                     end
                 end
-                
+
                 update_resolutions()
-                    
+
                 STDERR.puts "Setup finished."
-                
+
                 break
             rescue
                 STDERR.puts $!
@@ -272,17 +272,17 @@ end
 
 class Main < Sinatra::Base
     include QtsNeo4j
-    
+
 #     error RuntimeError do
 # #         respond(:error => env['sinatra.error'])
 #         redirect "#{WEB_ROOT}/", 302
 #     end
-    
+
     def self.task_link(slug)
         task = @@tasks[slug]
         "<a href='/task/#{task[:slug]}'>#{task[:title]}</a>"
     end
-    
+
     def self.load_tasks
         STDERR.puts "Refreshing tasks..."
         @@cat_config = {}
@@ -297,7 +297,7 @@ class Main < Sinatra::Base
                 cat.strip!
 #                 STDERR.puts "Loading #{path}..."
                 parts = File.read(path).split('-' * 8)
-                cat_info = {:config => YAML::load(parts[0]) || {}, 
+                cat_info = {:config => YAML::load(parts[0]) || {},
                             :teaser => parse_markdown(parts[1]),
                             :description => parse_markdown(parts[2]),
                             :title => cat}
@@ -414,7 +414,7 @@ class Main < Sinatra::Base
             end
             @@tasks[slug] = task
         end
-        
+
         @@cats_sorted = @@cat_order.keys.sort do |a, b|
             @@cat_order[a] <=> @@cat_order[b]
         end
@@ -442,7 +442,7 @@ class Main < Sinatra::Base
             @@tasks['zpl-sandbox'][:zpl_hpx] = ((@@tasks['zpl-sandbox'][:zpl_height] + @@tasks['zpl-sandbox'][:zpl_extra_margin] * 2) * @@tasks['zpl-sandbox'][:zpl_dpmm].to_f).to_i
         end
     end
-    
+
     def self.load_invitations
         @@invitations = {}
         @@user_groups = {}
@@ -515,24 +515,24 @@ class Main < Sinatra::Base
         sha2 << email
         srand(sha2.hexdigest.to_i(16))
         password = ''
-        8.times do 
+        8.times do
             c = chars.sample.dup
             c.downcase! if [0, 1].sample == 1
             password += c
         end
         password += '-'
-        4.times do 
+        4.times do
             c = chars.sample.dup
             c.downcase! if [0, 1].sample == 1
             password += c
         end
         password
     end
-    
+
     configure do
         set :show_exceptions, false
     end
-    
+
     configure do
         @@compiled_files = {}
         @@cat_order = {}
@@ -554,7 +554,7 @@ class Main < Sinatra::Base
                             password = @@invitations[email][:mysql_password]
                             ["CREATE USER IF NOT EXISTS '#{user}'@'%' identified by '#{password}';",
                             "CREATE DATABASE IF NOT EXISTS `#{user}`;",
-                            "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",           
+                            "GRANT ALL ON `#{user}`.* TO '#{user}'@'%';",
                             ].each do |query|
                                 STDERR.puts query
                                 client.query(query)
@@ -573,7 +573,7 @@ class Main < Sinatra::Base
         end
         @@labelary_last_time = 0
     end
-    
+
     def assert(condition, message = 'assertion failed')
         raise message unless condition
     end
@@ -585,7 +585,7 @@ class Main < Sinatra::Base
             assert(data[key.to_s].size <= (options[:max_value_lengths][key] || options[:max_string_length]), 'too_much_data')
         end
     end
-    
+
     def parse_request_data(options = {})
         options[:max_body_length] ||= 512
         options[:max_string_length] ||= 512
@@ -618,65 +618,65 @@ class Main < Sinatra::Base
             raise
         end
     end
-    
+
     def user_logged_in?
         !@session_user.nil?
     end
-    
+
     def admin_logged_in?
         @session_user && @session_user[:admin]
     end
-    
+
     def teacher_logged_in?
         @session_user && @@teachers.include?(@session_user[:email])
     end
-    
+
     def this_user_logged_in?(login)
         @session_user && (@session_user[:login] == login)
     end
-    
+
     def this_user_or_admin_logged_in?(login)
         admin_logged_in? || this_user_logged_in?(login)
     end
-    
+
     def require_user!
         assert(user_logged_in?)
     end
-    
+
     def require_admin!
         assert(admin_logged_in?)
     end
-    
+
     def require_teacher!
         assert(teacher_logged_in?)
     end
-    
+
     def require_this_user_or_admin(login)
         assert(this_user_or_admin_logged_in?(login))
     end
-    
+
     def require_this_user(login)
         assert(this_user_logged_in?(login))
     end
-    
+
     def this_is_a_page_for_logged_in_users
         unless user_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
-    
+
     def this_is_a_page_for_logged_in_admins
         unless admin_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
-    
+
     def this_is_a_page_for_logged_in_teachers
         unless teacher_logged_in?
             redirect "#{WEB_ROOT}/", 303
         end
     end
-    
+
     def all_sessions
         sids = request.cookies['sid']
         users = []
@@ -695,7 +695,7 @@ class Main < Sinatra::Base
         end
         users
     end
-    
+
     def purge_missing_sessions
         sid = request.cookies['sid']
         existing_sids = []
@@ -713,7 +713,7 @@ class Main < Sinatra::Base
         end
         existing_sids.join(',')
     end
-    
+
     before '*' do
         if DEVELOPMENT
             self.class.load_tasks
@@ -746,7 +746,7 @@ class Main < Sinatra::Base
             end
         end
     end
-    
+
     after '/api/*' do
         if @respond_content
             response.body = @respond_content
@@ -756,18 +756,18 @@ class Main < Sinatra::Base
             response.body = @respond_hash.to_json
         end
     end
-    
+
     def respond(hash = {})
         @respond_hash = hash
     end
-    
+
     def respond_raw_with_mimetype(content, mimetype)
         @respond_content = content
         @respond_mimetype = mimetype
     end
-    
+
     @@clients = {}
-    
+
     def htmlentities(s)
         @html_entities_coder ||= HTMLEntities.new
         @html_entities_coder.encode(s)
@@ -786,12 +786,12 @@ class Main < Sinatra::Base
         end
         return script_sha1, script
     end
-    
+
     get '/ws' do
         require_user!
         if Faye::WebSocket.websocket?(request.env)
             ws = Faye::WebSocket.new(request.env)
-            
+
             ws.on(:open) do |event|
                 ws.send({:hello => 'world', :rate_limit => RATE_LIMIT}.to_json)
             end
@@ -810,7 +810,7 @@ class Main < Sinatra::Base
                         task = @@tasks[request['slug']]
                         unless task.nil?
                             fifo = nil
-                            
+
                             script_sha1, submitted_script = store_script(request['script'])
                             ws.send({:script_sha1 => script_sha1}.to_json)
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
@@ -846,7 +846,7 @@ class Main < Sinatra::Base
                                         sleep rate_limit - (time - @@labelary_last_time)
                                     end
                                     @@labelary_last_time = time
-                                    
+
                                     if response.content_type.mime_type == 'image/png'
                                         File.open(png_path, 'w') do |f|
                                             f.write(response.body)
@@ -932,7 +932,7 @@ class Main < Sinatra::Base
                                         imports = 'import wizard'
                                     end
                                     scaffold.sub!('#{IMPORTS}', imports)
-                                    
+
                                     disable_functions_code = ''
                                     disable_functions_patch_code = ''
                                     scaffold.scan(/^DISABLE_FUNCTION.*$/).each do |x|
@@ -995,12 +995,12 @@ class Main < Sinatra::Base
                                 Thread.new do
                                     system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
                                 end
-                                    
+
                                 # first kill all processes from this user
                                 system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
-                                stdin, stdout, stderr, thread = 
-                                        Open3.popen3('docker', 'exec', '-i', 
-                                                    PYSANDBOX, 
+                                stdin, stdout, stderr, thread =
+                                        Open3.popen3('docker', 'exec', '-i',
+                                                    PYSANDBOX,
                                                     "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
                                 @@clients[client_id] = {:stdin => stdin,
                                                         :stdout => stdout,
@@ -1067,7 +1067,7 @@ class Main < Sinatra::Base
                                         STDERR.puts "Finished fifo thread"
                                     end
                                 end
-                                Thread.new do 
+                                Thread.new do
                                     result = ''
                                     strip_from_stderr = "  File \"/sandbox/#{@session_user[:email]}/scaffold.py\", line 249, in <module>\n    from main import *\n"
                                     strip_from_stderr_length = 0
@@ -1167,17 +1167,17 @@ class Main < Sinatra::Base
                                                 verify.keys.each.with_index do |input, i|
                                                     ws.send({:stderr => "\r\u001b[44;1m[ Test ]\u001b[0m "}.to_json)
                                                     ws.send({:stderr => "Durchlauf #{i + 1} von #{verify.size}..."}.to_json)
-                                                    
-                                                    
-                                                    test_stdin, test_stdout, test_stderr, test_thread = 
-                                                            Open3.popen3('docker', 'exec', '-i', 
-                                                                        PYSANDBOX, "timeout", 
-                                                                        SCRIPT_TIMEOUT.to_s, 
-                                                                        'python3', '-u', 
+
+
+                                                    test_stdin, test_stdout, test_stderr, test_thread =
+                                                            Open3.popen3('docker', 'exec', '-i',
+                                                                        PYSANDBOX, "timeout",
+                                                                        SCRIPT_TIMEOUT.to_s,
+                                                                        'python3', '-u',
                                                                         script_path.sub('/raw', ''))
                                                     test_stdin.write(input)
                                                     test_stdin.close
-                                                    
+
                                                     unless verify[input].call(test_stdout.read)
                                                         all_tests_passed = false
                                                         ws.send({:stderr => " fehlgeschlagen.\r\n"}.to_json)
@@ -1230,7 +1230,7 @@ class Main < Sinatra::Base
             ws.rack_response
         end
     end
-    
+
     post '/api/upload' do
         require_user!
         entry = params['file']
@@ -1242,7 +1242,7 @@ class Main < Sinatra::Base
             update_resolutions(tag)
         respond(:tag => tag)
     end
-    
+
     post '/api/update_user' do
         require_user!
         data = parse_request_data(:required_keys => [:name, :avatar])
@@ -1252,7 +1252,7 @@ class Main < Sinatra::Base
             RETURN u;
         END_OF_QUERY
     end
-    
+
     def logout()
         sid = request.cookies['sid']
         if sid =~ /^[0-9A-Za-z,]+$/
@@ -1270,7 +1270,7 @@ class Main < Sinatra::Base
     post '/api/logout' do
         respond(:remaining_sids => logout())
     end
-    
+
     post '/api/login' do
         data = parse_request_data(:required_keys => [:email])
         data[:email] = data[:email].strip.downcase
@@ -1322,7 +1322,7 @@ class Main < Sinatra::Base
             deliver_mail do
                 to data[:email]
                 from SMTP_FROM
-                
+
                 subject "Dein Anmeldecode lautet #{random_code}"
 
                 message = StringIO.open do |io|
@@ -1333,11 +1333,11 @@ class Main < Sinatra::Base
                     io.puts "<p>Michael Specht</p>"
                     io.string
                 end
-                
+
                 html_part do
                     body message
                 end
-                
+
                 text_part do
                     body mail_html_to_plain_text(message)
                 end
@@ -1347,7 +1347,7 @@ class Main < Sinatra::Base
         end
         respond(:tag => tag)
     end
-    
+
     def create_session(email)
         STDERR.puts "ALL SESSIONS: #{all_sessions.to_yaml}"
         sid = RandomTag::generate(24)
@@ -1364,7 +1364,7 @@ class Main < Sinatra::Base
         neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :data => data)
             MATCH (u:User {email: $email})
             CREATE (s:Session $data)-[:BELONGS_TO]->(u)
-            RETURN s; 
+            RETURN s;
         END_OF_QUERY
         all_sids = all_sessions().map { |x| x[:sid] }
         STDERR.puts all_sessions().to_yaml
@@ -1372,7 +1372,7 @@ class Main < Sinatra::Base
         all_sids.unshift(sid)
         all_sids.join(',')
     end
-    
+
     post '/api/confirm_login' do
         data = parse_request_data(:required_keys => [:tag, :code])
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag], :code => data[:code])
@@ -1394,7 +1394,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:session_id => session_id)
     end
-    
+
     def latest_draft_sha1(slug)
         return nil unless user_logged_in?
         require_user!
@@ -1409,7 +1409,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         own_submissions.empty? ? nil : own_submissions.first['sha1']
     end
-    
+
     def latest_solution_sha1(slug)
         return nil unless user_logged_in?
         require_user!
@@ -1423,12 +1423,12 @@ class Main < Sinatra::Base
         END_OF_QUERY
         own_submissions.empty? ? nil : own_submissions.first['sha1']
     end
-    
+
     def read_script_for_sha1(sha1)
         assert(sha1 =~ /^[0-9a-z]+$/)
         File.read("/raw/code/#{sha1}.py")
     end
-    
+
     post '/api/load_script_versions' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
@@ -1453,7 +1453,7 @@ class Main < Sinatra::Base
         end
         respond(:versions => versions)
     end
-    
+
     post '/api/load_script_solutions' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
@@ -1463,7 +1463,7 @@ class Main < Sinatra::Base
                     (sb)-[:FOR]->(t:Task {slug: $slug})
             RETURN COUNT(sb) AS n;
         END_OF_QUERY
-        
+
         if own_solution_count == 0
             respond(:see_other => 'https://youtu.be/dQw4w9WgXcQ')
         else
@@ -1495,7 +1495,7 @@ class Main < Sinatra::Base
             respond(:solutions => solutions.reverse)
         end
     end
-    
+
     post '/api/load_latest_draft' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
@@ -1506,7 +1506,7 @@ class Main < Sinatra::Base
             respond(:script => read_script_for_sha1(sha1))
         end
     end
-    
+
     post '/api/load_latest_solution' do
         require_user!
         data = parse_request_data(:required_keys => [:slug])
@@ -1517,13 +1517,13 @@ class Main < Sinatra::Base
             respond(:script => read_script_for_sha1(sha1))
         end
     end
-    
+
     post '/api/load_script' do
         require_user!
         data = parse_request_data(:required_keys => [:sha1])
         respond(:script => read_script_for_sha1(data[:sha1]))
     end
-    
+
     def map_lookup(map, x, y)
         if y >= 0 && y < map.size && x >= 0 && x < map.first.size
             map[y][x]
@@ -1531,7 +1531,7 @@ class Main < Sinatra::Base
             '?'
         end
     end
-    
+
     def map_is(map, x, y, which)
         if y >= 0 && y < map.size && x >= 0 && x < map.first.size
             which.include?(map[y][x])
@@ -1539,7 +1539,7 @@ class Main < Sinatra::Base
             false
         end
     end
-    
+
     def dungeon_for_task(slug)
         cache_key = "#{slug}"
         @@dungeon_for_task_cache ||= {}
@@ -1591,7 +1591,7 @@ class Main < Sinatra::Base
                     tiles << {:x => x + 1, :y => y - 1, :sprite => 'doors_frame_right', :scale => 1, :z => 1000}
                     tiles << {:x => x - 1, :y => y - 1, :sprite => 'doors_frame_top', :scale => 2, :dy => -3, :z => 1000}
                 end
-                   
+
                 # left top
                 if map_is(map, x - 1, y, 'l') && map_is(map, x - 1, y + 1, 'l')
                     tiles << {:x => x - 1, :y => y, :sprite => 'wall_side_mid_left', :z => 1000}
@@ -1632,7 +1632,7 @@ class Main < Sinatra::Base
                     tiles << {:x => x, :y => y - 1, :sprite => 'wall_mid', :z => 6, :dy => 4}
                 end
                 # inner wall left
-                if map_is(map, x, y, 'ULW') && !map_is(map, x - 1, y, 'ULW') 
+                if map_is(map, x, y, 'ULW') && !map_is(map, x - 1, y, 'ULW')
                     if !map_is(map, x - 1, y, 'x')
                         tiles << {:x => x, :y => y - 1, :sprite => 'wall_side_mid_right', :z => 6}
                         if !map_is(map, x, y - 1, 'ULW')
@@ -1680,14 +1680,14 @@ class Main < Sinatra::Base
                     tiles << {:x => x, :y => y - 1, :sprite => 'wall_fountain_mid_blue_anim_f0', :fountain_top => true}
                     tiles << {:x => x, :y => y, :sprite => 'wall_fountain_basin_blue_anim_f0', :fountain_bottom => true}
                 end
-                
+
                 # column
                 if map_lookup(map, x, y - 1) == 'C'
                     tiles << {:x => x, :y => y, :sprite => 'column_top', :dy => -8 - 32}
                     tiles << {:x => x, :y => y, :sprite => 'column_mid', :dy => -8 - 16}
                     tiles << {:x => x, :y => y, :sprite => 'column_base', :dy => -8}
                 end
-                
+
                 if map_is(map, x, y, 'D')
                     tiles << {:x => x, :y => y, :sprite => 'big_demon_idle_anim_f0', :scale => 2, :z => 48, :flip_x => true, :dx => -8, :dy => -13, :demon => true, :shift_y => -9}
                     demons_pos << [x, y]
@@ -1709,26 +1709,26 @@ class Main < Sinatra::Base
             end
         end
         tiles.map! { |x| x[:y] += 1; x }
-            
-        @@dungeon_for_task_cache[cache_key] = {:map => map, :tiles => tiles, :width => width, :height => height + 2, 
+
+        @@dungeon_for_task_cache[cache_key] = {:map => map, :tiles => tiles, :width => width, :height => height + 2,
                   :hero => {:x => start_pos[0], :y => start_pos[1], :dir => 0},
                   :demons => demons_pos.map { |m| {:x => m[0], :y => m[1], :dir => 0}}}
     end
-    
+
     post '/api/load_dungeon' do
         data = parse_request_data(:required_keys => [:slug])
         result = dungeon_for_task(data[:slug])
-        respond(:width => result[:width], :height => result[:height], 
+        respond(:width => result[:width], :height => result[:height],
                 :tiles => result[:tiles], :hero => result[:hero])
     end
-    
+
     def compile_files(key, mimetype, paths)
         @@compiled_files[key] ||= {:timestamp => nil, :content => nil}
-        
+
         latest_file_timestamp = paths.map do |path|
             File.mtime(File.join('/static', path))
         end.max
-        
+
         if @@compiled_files[key][:timestamp].nil? || @@compiled_files[key][:timestamp] < latest_file_timestamp
             @@compiled_files[key][:content] = StringIO.open do |io|
                 paths.each do |path|
@@ -1743,7 +1743,7 @@ class Main < Sinatra::Base
         response.headers['ETag'] = @@compiled_files[key][:sha1]
         respond_raw_with_mimetype(@@compiled_files[key][:content], mimetype)
     end
-    
+
     get '/api/compiled.js' do
         files = [
             '/bower_components/jquery-3.4.1.min.js',
@@ -1760,11 +1760,11 @@ class Main < Sinatra::Base
             '/easy6502/simulator/assembler.js',
             '/easy6502/javascripts/scale.fix.js'
         ]
-        
+
         key = :js
         compile_files(key, 'application/javascript', files)
     end
-    
+
     get '/api/compiled.css' do
         files = [
             '/bower_components/bootstrap/dist/css/bootstrap.min.css',
@@ -1772,7 +1772,7 @@ class Main < Sinatra::Base
             '/styles.css',
             '/xterm/xterm.css'
         ]
-        
+
         key = :css
         compile_files(key, 'text/css', files)
     end
@@ -1833,13 +1833,13 @@ class Main < Sinatra::Base
             WHERE (sb)-[:SUBMITTED_BY]->(u)
             RETURN COALESCE(sb.name, '') AS name;
         END_OF_QUERY
-        
+
         if result.size > 0
             name = result.first['name']
         end
         respond(:sha1 => sha1, :name => name)
     end
-    
+
     post '/api/save_script_as' do
         require_user!
         data = parse_request_data(:required_keys => [:slug, :sha1, :name],
@@ -1853,7 +1853,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         respond(:ok => 'yeah')
     end
-    
+
     def nav_items()
         StringIO.open do |io|
             nav_items = []
@@ -1929,7 +1929,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def print_live_signin_codes()()
         StringIO.open do |io|
             result = neo4j_query(<<~END_OF_QUERY, {:timestamp => Time.now.to_i})
@@ -1947,7 +1947,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def list_all_tasks(show_cat_slug = nil)
         StringIO.open do |io|
             solved_tasks = Set.new()
@@ -1958,8 +1958,8 @@ class Main < Sinatra::Base
             else
                 # find all passed tasks
                 result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
-                    MATCH (u:User {email: $email})<-[:SUBMITTED_BY]-(sb:Submission {correct: true})-[:FOR]->(t:Task) 
-                    RETURN t.slug;            
+                    MATCH (u:User {email: $email})<-[:SUBMITTED_BY]-(sb:Submission {correct: true})-[:FOR]->(t:Task)
+                    RETURN t.slug;
                 END_OF_QUERY
                 solved_tasks = Set.new(result.map { |x| x.values.first })
             end
@@ -1968,7 +1968,7 @@ class Main < Sinatra::Base
             max_printed_tasks_per_cat = 4
             max_printed_tasks_per_cat = nil if show_cat_slug
             max_printed_tasks_per_cat = nil
-            
+
             @@task_keys_sorted.each do |k|
                 task = @@tasks[k]
                 unless teacher_logged_in?
@@ -1980,13 +1980,13 @@ class Main < Sinatra::Base
                 if last_cat != task[:cat]
                     printed_tasks_per_cat = 0
                     unless last_cat.nil?
-                        io.puts "</div></div></div>" 
+                        io.puts "</div></div></div>"
                         io.puts "<hr />"
                     end
                     io.puts "<div class='row'><div class='col-md-12' style='margin-top: 15px;'>"
                     unless show_cat_slug
                         io.puts "<a class='float-right btn btn-success' href='/cat/#{task[:cat_slug]}'>#{task[:cat]}&nbsp;&nbsp;<i class='fa fa-chevron-right'></i></a>"
-                        io.puts "<h4 style='margin-bottom: 20px;'>#{task[:cat]}</h4>" 
+                        io.puts "<h4 style='margin-bottom: 20px;'>#{task[:cat]}</h4>"
                         io.puts "#{@@cat_config[task[:cat_slug]][:teaser]}"
                     end
                     # progress meter
@@ -1999,7 +1999,7 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                     io.puts "</div>"
                     io.puts "</div>"
-                    
+
                     io.puts "<div class='row'>"
                     last_cat = task[:cat]
                 end
@@ -2018,7 +2018,7 @@ class Main < Sinatra::Base
                     else
                             io.puts "<span title='leicht' class='badge task-badge sandbox'><i class='fa fa-vial'></i></span>"
                     end
-                    
+
                     io.puts "</div>"
                     io.puts "<div class='card-body #{task[:enabled] ? '' : 'text-muted'}'>"
                     io.puts "<div class='card-text'>#{task[:description]}</div>"
@@ -2066,7 +2066,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def print_cat(cat_slug)
         StringIO.open do |io|
             io.puts "<h2 style='margin-bottom: 20px;'>#{@@cat_config[cat_slug][:title]}</h2>"
@@ -2076,7 +2076,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def bytes_to_str(ai_Size)
         if ai_Size < 1024
             return "#{ai_Size} B"
@@ -2089,19 +2089,19 @@ class Main < Sinatra::Base
         end
         return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0 / 1024.0)} TB"
     end
-    
+
     def current_user_solved_this_task(slug)
         return false unless user_logged_in?
         solution = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :slug => slug})
             MATCH (sb:Submission {correct: true})-[:SUBMITTED_BY]->(u:User {email: $email}),
                   (sb)-[:FOR]->(t:Task {slug: $slug}),
                   (sb)-[:USING]->(sc:Script)
-            RETURN sb 
+            RETURN sb
             LIMIT 1;
         END_OF_QUERY
         !solution.empty?
     end
-    
+
     def show_daily_activity(days)
         require_teacher!
         date = (DateTime.now.new_offset(0) - days).to_s
@@ -2139,7 +2139,7 @@ class Main < Sinatra::Base
                 (@@invitations[a][:group] == @@invitations[b][:group]) ?
                 (users[b][:s].size <=> users[a][:s].size) :
                 (@@invitations[a][:group] <=> @@invitations[b][:group])
-                
+
             end.each do |email|
                 group = @@invitations[email][:group]
                 if last_group != group
@@ -2167,12 +2167,12 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def is_teacher_for_user?(email)
         require_teacher!
         @@teachers[@session_user[:email]].include?((@@invitations[email] || {})[:group])
     end
-    
+
     def show_teacher_dashboard()
         require_teacher!
         StringIO.open do |io|
@@ -2199,9 +2199,9 @@ class Main < Sinatra::Base
                 submissions_for_user[entry[:user][:email]] ||= {}
                 submissions_for_user[entry[:user][:email]][entry[:task][:slug]] ||= {}
                 if entry[:submission][:correct]
-                    submissions_for_user[entry[:user][:email]][entry[:task][:slug]][:latest_solution] ||= entry[:script][:sha1] 
+                    submissions_for_user[entry[:user][:email]][entry[:task][:slug]][:latest_solution] ||= entry[:script][:sha1]
                 else
-                    submissions_for_user[entry[:user][:email]][entry[:task][:slug]][:latest_draft] ||= entry[:script][:sha1] 
+                    submissions_for_user[entry[:user][:email]][entry[:task][:slug]][:latest_draft] ||= entry[:script][:sha1]
                 end
             end
             io.puts "<h4>Aufgaben</h4>"
@@ -2280,7 +2280,7 @@ class Main < Sinatra::Base
                 ORDER BY sb.t0 DESC
                 LIMIT 1000;
             END_OF_QUERY
-            
+
             script_task_order = []
             script_task_dict = {}
             submissions.reverse.each do |entry|
@@ -2377,7 +2377,7 @@ class Main < Sinatra::Base
                 io.puts "</tr>"
             end
             io.puts "</table>"
-            io.puts "Außerhalb von 8 bis 17 Uhr: #{spare_time_submissions_for_user.keys.size} / #{submissions_for_user.keys.size}" 
+            io.puts "Außerhalb von 8 bis 17 Uhr: #{spare_time_submissions_for_user.keys.size} / #{submissions_for_user.keys.size}"
             io.puts "<table class='table'>"
             io.puts "<tr><th>E-Mail</th><th>Name</th><th>Submissions</th></tr>"
             submissions_for_user.keys.sort do |a, b|
@@ -2393,7 +2393,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     def show_user_list()
         require_teacher!
         StringIO.open do |io|
@@ -2443,7 +2443,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     post '/api/get_user_info' do
         require_user!
         data = parse_request_data(:required_keys => [:email])
@@ -2455,7 +2455,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         html = StringIO.open do |io|
             io.puts "<h3>#{@@invitations[email][:name]}</h3>"
-            
+
             io.puts "<table class='table table-sm narrow table-striped' style='position: absolute; right: 15px; width: 400px;'>"
             io.puts "<thead>"
             io.puts "<tr><th>Aufgabe</th><th>Status</th><th>Subs</th></tr>"
@@ -2513,7 +2513,7 @@ class Main < Sinatra::Base
         end
         respond(:html => html)
     end
-    
+
     post '/api/get_group_info' do
         require_user!
         data = parse_request_data(:required_keys => [:group])
@@ -2564,13 +2564,13 @@ class Main < Sinatra::Base
         monday_for_yw = {}
         while p <= Date.today do
             yw = p.strftime('%Y-%V')
-            yw_list << yw 
+            yw_list << yw
             monday_for_yw[yw] = p.strftime('%d.%m.')
             p += 7
         end
         html = StringIO.open do |io|
             io.puts "<h3>#{group}</h3>"
-            
+
             io.puts "<table class='table table-sm narrow' style='font-size: 80%;'>"
             io.puts "<thead>"
             io.puts "<th>Name</th>"
@@ -2618,7 +2618,7 @@ class Main < Sinatra::Base
         end
         respond(:html => html)
     end
-    
+
     post '/api/print_label' do
         require_user!
         data = parse_request_data(:required_keys => [:tag])
@@ -2658,7 +2658,7 @@ class Main < Sinatra::Base
         end
         respond(:queue => rows, :new_from => Time.now.to_i)
     end
-    
+
     def list_all_lego_icons
         StringIO.open do |io|
             @@lego_icons[:all].sort.each do |k|
@@ -2667,7 +2667,7 @@ class Main < Sinatra::Base
             io.string
         end
     end
-    
+
     get '/*' do
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')
@@ -2679,7 +2679,7 @@ class Main < Sinatra::Base
             status 404
             return
         end
-        
+
         slug = nil
         task = nil
         sha1 = nil
@@ -2705,7 +2705,7 @@ class Main < Sinatra::Base
                 return
             end
         end
-        
+
         @page_title = ''
         @page_description = ''
 
@@ -2713,11 +2713,11 @@ class Main < Sinatra::Base
             unless path.include?('.') || path[0] == '_'
                 original_path = path.dup
                 show_offer = {}
-                
+
                 path = File::join('/static', path) + '.html'
                 if File::exists?(path)
                     content = File::read(path, :encoding => 'utf-8')
-                    
+
                     @original_path = original_path
                     @task_slug = slug
                     if original_path == 'cat'
@@ -2774,7 +2774,7 @@ class Main < Sinatra::Base
                             description += "<div class='hint'>"
                             description += "<p><em>Falls du Probleme hast, diese Aufgabe zu lösen, kannst du dir einen Hinweis geben lassen:</em></p>"
                             task[:hints].each.with_index do |hint, hint_index|
-                                description += "<span class='hint-button btn btn-sm btn-outline-secondary'>#{task[:hints].size > 1 ? "#{hint_index + 1}. " : ''}Hinweis anzeigen</span>" 
+                                description += "<span class='hint-button btn btn-sm btn-outline-secondary'>#{task[:hints].size > 1 ? "#{hint_index + 1}. " : ''}Hinweis anzeigen</span>"
                                 description += "<div style='display: none;'><hr />#{hint}"
                             end
                             task[:hints].each.with_index do |hint, hint_index|
@@ -2788,12 +2788,12 @@ class Main < Sinatra::Base
                         login_tag = parts[2]
                         login_code = parts[3]
                     end
-                    
+
                     template_path = '_template'
                     template_path = "/static/#{template_path}.html"
                     @template ||= {}
                     @template[template_path] ||= File::read(template_path, :encoding => 'utf-8')
-                    
+
                     s = @template[template_path].dup
                     s.sub!('#{CONTENT}') { content }
                     s.gsub!('{BRAND}', brand);

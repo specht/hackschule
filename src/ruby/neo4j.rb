@@ -13,16 +13,6 @@ module QtsNeo4j
         end
     end
 
-    class ResultRow
-        def initialize(v)
-            @v = Hash[v.map { |k, v| [k.to_sym, v] }]
-        end
-
-        def props
-            @v
-        end
-    end
-
     class BoltBuffer
         def initialize(data)
             @data = data
@@ -456,12 +446,12 @@ module QtsNeo4j
         end
 
         def connect()
-            STDERR.write "Connecting to Neo4j via Bolt..."
+            # STDERR.write "Connecting to Neo4j via Bolt..."
             @socket = TCPSocket.new('neo4j', 7687)
-            @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, true)
-            @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPIDLE, 50)
-            @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPINTVL, 10)
-            @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPCNT, 5)
+            # @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, true)
+            # @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPIDLE, 50)
+            # @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPINTVL, 10)
+            # @socket.setsockopt(Socket::SOL_TCP, Socket::TCP_KEEPCNT, 5)
             # The line below is important, otherwise we'll have to wait 40ms before every read
             @socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
             @buffer = []
@@ -484,7 +474,7 @@ module QtsNeo4j
             append_dict(data)
             flush()
             read_response() do |data|
-                STDERR.puts " connection established (#{data[:data]['server']})"
+                # STDERR.puts " connection established (#{data[:data]['server']})"
             end
 
             @transaction = 0
@@ -559,7 +549,17 @@ module QtsNeo4j
                                 if [BOLT_NODE, BOLT_RELATIONSHIP].include?(value[:marker])
                                     value = value[:properties]
                                 end
-                                value = ResultRow.new(value)
+                                value = Hash[value.map { |k, v| [k.to_sym, v] }]
+                            elsif value.is_a? Array
+                                value.map! do |v2|
+                                    if v2.is_a? Hash
+                                        if [BOLT_NODE, BOLT_RELATIONSHIP].include?(v2[:marker])
+                                            v2 = v2[:properties]
+                                        end
+                                        v2 = Hash[v2.map { |k, v| [k.to_sym, v] }]
+                                    end
+                                    v2
+                                end
                             end
                             entry[key] = value
                         end
@@ -591,19 +591,39 @@ module QtsNeo4j
     end
 
     def transaction(&block)
-        @@bolt_socket ||= BoltSocket.new()
-        @@bolt_socket.transaction do
+        @bolt_socket ||= BoltSocket.new()
+        @bolt_socket.transaction do
             yield
         end
     end
 
     def neo4j_query(query, data = {}, &block)
-        @@bolt_socket ||= BoltSocket.new()
-        @@bolt_socket.neo4j_query(query, data, &block)
+        @bolt_socket ||= BoltSocket.new()
+        @bolt_socket.neo4j_query(query, data, &block)
     end
 
     def neo4j_query_expect_one(query, data = {})
-        @@bolt_socket ||= BoltSocket.new()
-        @@bolt_socket.neo4j_query_expect_one(query, data)
+        @bolt_socket ||= BoltSocket.new()
+        @bolt_socket.neo4j_query_expect_one(query, data)
+    end
+
+    def wait_for_neo4j
+        delay = 1
+        10.times do
+            begin
+                neo4j_query("MATCH (n) RETURN n LIMIT 1;")
+            rescue
+                debug "Waiting #{delay} seconds for Neo4j to come up..."
+                sleep delay
+                delay += 1
+            end
+        end
+    end
+
+    def cleanup_neo4j
+        if @bolt_socket
+            @bolt_socket.disconnect()
+            @bolt_socket = nil
+        end
     end
 end

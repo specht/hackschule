@@ -15,7 +15,10 @@ require 'htmlentities'
 require '/credentials.rb'
 require 'mysql2'
 require 'digest/sha2'
-require './neo4j.rb'
+require 'neo4j_bolt'
+
+Neo4jBolt.bolt_host = 'neo4j'
+Neo4jBolt.bolt_port = 7687
 
 WEEK_DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
@@ -42,7 +45,7 @@ def update_resolutions(use_tag = nil)
 end
 
 class Neo4jGlobal
-    include QtsNeo4j
+    include Neo4jBolt
 end
 
 $neo4j = Neo4jGlobal.new
@@ -97,7 +100,7 @@ def parse_markdown(s)
 end
 
 class SetupDatabase
-    include QtsNeo4j
+    include Neo4jBolt
 
     CONSTRAINTS_LIST = [
         'User/email',
@@ -118,36 +121,7 @@ class SetupDatabase
                 wanted_constraints = Set.new()
                 wanted_indexes = Set.new()
                 STDERR.puts "Setting up constraints and indexes..."
-                CONSTRAINTS_LIST.each do |constraint|
-                    constraint_name = constraint.gsub('/', '_')
-                    wanted_constraints << constraint_name
-                    label = constraint.split('/').first
-                    property = constraint.split('/').last
-                    query = "CREATE CONSTRAINT #{constraint_name} IF NOT EXISTS FOR (n:#{label}) REQUIRE n.#{property} IS UNIQUE"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                INDEX_LIST.each do |index|
-                    index_name = index.gsub('/', '_')
-                    wanted_indexes << index_name
-                    label = index.split('/').first
-                    property = index.split('/').last
-                    query = "CREATE INDEX #{index_name} IF NOT EXISTS FOR (n:#{label}) ON (n.#{property})"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                neo4j_query("SHOW ALL CONSTRAINTS").each do |row|
-                    next if wanted_constraints.include?(row['name'])
-                    query = "DROP CONSTRAINT #{row['name']}"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
-                neo4j_query("SHOW ALL INDEXES").each do |row|
-                    next if wanted_indexes.include?(row['name']) || wanted_constraints.include?(row['name'])
-                    query = "DROP INDEX #{row['name']}"
-                    STDERR.puts query
-                    neo4j_query(query)
-                end
+                setup_constraints_and_indexes(CONSTRAINTS_LIST, INDEX_LIST)
                 transaction do
                     # give admin rights to admin
                     ADMIN_MAIL_ADDRESSES.each do |email|
@@ -191,7 +165,7 @@ class SetupDatabase
 end
 
 class Main < Sinatra::Base
-    include QtsNeo4j
+    include Neo4jBolt
 
 #     error RuntimeError do
 # #         respond(:error => env['sinatra.error'])
@@ -2772,6 +2746,10 @@ class Main < Sinatra::Base
         else
             status 404
         end
+    end
+
+    after '*' do
+        cleanup_neo4j()
     end
 
     run! if app_file == $0

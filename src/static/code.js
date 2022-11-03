@@ -11,6 +11,7 @@ window.interval = null;
 window.message_to_append = null;
 window.message_to_append_index = 0;
 window.message_to_append_timestamp = 0.0;
+window.audio = new Audio();
 
 jQuery.extend({
     getQueryParameters : function(str) {
@@ -217,6 +218,7 @@ function push_message(s, color, delay) {
 
 function handle_started() {
     $('#run').removeClass('btn-success').addClass('btn-danger').html("<i class='fa fa-stop'></i>&nbsp;&nbsp;Abbrechen").prop('disabled', false);
+    window.audio.pause();
     process_running = true;
     if (!$('#easy6502').is(':visible')) {
         if (!$('#screen').is(':visible'))
@@ -226,6 +228,7 @@ function handle_started() {
 
 function handle_stopped() {
     console.log('handle_stopped');
+    window.audio.pause();
     $('#run').removeClass('btn-danger').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen");
     $('#editor').prop('disabled', false);
     process_running = false;
@@ -297,6 +300,12 @@ function setup_ws(ws)
         else if (typeof(data.dungeon) !== 'undefined')
         {
             enqueue_dungeon_command(data.dungeon);
+        }
+        else if (typeof(data.ivr) !== 'undefined')
+        {
+            console.log("IVR", data);
+            window.audio.src = data.ivr.path;
+            window.audio.play();
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {

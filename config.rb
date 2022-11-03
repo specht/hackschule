@@ -24,6 +24,7 @@ MYSQL_DATA_PATH = File::join(DATA_PATH, 'mysql')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
 TTS_FILES_PATH = File::join(DATA_PATH, 'tts')
+TTS_CACHE_FILES_PATH = File::join(DATA_PATH, 'tts-cache')
 
 docker_compose = {
     :version => '3',
@@ -37,6 +38,7 @@ if PROFILE.include?(:static)
             './src/static:/usr/share/nginx/html:ro',
             "#{RAW_FILES_PATH}:/raw:ro",
             "#{GEN_FILES_PATH}:/gen:ro",
+            "#{TTS_CACHE_FILES_PATH}:/tts:ro",
             "#{LOGS_PATH}:/var/log/nginx",
         ]
     }
@@ -82,6 +84,11 @@ if PROFILE.include?(:static)
             location /gen/ {
                 rewrite ^/gen(.*)$ $1 break;
                 root /gen;
+            }
+
+            location /tts/ {
+                rewrite ^/tts(.*)$ $1 break;
+                root /tts;
             }
 
             location /pixelflut/ {
@@ -165,12 +172,16 @@ if PROFILE.include?(:dynamic)
     }
     docker_compose[:services][:tts_helper] = {
         :build => './docker/tts_helper',
-        :volumes => ["#{TTS_FILES_PATH}:/tts"],
+        :volumes => ['./src/tts_helper:/app:ro',
+                     "#{TTS_CACHE_FILES_PATH}:/tts"],
         :environment => env,
         :working_dir => '/app',
+        # :ports => [':80:9292'],
+        :expose => ['9292'],
         :entrypoint =>  DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
-            'rackup --quiet --host 0.0.0.0'
+            'rerun -b --dir /app -s SIGKILL \'RACK_ENV=production rackup --quiet --host 0.0.0.0\'' :
+            'RACK_ENV=production rackup --quiet --host 0.0.0.0',
+        :links => ['tts:tts'],
     }
     docker_compose[:services][:canvas] = {
         :build => './docker/canvas',
@@ -286,6 +297,10 @@ if PROFILE.include?(:dynamic)
     FileUtils::cp('src/canvas/Gemfile', 'docker/canvas/')
     FileUtils::mkpath(RAW_FILES_PATH)
     FileUtils::mkpath(TTS_FILES_PATH)
+    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'thorsten'))
+    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'silence'))
+    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'yt'))
+    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'mix'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
     Dir['src/static/avatars/*'].each do |path|
         destination = File::join(RAW_FILES_PATH, 'uploads', File.basename(path))

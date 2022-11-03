@@ -14,27 +14,70 @@ false
 [template]
 class Game(AnswerPhone):
     def run(self):
-        self.say("Hallo!")
-        self.say("Drücke die Taste 1 oder die Taste 2.")
+        self.bg_play('C23E5grsczE')
+        self.sleep(6000)
+        self.say("Hallo und herzlich willkommen in der Hackschule.")
+        self.sleep(2000)
+        self.say("Leider können wir deinen Anruf momentan nicht persönlich entgegennehmen.")
+        self.sleep(2000)
+        self.say("Bitte gib deinen vierstelligen Code ein, um ein Spiel zu starten.")
+        self.sleep(2000)
+        self.say("Falls du keinen Code hast, kannst du auch ein zufälliges Spiel starten. Drücke dafür bitte einfach die 0.")
         self.hangup()
 --------
 [custom_main_pre]
 import json
+import subprocess
 
 class AnswerPhone:
-    def __init__(self):
-        pass
+    def __init__(self, pipe):
+        self.pipe = pipe
+        self._reset()
 
-    def api_call(self, data):
-        #self.pipe_w.write(json.dumps(data) + "\n")
-        #self.pipe_w.flush()
-        #self.pipe_r.read()
-        pass
+    def _reset(self):
+        self.bg_tag = None
+        self.voice_queue = []
+
+    def _api_call(self, data):
+        proc = subprocess.Popen(['curl', '-s', '-X', 'POST', 'http://tts_helper:9292/', '--data-binary', '@-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.stdin.write(json.dumps(data).encode('utf-8'))
+        proc.stdin.close()
+        response = proc.stdout.read()
+        return json.loads(response)
+
+    def _flush(self):
+        data = {'command': 'mix', 'voice_queue': []}
+        if self.bg_tag != None:
+            print(f"(playing {self.bg_tag} in background)")
+            data['bg_tag'] = self.bg_tag
+        for item in self.voice_queue:
+            if item['type'] == 'say':
+                print(f"> {item['text']}")
+                data['voice_queue'].append({'type': 'say', 'sha1': item['sha1']})
+            elif item['type'] == 'sleep':
+                print(f"(sleeping for {item['ms']} ms)")
+                data['voice_queue'].append({'type': 'sleep', 'ms': item['ms']})
+        response = self._api_call(data)
+        print(f" 8k: {response['path']}")
+        print(f"22k: {response['path_22k']}")
+        self.pipe.write(json.dumps({'path': response['path_22k']}) + "\n")
+        self.pipe.flush()
+        self._reset()
+
+    def bg_play(self, tag):
+        self.bg_tag = tag
 
     def say(self, text):
-        print(f"> {text}")
-        self.api_call({'command': 'say', 's': text})
+        response = self._api_call({'command': 'say', 's': text})
+        self.voice_queue.append({'type': 'say', 'text': text, 'sha1': response['sha1']})
+
+    def sleep(self, ms):
+        response = self._api_call({'command': 'sleep', 'ms': ms})
+        self.voice_queue.append({'type': 'sleep', 'ms': ms})
 
     def hangup(self):
+        self._flush()
+        response = self._api_call({'command': 'hangup'})
         print("Hanging up")
-        self.api_call({'command': 'hangup'})
+        while True:
+            pass

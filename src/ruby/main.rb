@@ -810,6 +810,7 @@ class Main < Sinatra::Base
                                                 line.strip!
                                                 next if line.empty?
                                                 next if ['open', 'path', 'fspath', 'name', 'uname', 'environ', 'getuid', 'getpid', 'stat'].include?(line)
+                                                next line[0] == '#'
                                                 io.puts "os.#{line} = None"
                                             end
                                             io.puts "os.environ.clear()"
@@ -888,9 +889,11 @@ class Main < Sinatra::Base
                                         end
                                     end
                                     if task[:ivr]
+                                        File.mkfifo(File.join(dir, 'fifo'))
+                                        FileUtils.chmod(0x666, File.join(dir, 'fifo'))
+                                        f.puts "ivr_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
                                         STDERR.puts "TODO: When running a IVR script live, use another fifo"
-                                        f.puts "print('heyyyyyyyy')"
-                                        f.puts "game = Game()"
+                                        f.puts "game = Game(ivr_out)"
                                         f.puts "game.run()"
                                     end
                                 end
@@ -900,10 +903,17 @@ class Main < Sinatra::Base
 
                                 # first kill all processes from this user
                                 system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
-                                stdin, stdout, stderr, thread =
-                                        Open3.popen3('docker', 'exec', '-i',
-                                                    PYSANDBOX,
-                                                    "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                if task[:ivr]
+                                    stdin, stdout, stderr, thread =
+                                    Open3.popen3('docker', 'exec', '-i',
+                                                PYSANDBOX,
+                                                'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                else
+                                    stdin, stdout, stderr, thread =
+                                    Open3.popen3('docker', 'exec', '-i',
+                                                PYSANDBOX,
+                                                "timeout", SCRIPT_TIMEOUT.to_s, 'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                end
                                 @@clients[client_id] = {:stdin => stdin,
                                                         :stdout => stdout,
                                                         :stderr => stderr,
@@ -913,7 +923,7 @@ class Main < Sinatra::Base
                                 ws.send({:status => 'started'}.to_json)
                                 fifo_thread = nil
                                 mark_script_passed = false
-                                if task[:dungeon] || task[:pixelflut] || task[:canvas]
+                                if task[:dungeon] || task[:pixelflut] || task[:canvas] || task[:ivr]
                                     fifo_thread = Thread.new do
                                         fifo = File.open(File.join(dir, 'fifo'), 'r')
                                         fifo_closed = false
@@ -956,6 +966,8 @@ class Main < Sinatra::Base
                                                                     ws.send(data.to_json)
                                                                 elsif task[:canvas]
                                                                     ws.send(data.to_json)
+                                                                elsif task[:ivr]
+                                                                    ws.send({:ivr => data}.to_json)
                                                                 end
                                                                 fifo_buffer = ''
                                                             else
@@ -1036,7 +1048,12 @@ class Main < Sinatra::Base
                                                         STDERR.puts "(from fifo)"
                                                         buffer.each_char do |c|
                                                             if c == "\n"
-                                                                ws.send({:dungeon => JSON.parse(fifo_buffer)}.to_json)
+                                                                STDERR.puts "// GENFIFO // >>> PARSE [#{fifo_buffer}]"
+                                                                if task[:ivr]
+                                                                    ws.send({:ivr => JSON.parse(fifo_buffer)}.to_json)
+                                                                else
+                                                                    ws.send({:dungeon => JSON.parse(fifo_buffer)}.to_json)
+                                                                end
                                                                 fifo_buffer = ''
                                                             else
                                                                 fifo_buffer += c

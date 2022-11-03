@@ -102,7 +102,7 @@ path
 pathconf
 pathconf_names
 pathsep
-pipe
+#pipe
 pipe2
 popen
 posix_fadvise

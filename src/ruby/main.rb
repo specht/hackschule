@@ -125,8 +125,9 @@ class SetupDatabase
                 transaction do
                     # give admin rights to admin
                     ADMIN_MAIL_ADDRESSES.each do |email|
+                        STDERR.puts "Giving admin rights to #{email}"
                         neo4j_query(<<~END_OF_QUERY, :email => email)
-                            MATCH (u:User {email: $email})
+                            MERGE (u:User {email: $email})
                             SET u.admin = true;
                         END_OF_QUERY
                     end
@@ -886,6 +887,12 @@ class Main < Sinatra::Base
                                             f2.write(File.read('data_stream.py'))
                                         end
                                     end
+                                    if task[:ivr]
+                                        STDERR.puts "TODO: When running a IVR script live, use another fifo"
+                                        f.puts "print('heyyyyyyyy')"
+                                        f.puts "game = Game()"
+                                        f.puts "game.run()"
+                                    end
                                 end
                                 Thread.new do
                                     system("docker update --cpus 1.0 --memory 1g #{PYSANDBOX}");
@@ -935,10 +942,10 @@ class Main < Sinatra::Base
                                                         break
                                                     end
                                                     if buffer
-                                                        STDERR.puts "FIFO: Received #{buffer.size} bytes: #{buffer}"
+                                                        # STDERR.puts "FIFO: Received #{buffer.size} bytes: #{buffer}"
                                                         buffer.each_char do |c|
                                                             if c == "\n"
-                                                                STDERR.puts ">>> PARSE [#{fifo_buffer}]"
+                                                                STDERR.puts "// FIFO // >>> PARSE [#{fifo_buffer}]"
                                                                 data = JSON.parse(fifo_buffer)
                                                                 if data['status'] == 'passed'
                                                                     mark_script_passed = true
@@ -959,7 +966,7 @@ class Main < Sinatra::Base
                                                 end
                                             end
                                         end
-                                        STDERR.puts "Finished fifo thread"
+                                        STDERR.puts "// FIFO // >>> Finished fifo thread"
                                     end
                                 end
                                 Thread.new do

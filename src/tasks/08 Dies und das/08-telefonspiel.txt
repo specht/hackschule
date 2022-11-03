@@ -1,0 +1,40 @@
+title: Telefonspiel
+enabled: false
+count_score: no
+difficulty: easy
+ivr: true
+--------
+Programmiere dein eigenes Telefonspiel!
+
+Wenn dein Spiel live geschaltet ist, kannst du es unter der Telefonnummer <b>030/75438953</b> (Ortstarif) spielen.
+--------
+[verify]
+false
+--------
+[template]
+class Game(AnswerPhone):
+    def run(self):
+        self.say("Hallo!")
+        self.say("Drücke die Taste 1 oder die Taste 2.")
+        self.hangup()
+--------
+[custom_main_pre]
+import json
+
+class AnswerPhone:
+    def __init__(self):
+        pass
+
+    def api_call(self, data):
+        #self.pipe_w.write(json.dumps(data) + "\n")
+        #self.pipe_w.flush()
+        #self.pipe_r.read()
+        pass
+
+    def say(self, text):
+        print(f"> {text}")
+        self.api_call({'command': 'say', 's': text})
+
+    def hangup(self):
+        print("Hanging up")
+        self.api_call({'command': 'hangup'})

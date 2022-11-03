@@ -180,7 +180,7 @@ if PROFILE.include?(:dynamic)
         :expose => ['9292'],
         :entrypoint =>  DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'RACK_ENV=production rackup --quiet --host 0.0.0.0\'' :
-            'RACK_ENV=production rackup --quiet --host 0.0.0.0',
+            'rackup --quiet --host 0.0.0.0',
         :links => ['tts:tts'],
     }
     docker_compose[:services][:canvas] = {

@@ -167,12 +167,15 @@ if PROFILE.include?(:dynamic)
     }
     docker_compose[:services][:ivr] = {
         :build => './docker/ruby',
-        :volumes => ['./src/ivr:/app:ro'],
+        :volumes => ['./src/ivr:/app:ro',
+                     "#{RAW_FILES_PATH}/code:/code:ro",
+                     './src/tasks:/tasks:ro'],
         :environment => env,
         :working_dir => '/app',
         :entrypoint =>  DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --host 0.0.0.0\'' :
-            'rackup --host 0.0.0.0'
+            'rackup --host 0.0.0.0',
+        :links => ['tts_helper:tts_helper'],
     }
     docker_compose[:services][:pysandbox] = {
         :build => './docker/pysandbox',

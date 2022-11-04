@@ -320,8 +320,14 @@ function setup_ws(ws)
         }
         else if (typeof(data.ivr) !== 'undefined')
         {
-            window.audio_queue.push(data.ivr);
-            start_audio_queue();
+            if (data.ivr.command === 'reset_audio_queue') {
+                console.log("clearing audio queue!")
+                window.audio_queue = [];
+                window.audio.pause();
+            } else {
+                window.audio_queue.push(data.ivr);
+                start_audio_queue();
+            }
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {

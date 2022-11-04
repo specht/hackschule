@@ -56,13 +56,13 @@ class Main < Sinatra::Base
                 mix_path = render_sound("ffmpeg -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5.0:makeup=1:level_sc=0.5:release=400:mix=0.95[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
                 response[:path] = mix_path
             end
-            low_khz_path = render_sound("sox \"#{response[:path]}\" -r 8000 -c 1 \"__OUT_PATH__\"")
-            response[:path] = low_khz_path
         end
 
+        response[:path_hd] = response[:path]
+        low_khz_path = render_sound("sox \"#{response[:path]}\" -r 8000 -c 1 \"__OUT_PATH__\"")
+        response[:path] = low_khz_path
         content_type = 'application/json'
         response.to_json
-
     end
 end
 

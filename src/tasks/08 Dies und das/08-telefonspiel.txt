@@ -28,14 +28,17 @@ class Game(AnswerPhone):
 [custom_main_pre]
 import json
 import subprocess
+import sys
 
 class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
         self._reset()
+        self.ivr_mode = False
+        if len(sys.argv) > 1 and sys.argv[1] == '--ivr':
+            self.ivr_mode = True
 
     def _reset(self):
-        self.bg_tag = None
         self.voice_queue = []
 
     def _api_call(self, data):
@@ -44,8 +47,6 @@ class AnswerPhone:
         proc.stdin.close()
         response = proc.stdout.read()
         response = json.loads(response)
-        #self.pipe.write(json.dumps({'path': response['path']}) + "\n")
-        #self.pipe.flush()
         return response
 
     def _flush(self):
@@ -55,30 +56,48 @@ class AnswerPhone:
         for path in self.voice_queue:
             data['voice_queue'].append(path)
         response = self._api_call(data)
-        self.pipe.write(json.dumps({'path': response['path']}) + "\n")
+        self.pipe.write(json.dumps({'path': response['path_hd']}) + "\n")
         self.pipe.flush()
         self._reset()
 
     def bg_play(self, tag):
         self.bg_tag = tag
 
+    def bg_stop(self):
+        self.bg_tag = None
+
     def say(self, text):
         first = True
         response = self._api_call({'command': 'say', 's': text})
         remaining = response['remaining']
-        self.voice_queue.append(response['path'])
+        self.voice_queue.append(response['path_hd'])
         for sentence in remaining:
             response = self._api_call({'command': 'say', 's': sentence, 'already_split': True})
-            self.voice_queue.append(response['path'])
+            self.voice_queue.append(response['path_hd'])
 
     def sleep(self, ms):
         response = self._api_call({'command': 'sleep', 'ms': ms})
-        self.voice_queue.append(response['path'])
+        self.voice_queue.append(response['path_hd'])
+
+    def dtmf(self, max_digits):
+        self._flush()
+        if self.ivr_mode:
+            self.pipe.write(json.dumps({'get_dtmf': max_digits}) + "\n")
+            self.pipe.flush()
+            return sys.stdin.readline().strip()
+        else:
+            dtmf = input(f"Eingabe (max. {max_digits} Stellen): ")
+            self.pipe.write(json.dumps({'command': 'reset_audio_queue'}) + "\n")
+            self.pipe.flush()
+            return dtmf
 
     def hangup(self):
         self.sleep(1000)
         self._flush()
         self.pipe.write(json.dumps({'command': 'hangup'}) + "\n")
         self.pipe.flush()
-        while True:
-            pass
+        if self.ivr_mode:
+            sys.exit(0)
+        else:
+            while True:
+                pass

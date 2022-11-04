@@ -106,7 +106,8 @@ class SetupDatabase
         'User/email',
         'Task/slug',
         'Script/sha1',
-        'LabelPrintRequest/tag'
+        'LabelPrintRequest/tag',
+        'IvrCode/code',
     ]
     INDEX_LIST = [
         'Submission/correct',
@@ -2578,6 +2579,38 @@ class Main < Sinatra::Base
             row
         end
         respond(:queue => rows, :new_from => Time.now.to_i)
+    end
+
+    post '/api/get_my_ivr' do
+        require_user!
+        rows = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script)
+            RETURN i.code AS code, s.sha1 AS sha1;
+        END_OF_QUERY
+        respond(:rows => rows)
+    end
+
+    def all_used_ivr_codes
+        Dir['/ivr_live/*'].map { |x| File.basename(x) }
+    end
+
+    post '/api/publish_ivr' do
+        require_user!
+        data = parse_request_data(:required_keys => [:sha1])
+        all_codes = Set.new((0..9999).to_a.map { |x| sprintf('%04d', x)} )
+        all_codes -= Set.new(all_used_ivr_codes())
+        srand()
+        code = all_codes.to_a.sample
+        STDERR.puts "Publish #{data[:sha1]} as #{code}"
+        File.open("/ivr_live/#{code}", 'w') do |f|
+            f.puts data[:sha1]
+        end
+        neo4j_query(<<~END_OF_QUERY, {:sha1 => data[:sha1], :email => @session_user[:email], :code => code})
+            MATCH (u:User {email: $email})
+            MATCH (s:Script {sha1: $sha1})
+            CREATE (u)<-[:BY]-(i:IvrCode {code: $code})-[:WHICH]->(s);
+        END_OF_QUERY
+        respond(:code => code)
     end
 
     def list_all_lego_icons

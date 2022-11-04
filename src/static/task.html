@@ -278,6 +278,7 @@ Du bist momentan nicht angemeldet. Bitte <a href='/login'>melde dich an</a>, um 
 
 var session_user_email = '#{(@session_user || {})[:email]}';
 var no_user_logged_in = ('#{@session_user.nil?}' === 'true');
+var got_ivr = false;
 
 function load_latest_draft() {
     api_call('/api/load_latest_draft', {slug: window.slug}, function(data) {
@@ -387,7 +388,7 @@ function name_script_modal() {
     api_call('/api/store_script', {script: editor.getValue(), slug: window.slug}, function(data) {
         if (data.success)
         {
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1); 
+            fixUri(window.slug, data.sha1);
             $('#name_this_script').val(data.name);
             let store_name_data = {};
             store_name_data.slug = window.slug;
@@ -404,7 +405,7 @@ function share_script_modal() {
         if (data.success)
         {
             $('#share_this_link').val('#{WEB_ROOT}/task/#{TASK_SLUG}/' + data.sha1);
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1); 
+            fixUri(window.slug, data.sha1);
             $('#shareModal').modal('show');
         }
     });
@@ -603,6 +604,10 @@ window.addEventListener('load', function () {
     $('.bu-print-label').click(function() {
         $('#printLabelModal').modal('show');
     });
+    window.got_ivr = ($('#ivr_div').length > 0);
+    if (window.got_ivr) {
+        refresh_active_ivr_codes();
+    }
 });
 window.slug = '#{TASK_SLUG}';
 </script>

@@ -258,6 +258,44 @@ function start_audio_queue() {
     }
 }
 
+function refresh_active_ivr_codes() {
+    api_call('/api/get_my_ivr', {}, function(data) {
+        $('#ivr_div_list').empty();
+        if (data.rows.length === 0) {
+            $('#ivr_div_list').append("Du hast noch keine Spiele veröffentlich.")
+        } else {
+            let table = $(`<table>`);
+            for (let entry of data.rows) {
+                let row = $("<tr>");
+                row.append($("<td>").text(`${entry.code}`));
+                row.append($("<td>").text(`${entry.sha1}`));
+                table.append(row);
+            }
+            $('#ivr_div_list').append(table);
+        }
+        console.log(data);
+    });
+}
+
+function fixUri(slug, sha1) {
+    history.replaceState({}, null, '/task/' + slug + '/' + sha1);
+    if (window.got_ivr) {
+        console.log(`have ivr for ${sha1}`);
+        refresh_active_ivr_codes();
+        window.ivr_sha1 = sha1;
+        $('#ivr_div').empty();
+        let button = $(`<button class='btn btn-success'>Live schalten</button>`);
+        $('#ivr_div').append(button);
+        button.on('click', function(e) {
+            api_call('/api/publish_ivr', {sha1: window.ivr_sha1}, function(data) {
+                if (data.success) {
+                    refresh_active_ivr_codes();
+                }
+            });
+        });
+    }
+}
+
 function setup_ws(ws)
 {
     ws.onopen = function () {
@@ -331,7 +369,7 @@ function setup_ws(ws)
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.script_sha1);
+            fixUri(window.slug, data.script_sha1);
         }
         else if (typeof(data.zpl_png) !== 'undefined')
         {
@@ -376,7 +414,7 @@ function store_script(script)
     api_call('/api/store_script', {
         slug: window.slug,
         script: script}, function(data) {
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1);
+            fixUri(window.slug, data.sha1);
         });
 }
 

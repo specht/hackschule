@@ -6,7 +6,13 @@ ivr: true
 --------
 Programmiere dein eigenes Telefonspiel!
 
-Wenn dein Spiel live geschaltet ist, kannst du es unter der Telefonnummer <b>030/75438953</b> (Ortstarif) spielen.
+Wenn dein Spiel live geschaltet ist, kannst du es unter der folgenden Telefonnummer spielen:
+<div style='font-size: 150%; border-radius: 8px; border: 1px solid rgba(0,0,0,0.5); padding: 10px; text-align: center;'>
+<i class='fa fa-phone-square' style='color: #4aa03f;'></i>&nbsp;&nbsp;<a href='tel:+493075438953'>030/75438953</a>
+<span style='opacity: 0.7; font-size: 70%;'>(Ortstarif)</span>
+</div>
+<div id='ivr_div_list'></div>
+<div id='ivr_div'></div>
 --------
 [verify]
 false
@@ -14,8 +20,8 @@ false
 [template]
 class Game(AnswerPhone):
     def run(self):
-        self.bg_play('https://youtu.be/cI6ygcSoGzg')
-        self.sleep(6000)
+        self.bg_play('https://youtu.be/dQsYLvGhO-k')
+        self.sleep(4000)
         self.say("Hallo.")
         self.sleep(2000)
         self.say("Hier kannst du dein eigenes Telefonspiel machen.")
@@ -30,7 +36,7 @@ class Game(AnswerPhone):
         taste = self.dtmf(1)
         self.say(f"Danke. Du hast die Taste {taste} gedrückt.")
         self.sleep(2000)
-        self.say(f"Das Programm wird nun beendet.")
+        self.say("Das Programm wird nun beendet.")
 --------
 [custom_main_pre]
 import json

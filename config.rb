@@ -25,6 +25,7 @@ RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
 TTS_FILES_PATH = File::join(DATA_PATH, 'tts')
 IVR_PATH = File::join(DATA_PATH, 'ivr')
+IVR_CODES_PATH = File::join(DATA_PATH, 'ivr', 'live')
 TTS_CACHE_FILES_PATH = File::join(DATA_PATH, 'tts-cache')
 
 docker_compose = {
@@ -158,6 +159,7 @@ if PROFILE.include?(:dynamic)
                      './src/planets:/planets:ro',
                      "#{RAW_FILES_PATH}:/raw",
                      "#{GEN_FILES_PATH}:/gen",
+                     "#{IVR_CODES_PATH}:/ivr_live",
                      "/var/run/docker.sock:/var/run/docker.sock"],
         :environment => env,
         :privileged => true,
@@ -332,6 +334,7 @@ if PROFILE.include?(:dynamic)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'zpl'))
     FileUtils::mkpath(GEN_FILES_PATH)
     FileUtils::mkpath(IVR_PATH)
+    FileUtils::mkpath(IVR_CODES_PATH)
 end
 if PROFILE.include?(:pysandbox)
     FileUtils::cp('src/pysandbox/Gemfile', 'docker/pysandbox/')

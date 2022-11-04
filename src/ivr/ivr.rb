@@ -28,6 +28,7 @@ class Main < Sinatra::Base
             line = @@info_for_call_id[call_id][:buffer][0, nli]
             @@info_for_call_id[call_id][:buffer] = @@info_for_call_id[call_id][:buffer][nli + 1, @@info_for_call_id[call_id][:buffer].size]
             data = JSON.parse(line)
+            STDERR.puts ">> #{data.to_json}"
             if data['path']
                 @@info_for_call_id[call_id][:last_path] = data['path']
             elsif data['get_dtmf']

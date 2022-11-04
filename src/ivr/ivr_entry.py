@@ -12,3 +12,4 @@ class Game(AnswerPhone):
         self.sleep(20000)
         code = self.dtmf(4)
         self._dispatch(code)
+        self.hangup()

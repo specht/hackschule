@@ -67,10 +67,11 @@ class AnswerPhone:
 
     def _dispatch(self, code):
         # importlib.import_module('/code/bdgy1kvx.py')
-        spec = importlib.util.spec_from_file_location("bdgy1kvx", "/code/bdgy1kvx.py")
-        foo = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(foo)
+        module = SourceFileLoader("bdgy1kvx","/code/bdgy1kvx.py").load_module()
         print("DISPATCHED!!!", file = sys.stderr)
+        game = module.Game(sys.stdout)
+        game.run()
+        game.hangup()
 
     def bg_play(self, tag):
         self.bg_tag = tag

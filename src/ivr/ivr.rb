@@ -33,7 +33,8 @@ class Main < Sinatra::Base
             if data['path']
                 @@info_for_call_id[call_id][:last_path] = data['path']
             elsif data['get_dtmf']
-                STDERR.puts "[#{call_id}] << [#{line}]"
+                @@info_for_call_id[call_id][:notify][1].puts("hey")
+            elsif data['hangup']
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             end
         end

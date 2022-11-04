@@ -29,6 +29,7 @@ class Game(AnswerPhone):
 import json
 import subprocess
 import sys
+import importlib
 
 class AnswerPhone:
     def __init__(self, pipe):
@@ -65,7 +66,7 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(self, code):
-        import '/code/bdgy1kvx.py'
+        importlib.import_module('/code/bdgy1kvx.py')
         print("DISPATCHED!!!", file = sys.stderr)
 
     def bg_play(self, tag):

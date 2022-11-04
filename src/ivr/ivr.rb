@@ -20,7 +20,7 @@ class Main < Sinatra::Base
                 io.puts "<Response>"
                 io.puts "<Gather maxDigits=\"1\" timeout=\"5000\" onData=\"https://hackschule.de/ivr/\">"
                 io.puts "<Play>"
-                io.puts "<Url>https://hackschule.de/tts/ef/c8184c89dc45f5.wav</Url>"
+                io.puts "<Url>https://hackschule.de/tts/a4/c4dad1efbfe633.wav</Url>"
                 io.puts "</Play>"
                 io.puts "</Gather>"
                 io.puts "</Response>"

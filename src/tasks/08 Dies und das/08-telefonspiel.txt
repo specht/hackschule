@@ -14,16 +14,23 @@ false
 [template]
 class Game(AnswerPhone):
     def run(self):
-        self.bg_play('C23E5grsczE')
+        self.bg_play('https://youtu.be/cI6ygcSoGzg')
         self.sleep(6000)
-        self.say("Hallo und herzlich willkommen in der Hackschule.")
+        self.say("Hallo.")
         self.sleep(2000)
-        self.say("Leider können wir deinen Anruf momentan nicht persönlich entgegennehmen.")
+        self.say("Hier kannst du dein eigenes Telefonspiel machen.")
         self.sleep(2000)
-        self.say("Bitte gib deinen vierstelligen Code ein, um ein Spiel zu starten.")
+        self.say("Du kannst dein Programm Texte sprechen lassen und Eingaben von der Tastatur des Telefons einlesen.")
         self.sleep(2000)
-        self.say("Falls du keinen Code hast, kannst du auch ein zufälliges Spiel starten. Drücke dafür bitte einfach die 0.")
-        self.hangup()
+        self.say("Machen wir mal ein Beispiel. Drück bitte eine Taste.")
+        # 20 Sekunden warten, damit die Hintergrundgeräusche
+        # nicht sofort aufhören, wenn der gesprochene Text
+        # vorbei ist und nur noch auf die Eingabe gewartet wird.
+        self.sleep(20000)
+        taste = self.dtmf(1)
+        self.say(f"Danke. Du hast die Taste {taste} gedrückt.")
+        self.sleep(2000)
+        self.say(f"Das Programm wird nun beendet.")
 --------
 [custom_main_pre]
 import json

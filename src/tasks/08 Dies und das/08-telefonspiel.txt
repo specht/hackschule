@@ -29,7 +29,8 @@ class Game(AnswerPhone):
 import json
 import subprocess
 import sys
-from importlib.machinery import SourceFileLoader
+
+print("LAUNCHING NEW ANSWERPHONE", file = sys.stderr)
 
 class AnswerPhone:
     def __init__(self, pipe):
@@ -114,7 +115,4 @@ class AnswerPhone:
 
 def _global_dispatch(code):
     print("_global_dispatch:", code, file = sys.stderr)
-    module = SourceFileLoader(code, f"/code/{code}.py").load_module()
-    game = module.Game(sys.stdout)
-    game.run()
-    game.hangup()
+    os.execv('python3', [f'/code/{code}.py'])

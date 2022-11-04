@@ -80,7 +80,9 @@ class Main < Sinatra::Base
                             self.kill_call(call_id)
                         else
                             STDERR.puts "Got a response for #{call_id}!"
-                            @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
+                            buf io.read_nonblock(1024)
+                            STDERR.puts buf
+                            @@info_for_call_id[call_id][:buffer] += buf
                             self.handle_buffer_for_call(call_id)
                         end
                     else

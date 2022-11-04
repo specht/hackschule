@@ -110,7 +110,7 @@ class Main < Sinatra::Base
             response.body = xml
         elsif event == 'dtmf'
             dtmf = data['dtmf']
-            STDERR.puts "RECEIVED DTMF from sipgate with dtmf = #{dtmf}!"
+            STDERR.puts "RECEIVED DTMF from sipgate with call_id #{call_id} and dtmf = #{dtmf}!"
         end
     end
 end

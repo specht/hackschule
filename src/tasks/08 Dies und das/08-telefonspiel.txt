@@ -31,13 +31,6 @@ import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
 
-def _global_dispatch(code):
-    module = SourceFileLoader(code, f"/code/{code}.py").load_module()
-    game = module.Game(sys.stdout)
-    game.run()
-    game.hangup()
-
-
 class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
@@ -118,3 +111,9 @@ class AnswerPhone:
         else:
             while True:
                 pass
+
+def _global_dispatch(code):
+    module = SourceFileLoader(code, f"/code/{code}.py").load_module()
+    game = module.Game(sys.stdout)
+    game.run()
+    game.hangup()

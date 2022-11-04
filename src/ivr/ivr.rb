@@ -88,6 +88,7 @@ class Main < Sinatra::Base
     end
 
     post '/ivr/' do
+        STDERR.puts "sipgate knocking!"
         form = request.body.read
         decoded_form = URI.decode_www_form(form)
         data = Hash[decoded_form]

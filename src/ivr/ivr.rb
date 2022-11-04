@@ -90,6 +90,7 @@ class Main < Sinatra::Base
             @@info_for_call_id[call_id][:buffer] = ''
             @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id
             @@watcher_ping[1].puts("hey")
+            STDERR.puts "Waiting for response from thread..."
             sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
             @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
             xml = StringIO.open do |io|
@@ -103,6 +104,7 @@ class Main < Sinatra::Base
                 io.puts "</Response>"
                 io.string
             end
+            STDERR.puts "Sending XML:\n#{xml}"
             response.headers['Content-Type'] = 'application/xml'
             response.headers['Content-Length'] = "#{xml.size}"
             response.body = xml

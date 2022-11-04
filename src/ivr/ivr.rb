@@ -37,9 +37,12 @@ class Main < Sinatra::Base
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             elsif data['dispatch']
                 STDERR.puts "Dispatching call #{call_id} to code #{data['dispatch']}!"
-                self.kill_call(call_id)
+                @@info_for_call_id[call_id][:thread].kill
                 self.launch_script(call_id, "/code/bdgy1kvx.py")
-                # @@info_for_call_id[call_id][:notify][1].puts("hey")
+                @@info_for_call_id[call_id][:last_path] = nil
+                @@info_for_call_id[call_id][:buffer] = ''
+                @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id
+                @@watcher_ping[1].puts("hey")
             end
         end
     end

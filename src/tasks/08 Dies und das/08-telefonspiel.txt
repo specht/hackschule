@@ -113,6 +113,7 @@ class AnswerPhone:
                 pass
 
 def _global_dispatch(code):
+    print("_global_dispatch:", code, file = sys.stderr)
     module = SourceFileLoader(code, f"/code/{code}.py").load_module()
     game = module.Game(sys.stdout)
     game.run()

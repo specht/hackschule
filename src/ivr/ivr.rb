@@ -58,7 +58,6 @@ class Main < Sinatra::Base
                         STDERR.puts s
                     end
                 end
-                sleep 1.0
             end
         end
     end

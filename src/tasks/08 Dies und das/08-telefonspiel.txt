@@ -117,7 +117,7 @@ class AnswerPhone:
 
 def _global_dispatch(code):
     print("_global_dispatch:", code, file = sys.stderr)
-    temp = tempfile.TemporaryFile()
+    temp = tempfile.NamedTemporaryFile()
     temp.write("import sys\n".encode('utf-8'))
     temp.write("print('heyyyy', file = sys.stderr)\n".encode('utf-8'))
     os.execv('/usr/bin/python3', ['/usr/bin/python3', temp.name])

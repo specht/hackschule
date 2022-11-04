@@ -32,8 +32,6 @@ import sys
 import os
 import tempfile
 
-print("LAUNCHING NEW ANSWERPHONE", file = sys.stderr)
-
 class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
@@ -127,6 +125,5 @@ def _global_dispatch(code):
         temp.write("game = Game(sys.stdout)\n".encode('utf-8'))
         temp.write("game.run()\n".encode('utf-8'))
         temp.write("game.hangup()\n".encode('utf-8'))
-        temp.write("print('heyyyy', file = sys.stderr)\n".encode('utf-8'))
         temp.flush()
         os.execv('/usr/bin/python3', ['/usr/bin/python3', temp.name, '--ivr'])

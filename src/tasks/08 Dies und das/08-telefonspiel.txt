@@ -30,6 +30,7 @@ import json
 import subprocess
 import sys
 import os
+import tempfile
 
 print("LAUNCHING NEW ANSWERPHONE", file = sys.stderr)
 
@@ -116,4 +117,7 @@ class AnswerPhone:
 
 def _global_dispatch(code):
     print("_global_dispatch:", code, file = sys.stderr)
-    os.execv('/usr/bin/python3', ['/usr/bin/python3', f'/code/{code}.py'])
+    temp = tempfile.TemporaryFile()
+    temp.write("import sys\n")
+    temp.write("print('heyyyy', file = sys.stderr)\n")
+    os.execv('/usr/bin/python3', ['/usr/bin/python3', temp.name])

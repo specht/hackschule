@@ -29,4 +29,6 @@ class Game(AnswerPhone):
             if code in available_codes:
                 self._dispatch(code)
             else:
-                self.say(f"Tut mir leid, aber ein Spiel mit dem Code {', '.join(list(code))} gibt es momentan nicht.")
+                self.say("Tut mir leid, aber ein Spiel mit dem Code")
+                self.say(', '.join(list(code)))
+                self.say("gibt es momentan nicht.")

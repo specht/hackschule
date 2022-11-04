@@ -23,7 +23,7 @@ class Main < Sinatra::Base
         {:stdin => stdin, :stdout=> stdout, :stderr => stderr, :thread => thread}
     end
 
-    def handle_buffer_for_call(call_id)
+    def self.handle_buffer_for_call(call_id)
         while !(@@info_for_call_id[call_id][:buffer].index("\n").nil?)
             nli = @@info_for_call_id[call_id][:buffer].index("\n")
             line = @@info_for_call_id[call_id][:buffer][0, nli]
@@ -60,7 +60,7 @@ class Main < Sinatra::Base
                     if call_id
                         STDERR.puts "Got a response for #{call_id}!"
                         @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
-                        handle_buffer_for_call(call_id)
+                        self.class.handle_buffer_for_call(call_id)
                     else
                         s = io.read_nonblock(1024)
                     end

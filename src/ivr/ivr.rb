@@ -52,7 +52,6 @@ class Main < Sinatra::Base
                         STDERR.puts "Got a response for #{call_id}!"
                     end
                 end
-                STDERR.puts reads.to_yaml
                 sleep 1.0
             end
         end

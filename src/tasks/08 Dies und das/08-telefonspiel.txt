@@ -118,8 +118,12 @@ class AnswerPhone:
 def _global_dispatch(code):
     print("_global_dispatch:", code, file = sys.stderr)
     temp = tempfile.NamedTemporaryFile()
+    with open(f'/ivr/header.py') as f:
+        temp.write(f.read().encode('utf-8'))
+    temp.write("\n".encode('utf-8'))
     with open(f'/code/{code}.py') as f:
         temp.write(f.read().encode('utf-8'))
+    temp.write("\n".encode('utf-8'))
     temp.write("game = Game(sys.stdout)\n".encode('utf-8'))
     temp.write("game.run()\n".encode('utf-8'))
     temp.write("game.hangup()\n".encode('utf-8'))

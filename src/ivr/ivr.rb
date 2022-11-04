@@ -40,6 +40,11 @@ class Main < Sinatra::Base
         end
     end
 
+    def self.kill_call(call_id)
+        @@info_for_call_id[call_id][:thread].kill
+        @@info_for_call_id.delete(call_id)
+    end
+
     configure do
         STDERR.puts "Configuring IVR"
         parts = File.read(Dir['/tasks/**/*telefonspiel.txt'].first).split('-' * 8).map { |x| x.strip }
@@ -68,10 +73,12 @@ class Main < Sinatra::Base
                     if call_id
                         if io.eof?
                             STDERR.puts "Script has finished, kill it!"
+                            self.kill_call(call_id)
+                        else
+                            STDERR.puts "Got a response for #{call_id}!"
+                            @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
+                            self.handle_buffer_for_call(call_id)
                         end
-                        STDERR.puts "Got a response for #{call_id}!"
-                        @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
-                        self.handle_buffer_for_call(call_id)
                     else
                         s = io.read_nonblock(1024)
                     end

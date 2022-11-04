@@ -64,10 +64,10 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(code):
-        self._flush()
         self.pipe.write(json.dumps({'dispatch': code}) + "\n")
         self.pipe.flush()
-        return sys.stdin.readline().strip()
+        while True:
+            pass
 
     def bg_play(self, tag):
         self.bg_tag = tag

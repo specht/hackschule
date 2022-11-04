@@ -66,6 +66,7 @@ class AnswerPhone:
     def _dispatch(code):
         self.pipe.write(json.dumps({'dispatch': code}) + "\n")
         self.pipe.flush()
+        return sys.stdin.readline().strip()
 
     def bg_play(self, tag):
         self.bg_tag = tag

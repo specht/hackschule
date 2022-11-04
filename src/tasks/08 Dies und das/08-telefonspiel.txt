@@ -56,7 +56,10 @@ class AnswerPhone:
         for path in self.voice_queue:
             data['voice_queue'].append(path)
         response = self._api_call(data)
-        self.pipe.write(json.dumps({'path': response['path_hd']}) + "\n")
+        if self.ivr_mode:
+            self.pipe.write(json.dumps({'path': response['path']}) + "\n")
+        else:
+            self.pipe.write(json.dumps({'path': response['path_hd']}) + "\n")
         self.pipe.flush()
         self._reset()
 

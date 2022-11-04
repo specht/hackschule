@@ -79,6 +79,7 @@ class Main < Sinatra::Base
                 STDERR.puts "Got something"
                 streams.first.each do |io|
                     call_id = @@call_id_for_stdout_fd[io.fileno]
+                    STDERR.puts "call id: #{call_id}"
                     if call_id
                         if io.eof?
                             STDERR.puts "Script has finished, kill it!"

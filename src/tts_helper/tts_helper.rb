@@ -34,7 +34,7 @@ class Main < Sinatra::Base
         if data['command'] == 'say'
             text = data['s'].strip
             response[:paths] = []
-            text.split(/([\.\?!]+)/).each_slice(2) do |x|
+            text.split(/([^\d][\.\?!]+)/).each_slice(2) do |x|
                 sentence = x.map { |y| y.strip }.join('').strip
                 response[:paths] << render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
             end

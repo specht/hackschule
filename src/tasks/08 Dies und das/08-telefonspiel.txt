@@ -63,6 +63,10 @@ class AnswerPhone:
         self.pipe.flush()
         self._reset()
 
+    def _dispatch(code):
+        self.pipe.write(json.dumps({'dispatch': code}) + "\n")
+        self.pipe.flush()
+
     def bg_play(self, tag):
         self.bg_tag = tag
 

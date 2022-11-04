@@ -5,14 +5,12 @@ require 'json'
 require 'yaml'
 require 'open3'
 
-DEFAULT_SCRIPT = 'mp0lx174'
-
 class Main < Sinatra::Base
-    def self.launch_script(call_id, tag)
+    def self.launch_script(call_id, script_path)
         STDERR.puts "Launching script #{tag}..."
         path = "/tmp/script-#{call_id}.py"
         File.open(path, 'w') do |f|
-            script = File.read("/code/#{tag}.py")
+            script = File.read(script_path)
             f.puts(@@header)
             f.puts(script)
             f.puts "game = Game(sys.stdout)"
@@ -36,6 +34,9 @@ class Main < Sinatra::Base
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             elsif data['command'] == 'hangup'
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
+            elsif data['dispatch']
+                STDERR.puts "Dispatching call #{call_id} to code #{data['dispatch']}!"
+                # @@info_for_call_id[call_id][:notify][1].puts("hey")
             end
         end
     end
@@ -99,7 +100,7 @@ class Main < Sinatra::Base
         event = data['event']
         if event == 'newCall'
             STDERR.puts "RECEIVED NEW_CALL from sipgate with call id #{call_id}!"
-            @@info_for_call_id[call_id] = self.class.launch_script(call_id, DEFAULT_SCRIPT)
+            @@info_for_call_id[call_id] = self.class.launch_script(call_id, "/app/ivr_entry.py")
             @@info_for_call_id[call_id][:last_path] = nil
             @@info_for_call_id[call_id][:buffer] = ''
             @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id

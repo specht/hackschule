@@ -108,7 +108,9 @@ class Main < Sinatra::Base
         else
             STDERR.puts "RECEIVED #{event.upcase} from sipgate with call_id #{call_id}!"
         end
+        STDERR.puts "Waiting for answer from thread for #{call_id}..."
         sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
+        STDERR.puts "Got answer from thread for #{call_id}..."
         @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
         xml = StringIO.open do |io|
             io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"

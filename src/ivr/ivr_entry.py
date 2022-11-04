@@ -13,7 +13,7 @@ class Game(AnswerPhone):
         if len(available_codes) == 0:
             self.say("Normalerweise solltest du hier Spiele spielen können. Momentan sind aber leider keine Spiele verfügbar.")
             self.sleep(2000)
-            self.say("Wenn du das ändern möchtest, schreib dein eigenes Spiel unter www hackschule punkt de eh.")
+            self.say("Wenn du das ändern möchtest, schreib dein eigenes Spiel unter www hackschule punkt de eh und veröffentliche es dann.")
             self.sleep(20000)
             return
         while True:

@@ -34,7 +34,7 @@ class Main < Sinatra::Base
                 @@info_for_call_id[call_id][:last_path] = data['path']
             elsif data['get_dtmf']
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
-            elsif data['hangup']
+            elsif data['command'] == 'hangup'
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             end
         end

@@ -84,6 +84,9 @@ class AnswerPhone:
             sha1 = f.readline().strip()
             _global_dispatch(sha1)
 
+    def set_title(self, title):
+        self.title = title
+
     def bg_play(self, tag):
         self.bg_tag = tag
 

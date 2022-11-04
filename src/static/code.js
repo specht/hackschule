@@ -269,6 +269,7 @@ function refresh_active_ivr_codes() {
                 let row = $("<tr>");
                 row.append($("<td>").text(`${entry.code}`));
                 row.append($("<td>").text(`${entry.sha1}`));
+                row.append($("<td>").append($('<a>').attr('href', `tel:+493075438953,${entry.code}`).text(`+493075438953,${entry.code}`)));
                 table.append(row);
             }
             $('#ivr_div_list').append(table);

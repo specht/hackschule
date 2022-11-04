@@ -27,6 +27,10 @@ class Main < Sinatra::Base
         path
     end
 
+    def split_sentences(s)
+        s.gsub(/\s+/, ' ').strip.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
+    end
+
     post '/' do
         body =request.body.read
         data = JSON.parse(body)
@@ -36,11 +40,12 @@ class Main < Sinatra::Base
             sentence = data['s'].strip
             remaining = []
             unless data['already_split'] == true
-                sentences = sentence.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
+                sentences = split_sentences(sentence)
                 sentence = sentences.shift
                 remaining = sentences
                 response[:remaining] = remaining
             end
+            STDERR.puts "[#{sentence}]"
             response[:path] = render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
         elsif data['command'] == 'sleep'
             ms = data['ms']

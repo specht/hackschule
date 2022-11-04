@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'sinatra'
-require 'chunky_png'
 require 'json'
 require 'yaml'
 

@@ -50,11 +50,11 @@ class Main < Sinatra::Base
                     call_id = @@call_id_for_stdout_fd[io.fileno]
                     if call_id
                         STDERR.puts "Got a response for #{call_id}!"
-                        s = io.read_nonblock()
+                        s = io.read()
                         STDERR.puts s
                     else
                         STDERR.puts "JUST THE WATCHER PING"
-                        s = io.read_nonblock()
+                        s = io.read()
                         STDERR.puts s
                     end
                 end

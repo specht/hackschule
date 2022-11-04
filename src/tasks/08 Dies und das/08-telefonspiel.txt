@@ -65,7 +65,7 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(self, code):
-        import './code/bdgy1kvx.py'
+        import '/code/bdgy1kvx.py'
         print("DISPATCHED!!!", file = sys.stderr)
 
     def bg_play(self, tag):

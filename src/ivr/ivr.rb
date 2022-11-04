@@ -18,8 +18,8 @@ class Main < Sinatra::Base
             f.puts "game.hangup()"
         end
         notify = IO.pipe
-        stdin, stdout, stderr, thread = Open3.popen3('python3', path, '--ivr')
-        {:stdin => stdin, :stdout=> stdout, :stderr => stderr, :thread => thread, :notify => notify}
+        stdin, stdout, thread = Open3.popen2('python3', path, '--ivr')
+        {:stdin => stdin, :stdout=> stdout, :thread => thread, :notify => notify}
     end
 
     def self.handle_buffer_for_call(call_id)

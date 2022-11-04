@@ -66,6 +66,9 @@ class Main < Sinatra::Base
                 streams.first.each do |io|
                     call_id = @@call_id_for_stdout_fd[io.fileno]
                     if call_id
+                        if io.eof?
+                            STDERR.puts "Script has finished, kill it!"
+                        end
                         STDERR.puts "Got a response for #{call_id}!"
                         @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
                         self.handle_buffer_for_call(call_id)

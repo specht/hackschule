@@ -63,7 +63,7 @@ class AnswerPhone:
         self.pipe.flush()
         self._reset()
 
-    def _dispatch(code):
+    def _dispatch(self, code):
         self.pipe.write(json.dumps({'dispatch': code}) + "\n")
         self.pipe.flush()
         while True:

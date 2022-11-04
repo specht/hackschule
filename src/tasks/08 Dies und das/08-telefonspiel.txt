@@ -29,7 +29,7 @@ class Game(AnswerPhone):
 import json
 import subprocess
 import sys
-import importlib.util
+from importlib.machinery import SourceFileLoader
 
 class AnswerPhone:
     def __init__(self, pipe):

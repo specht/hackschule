@@ -100,7 +100,9 @@ class AnswerPhone:
         self.pipe.write(json.dumps({'command': 'hangup'}) + "\n")
         self.pipe.flush()
         if self.ivr_mode:
-            sys.exit(0)
+            while True:
+                pass
+            #sys.exit(0)
         else:
             while True:
                 pass

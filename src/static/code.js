@@ -12,6 +12,7 @@ window.message_to_append = null;
 window.message_to_append_index = 0;
 window.message_to_append_timestamp = 0.0;
 window.audio = new Audio();
+window.audio_queue = [];
 
 jQuery.extend({
     getQueryParameters : function(str) {
@@ -39,10 +40,10 @@ function api_call(url, data, callback, options)
 {
     if (typeof(options) === 'undefined')
         options = {};
-    
+
     if (typeof(window.please_wait_timeout) !== 'undefined')
         clearTimeout(window.please_wait_timeout);
-    
+
     if (options.no_please_wait !== true)
     {
         // show 'please wait' message after 500 ms
@@ -54,14 +55,14 @@ function api_call(url, data, callback, options)
             }, 500);
         })();
     }
-    
+
     var jqxhr = jQuery.post({
         url: url,
         data: JSON.stringify(data),
         contentType: 'application/json',
         dataType: 'json'
     });
-    
+
     jqxhr.done(function(data) {
         clearTimeout(window.please_wait_timeout);
         $('.api_messages').empty().hide();
@@ -71,7 +72,7 @@ function api_call(url, data, callback, options)
             callback(data);
         }
     });
-    
+
     jqxhr.fail(function(http) {
         clearTimeout(window.please_wait_timeout);
         $('.api_messages').empty();
@@ -156,7 +157,7 @@ function handle_message()
         if (message_queue.length > 0)
             setTimeout(handle_message, 0);
     }
-    
+
     $("html, body").stop().animate({ scrollTop: $(document).height() }, 400);
 }
 
@@ -191,15 +192,15 @@ function append_error(msg)
     append('error', msg);
 }
 
-function keepAlive() { 
+function keepAlive() {
     var timeout = 20000;
-    if (ws.readyState == ws.OPEN) {  
-        ws.send('');  
-    }  
+    if (ws.readyState == ws.OPEN) {
+        ws.send('');
+    }
     (function() {
-        timerId = setTimeout(keepAlive, timeout);  
+        timerId = setTimeout(keepAlive, timeout);
     })();
-}                  
+}
 
 function push_message(s, color, delay) {
     if (typeof(color) === 'undefined')
@@ -219,6 +220,7 @@ function push_message(s, color, delay) {
 function handle_started() {
     $('#run').removeClass('btn-success').addClass('btn-danger').html("<i class='fa fa-stop'></i>&nbsp;&nbsp;Abbrechen").prop('disabled', false);
     window.audio.pause();
+    window.audio_queue = [];
     process_running = true;
     if (!$('#easy6502').is(':visible')) {
         if (!$('#screen').is(':visible'))
@@ -227,8 +229,8 @@ function handle_started() {
 }
 
 function handle_stopped() {
-    console.log('handle_stopped');
     window.audio.pause();
+    window.audio_queue = [];
     $('#run').removeClass('btn-danger').addClass('btn-success').html("<i class='fa fa-play'></i>&nbsp;&nbsp;Ausführen");
     $('#editor').prop('disabled', false);
     process_running = false;
@@ -239,6 +241,21 @@ function handle_stopped() {
         editor.focus();
     $('#screen img.pixelflut').removeAttr('src').attr('src', '/pixelflut/?' + Date.now());
     $('#screen img.canvas').removeAttr('src').attr('src', '/canvas/' + session_user_email + '/?' + Date.now());
+}
+
+function start_audio_queue() {
+    if (window.audio_queue.length === 0)
+        return;
+    if (window.audio.paused) {
+        let item = window.audio_queue.shift();
+        if (item.command === 'hangup') {
+            console.log("HANGING UP!")
+            $('#run').trigger('click');
+        } else {
+            window.audio.src = item.path;
+            window.audio.play();
+        }
+    }
 }
 
 function setup_ws(ws)
@@ -260,7 +277,7 @@ function setup_ws(ws)
 
     ws.onmessage = function (msg) {
         data = JSON.parse(msg.data);
-        console.log(data);
+        // console.log(data);
         if (data.hello === 'world')
         {
             window.rate_limit = data.rate_limit;
@@ -303,9 +320,8 @@ function setup_ws(ws)
         }
         else if (typeof(data.ivr) !== 'undefined')
         {
-            console.log("IVR", data);
-            window.audio.src = data.ivr.path;
-            window.audio.play();
+            window.audio_queue.push(data.ivr);
+            start_audio_queue();
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {
@@ -319,6 +335,9 @@ function setup_ws(ws)
             window.print_label_tag = parts[parts.length - 1].replace('.png', '');
 
         }
+    }
+    window.audio.onended = function() {
+        start_audio_queue();
     }
 }
 
@@ -346,12 +365,12 @@ function launch_script(script)
     $('.bu-print-label').prop('disabled', true).removeClass('btn-outline-success').addClass('btn-outline-secondary');
 }
 
-function store_script(script) 
+function store_script(script)
 {
     api_call('/api/store_script', {
         slug: window.slug,
         script: script}, function(data) {
-            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1); 
+            history.replaceState({}, null, '/task/' + window.slug + '/' + data.sha1);
         });
 }
 

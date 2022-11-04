@@ -895,6 +895,7 @@ class Main < Sinatra::Base
                                         STDERR.puts "TODO: When running a IVR script live, use another fifo"
                                         f.puts "game = Game(ivr_out)"
                                         f.puts "game.run()"
+                                        f.puts "game.hangup()"
                                     end
                                 end
                                 Thread.new do
@@ -904,10 +905,11 @@ class Main < Sinatra::Base
                                 # first kill all processes from this user
                                 system("docker exec #{PYSANDBOX} python3 /killuser.py #{@session_user[:email]}")
                                 if task[:ivr]
+                                    # one hour timeout for IVR scripts
                                     stdin, stdout, stderr, thread =
                                     Open3.popen3('docker', 'exec', '-i',
                                                 PYSANDBOX,
-                                                'python3', '-B', '-u', script_path.sub('/raw', ''))
+                                                "timeout", "#{60 * 60}", 'python3', '-B', '-u', script_path.sub('/raw', ''))
                                 else
                                     stdin, stdout, stderr, thread =
                                     Open3.popen3('docker', 'exec', '-i',

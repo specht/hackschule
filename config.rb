@@ -60,7 +60,8 @@ if PROFILE.include?(:static)
     if PROFILE.include?(:dynamic)
         docker_compose[:services][:nginx][:links] = ["ruby:ruby",
                                                      "pixelflut:pixelflut",
-                                                     "canvas:canvas"]
+                                                     "canvas:canvas",
+                                                     "ivr:ivr"]
     end
     nginx_config = <<~eos
         log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
@@ -99,18 +100,28 @@ if PROFILE.include?(:static)
                 try_files $uri @canvas;
             }
 
+            location /ivr/ {
+                try_files $uri @ivr;
+            }
+
             location @pixelflut {
                 proxy_pass http://pixelflut:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
             }
-        
+
+            location @ivr {
+                proxy_pass http://ivr:9292;
+                proxy_set_header Host $host;
+                proxy_http_version 1.1;
+            }
+
             location @canvas {
                 proxy_pass http://canvas:9292;
                 proxy_set_header Host $host;
                 proxy_http_version 1.1;
             }
-        
+
             location / {
                 root /usr/share/nginx/html;
                 include /etc/nginx/mime.types;
@@ -131,7 +142,7 @@ if PROFILE.include?(:static)
         f.write nginx_config
     end
     if PROFILE.include?(:dynamic)
-        docker_compose[:services][:nginx][:depends_on] = [:ruby, :pixelflut, :canvas]
+        docker_compose[:services][:nginx][:depends_on] = [:ruby, :pixelflut, :canvas, :ivr]
     end
 end
 
@@ -149,6 +160,15 @@ if PROFILE.include?(:dynamic)
                      "/var/run/docker.sock:/var/run/docker.sock"],
         :environment => env,
         :privileged => true,
+        :working_dir => '/app',
+        :entrypoint =>  DEVELOPMENT ?
+            'rerun -b --dir /app -s SIGKILL \'rackup --host 0.0.0.0\'' :
+            'rackup --host 0.0.0.0'
+    }
+    docker_compose[:services][:ivr] = {
+        :build => './docker/ruby',
+        :volumes => ['./src/ivr:/app:ro'],
+        :environment => env,
         :working_dir => '/app',
         :entrypoint =>  DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --host 0.0.0.0\'' :

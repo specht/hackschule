@@ -43,17 +43,19 @@ class AnswerPhone:
         proc.stdin.write(json.dumps(data).encode('utf-8'))
         proc.stdin.close()
         response = proc.stdout.read()
-        return json.loads(response)
+        response = json.loads(response)
+        #self.pipe.write(json.dumps({'path': response['path']}) + "\n")
+        #self.pipe.flush()
+        return response
 
     def _flush(self):
         data = {'command': 'mix', 'voice_queue': []}
         if self.bg_tag != None:
-            print(f"(playing {self.bg_tag} in background)")
             data['bg_tag'] = self.bg_tag
         for path in self.voice_queue:
             data['voice_queue'].append(path)
         response = self._api_call(data)
-        self.pipe.write(json.dumps({'path': response['path_22k']}) + "\n")
+        self.pipe.write(json.dumps({'path': response['path']}) + "\n")
         self.pipe.flush()
         self._reset()
 
@@ -61,18 +63,22 @@ class AnswerPhone:
         self.bg_tag = tag
 
     def say(self, text):
+        first = True
         response = self._api_call({'command': 'say', 's': text})
-        for path in response['paths']:
-            self.voice_queue.append(path)
+        remaining = response['remaining']
+        self.voice_queue.append(response['path'])
+        for sentence in remaining:
+            response = self._api_call({'command': 'say', 's': sentence, 'already_split': True})
+            self.voice_queue.append(response['path'])
 
     def sleep(self, ms):
         response = self._api_call({'command': 'sleep', 'ms': ms})
-        for path in response['paths']:
-            self.voice_queue.append(path)
+        self.voice_queue.append(response['path'])
 
     def hangup(self):
+        self.sleep(1000)
         self._flush()
-        response = self._api_call({'command': 'hangup'})
-        print("Hanging up")
+        self.pipe.write(json.dumps({'command': 'hangup'}) + "\n")
+        self.pipe.flush()
         while True:
             pass

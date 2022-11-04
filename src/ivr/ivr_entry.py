@@ -9,6 +9,11 @@ class Game(AnswerPhone):
         self.sleep(2000)
         self.say("Leider können wir deinen Anruf momentan nicht persönlich entgegennehmen.")
         self.sleep(2000)
+        available_codes = [os.path.basename(x) for x in glob.glob('/ivr/live/*')]
+        if len(available_codes) == 0:
+            self.say("Momentan sind keine Spiele live geschaltet.")
+            self.sleep(20000)
+            return
         while True:
             available_codes = [os.path.basename(x) for x in glob.glob('/ivr/live/*')]
             self.say("Bitte gib deinen vierstelligen Code ein, um ein Spiel zu starten.")

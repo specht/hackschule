@@ -44,9 +44,9 @@ class Main < Sinatra::Base
                     read_sockets << info[:stdout]
                 end
                 STDERR.puts "Waiting on #{read_sockets.size} sockets"
-                reads = IO.select(read_sockets)
+                streams = IO.select(read_sockets)
                 STDERR.puts "Got something"
-                reads.each do |io|
+                streams.first.each do |io|
                     call_id = @@call_id_for_stdout_fd[io.fileno]
                     if call_id
                         STDERR.puts "Got a response for #{call_id}!"

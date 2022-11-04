@@ -18,7 +18,7 @@ class Main < Sinatra::Base
             xml = StringIO.open do |io|
                 io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                 io.puts "<Response>"
-                io.puts "<Gather maxDigits=\"4\" timeout=\"5000\" onData=\"https://hackschule.de/ivr/\">"
+                io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
                 io.puts "<Play>"
                 io.puts "<Url>https://hackschule.de/tts/a4/c4dad1efbfe633.wav</Url>"
                 io.puts "</Play>"

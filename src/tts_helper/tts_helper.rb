@@ -49,7 +49,6 @@ class Main < Sinatra::Base
         elsif data['command'] == 'mix'
             voice_path = render_sound("sox #{data['voice_queue'].map { |x| '"' + x + '"'}.join(' ')} \"__OUT_PATH__\"")
             response[:path] = voice_path
-
             if data['bg_tag']
                 bg_path = render_sound("cd /tts && yt-dlp -x --audio-format wav -o \"temp.%(ext)s\" \"#{data['bg_tag']}\" && ffmpeg -i \"temp.wav\" -ar 22050 -ac 1 \"__OUT_PATH__\" && rm temp.wav")
                 response[:path] = bg_path
@@ -57,6 +56,8 @@ class Main < Sinatra::Base
                 mix_path = render_sound("ffmpeg -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5.0:makeup=1:level_sc=0.5:release=400:mix=0.95[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
                 response[:path] = mix_path
             end
+            8khz_path = render_sound("sox \"#{response[:path]}\" -r 8000 -c 1 \"__OUT_PATH__\"")
+            response[:path] = 8khz_path
         end
 
         content_type = 'application/json'

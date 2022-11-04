@@ -31,6 +31,13 @@ import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
 
+def _global_dispatch(code):
+    module = SourceFileLoader(code, f"/code/{code}.py").load_module()
+    game = module.Game(sys.stdout)
+    game.run()
+    game.hangup()
+
+
 class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
@@ -66,12 +73,7 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(self, code):
-        # importlib.import_module('/code/bdgy1kvx.py')
-        module = SourceFileLoader("bdgy1kvx","/code/bdgy1kvx.py").load_module()
-        print("DISPATCHED!!!", file = sys.stderr)
-        game = module.Game(sys.stdout)
-        game.run()
-        game.hangup()
+        _global_dispatch('bdgy1kvx')
 
     def bg_play(self, tag):
         self.bg_tag = tag

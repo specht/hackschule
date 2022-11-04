@@ -34,6 +34,7 @@ class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
         self._reset()
+        self.bg_tag = None
         self.ivr_mode = False
         if len(sys.argv) > 1 and sys.argv[1] == '--ivr':
             self.ivr_mode = True

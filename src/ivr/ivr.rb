@@ -37,6 +37,8 @@ class Main < Sinatra::Base
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             elsif data['dispatch']
                 STDERR.puts "Dispatching call #{call_id} to code #{data['dispatch']}!"
+                self.kill_call(call_id)
+                self.launch_script(call_id, "/scripts/")
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             end
         end

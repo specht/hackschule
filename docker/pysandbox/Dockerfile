@@ -1,5 +1,4 @@
 FROM python:3.8
-MAINTAINER Dr. Michael Specht <specht@quelltextschmiede.de>
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y tzdata cpulimit && rm -rf /var/cache/apt/*

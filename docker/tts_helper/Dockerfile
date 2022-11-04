@@ -1,4 +1,4 @@
-FROM ruby:2-alpine
+FROM ruby:3-alpine
 
 RUN apk update && apk upgrade
 RUN apk add curl bash curl-dev ruby-dev build-base tzdata sox ffmpeg youtube-dl && rm -rf /var/cache/apk/*

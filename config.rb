@@ -176,10 +176,8 @@ if PROFILE.include?(:dynamic)
                      "#{TTS_CACHE_FILES_PATH}:/tts"],
         :environment => env,
         :working_dir => '/app',
-        # :ports => [':80:9292'],
-        :expose => ['9292'],
         :entrypoint =>  DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'RACK_ENV=production rackup --quiet --host 0.0.0.0\'' :
+            'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
             'rackup --quiet --host 0.0.0.0',
         :links => ['tts:tts'],
     }
@@ -297,10 +295,6 @@ if PROFILE.include?(:dynamic)
     FileUtils::cp('src/canvas/Gemfile', 'docker/canvas/')
     FileUtils::mkpath(RAW_FILES_PATH)
     FileUtils::mkpath(TTS_FILES_PATH)
-    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'thorsten'))
-    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'silence'))
-    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'yt'))
-    FileUtils::mkpath(File.join(TTS_CACHE_FILES_PATH, 'mix'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
     Dir['src/static/avatars/*'].each do |path|
         destination = File::join(RAW_FILES_PATH, 'uploads', File.basename(path))

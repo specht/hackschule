@@ -1,5 +1,4 @@
-FROM ruby:2-alpine
-MAINTAINER Dr. Michael Specht <specht@quelltextschmiede.de>
+FROM ruby:3-alpine
 
 RUN apk update && apk upgrade
 RUN apk add curl bash curl-dev ruby-dev build-base tzdata && rm -rf /var/cache/apk/*

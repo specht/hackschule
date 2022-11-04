@@ -50,16 +50,9 @@ class AnswerPhone:
         if self.bg_tag != None:
             print(f"(playing {self.bg_tag} in background)")
             data['bg_tag'] = self.bg_tag
-        for item in self.voice_queue:
-            if item['type'] == 'say':
-                print(f"> {item['text']}")
-                data['voice_queue'].append({'type': 'say', 'sha1': item['sha1']})
-            elif item['type'] == 'sleep':
-                print(f"(sleeping for {item['ms']} ms)")
-                data['voice_queue'].append({'type': 'sleep', 'ms': item['ms']})
+        for path in self.voice_queue:
+            data['voice_queue'].append(path)
         response = self._api_call(data)
-        print(f" 8k: {response['path']}")
-        print(f"22k: {response['path_22k']}")
         self.pipe.write(json.dumps({'path': response['path_22k']}) + "\n")
         self.pipe.flush()
         self._reset()
@@ -69,11 +62,13 @@ class AnswerPhone:
 
     def say(self, text):
         response = self._api_call({'command': 'say', 's': text})
-        self.voice_queue.append({'type': 'say', 'text': text, 'sha1': response['sha1']})
+        for path in response['paths']:
+            self.voice_queue.append(path)
 
     def sleep(self, ms):
         response = self._api_call({'command': 'sleep', 'ms': ms})
-        self.voice_queue.append({'type': 'sleep', 'ms': ms})
+        for path in response['paths']:
+            self.voice_queue.append(path)
 
     def hangup(self):
         self._flush()

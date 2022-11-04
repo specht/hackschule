@@ -108,7 +108,6 @@ class Main < Sinatra::Base
         else
             STDERR.puts "RECEIVED #{event.upcase} from sipgate with call_id #{call_id}!"
         end
-        STDERR.puts "Waiting for response from thread..."
         sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
         @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
         xml = StringIO.open do |io|
@@ -122,7 +121,6 @@ class Main < Sinatra::Base
             io.puts "</Response>"
             io.string
         end
-        STDERR.puts "Sending XML:\n#{xml}"
         response.headers['Content-Type'] = 'application/xml'
         response.headers['Content-Length'] = "#{xml.size}"
         response.body = xml

@@ -19,8 +19,9 @@ class Main < Sinatra::Base
             f.puts "game.run()"
             f.puts "game.hangup()"
         end
+        notify = IO.pipe
         stdin, stdout, stderr, thread = Open3.popen3('python3', path, '--ivr')
-        {:stdin => stdin, :stdout=> stdout, :stderr => stderr, :thread => thread}
+        {:stdin => stdin, :stdout=> stdout, :stderr => stderr, :thread => thread, :notify => notify}
     end
 
     def self.handle_buffer_for_call(call_id)
@@ -28,7 +29,13 @@ class Main < Sinatra::Base
             nli = @@info_for_call_id[call_id][:buffer].index("\n")
             line = @@info_for_call_id[call_id][:buffer][0, nli]
             @@info_for_call_id[call_id][:buffer] = @@info_for_call_id[call_id][:buffer][nli + 1, @@info_for_call_id[call_id][:buffer].size]
-            STDERR.puts "[#{call_id}] << [#{line}]"
+            data = JSON.parse(line)
+            if data['path']
+                @@info_for_call_id[call_id][:last_path] = data['path']
+            elsif data['get_dtmf']
+                STDERR.puts "[#{call_id}] << [#{line}]"
+                @@info_for_call_id[call_id][:notify][1].puts("hey")
+            end
         end
     end
 
@@ -83,20 +90,22 @@ class Main < Sinatra::Base
             @@info_for_call_id[call_id][:buffer] = ''
             @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id
             @@watcher_ping[1].puts("hey")
-            # xml = StringIO.open do |io|
-            #     io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-            #     io.puts "<Response>"
-            #     io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
-            #     io.puts "<Play>"
-            #     io.puts "<Url>https://hackschule.de/tts/a4/c4dad1efbfe633.wav</Url>"
-            #     io.puts "</Play>"
-            #     io.puts "</Gather>"
-            #     io.puts "</Response>"
-            #     io.string
-            # end
-            # response.headers['Content-Type'] = 'application/xml'
-            # response.headers['Content-Length'] = "#{xml.size}"
-            # response.body = xml
+            sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
+            @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
+            xml = StringIO.open do |io|
+                io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                io.puts "<Response>"
+                io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
+                io.puts "<Play>"
+                io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
+                io.puts "</Play>"
+                io.puts "</Gather>"
+                io.puts "</Response>"
+                io.string
+            end
+            response.headers['Content-Type'] = 'application/xml'
+            response.headers['Content-Length'] = "#{xml.size}"
+            response.body = xml
         elsif event == 'dtmf'
             dtmf = data['dtmf']
         end

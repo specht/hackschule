@@ -65,10 +65,8 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(self, code):
-        self.pipe.write(json.dumps({'dispatch': code}) + "\n")
-        self.pipe.flush()
-        while True:
-            pass
+        import './code/bdgy1kvx.py'
+        print("DISPATCHED!!!", file = sys.stderr)
 
     def bg_play(self, tag):
         self.bg_tag = tag

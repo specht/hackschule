@@ -112,7 +112,7 @@ class Main < Sinatra::Base
         elsif event == 'dtmf'
             dtmf = data['dtmf']
             STDERR.puts "RECEIVED DTMF from sipgate with call_id #{call_id} and dtmf = #{dtmf} (#{dtmf.class})!"
-            if dtmf.empty?
+            if dtmf.empty? || dtmf == '-1'
                 self.class.kill_call(call_id)
             else
                 @@info_for_call_id[call_id][:stdin].puts(dtmf)

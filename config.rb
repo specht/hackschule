@@ -24,6 +24,7 @@ MYSQL_DATA_PATH = File::join(DATA_PATH, 'mysql')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
 TTS_FILES_PATH = File::join(DATA_PATH, 'tts')
+IVR_PATH = File::join(DATA_PATH, 'ivr')
 TTS_CACHE_FILES_PATH = File::join(DATA_PATH, 'tts-cache')
 
 docker_compose = {
@@ -169,6 +170,7 @@ if PROFILE.include?(:dynamic)
         :build => './docker/ruby',
         :volumes => ['./src/ivr:/app:ro',
                      "#{RAW_FILES_PATH}/code:/code:ro",
+                     "#{IVR_PATH}:/ivr",
                      './src/tasks:/tasks:ro'],
         :environment => env,
         :working_dir => '/app',
@@ -329,6 +331,7 @@ if PROFILE.include?(:dynamic)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'canvas'))
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'zpl'))
     FileUtils::mkpath(GEN_FILES_PATH)
+    FileUtils::mkpath(IVR_PATH)
 end
 if PROFILE.include?(:pysandbox)
     FileUtils::cp('src/pysandbox/Gemfile', 'docker/pysandbox/')

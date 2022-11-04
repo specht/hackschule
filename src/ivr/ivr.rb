@@ -55,6 +55,9 @@ class Main < Sinatra::Base
                 @@header = part.sub('[custom_main_pre]', '').strip
             end
         end
+        File.open('/ivr/header.py', 'w') do |f|
+            f.write @@header
+        end
         @@info_for_call_id = {}
         @@watcher_ping = IO.pipe
         @@call_id_for_stdout_fd = {}

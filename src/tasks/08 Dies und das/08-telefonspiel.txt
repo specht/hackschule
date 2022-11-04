@@ -80,7 +80,9 @@ class AnswerPhone:
         self._reset()
 
     def _dispatch(self, code):
-        _global_dispatch('bdgy1kvx')
+        with open(f'/ivr/live/{code}', 'r') as f:
+            sha1 = f.readline().trim()
+            _global_dispatch(sha1)
 
     def bg_play(self, tag):
         self.bg_tag = tag

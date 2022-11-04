@@ -41,6 +41,7 @@ class Main < Sinatra::Base
     end
 
     def self.kill_call(call_id)
+        @@info_for_call_id[call_id][:stdout].close
         @@info_for_call_id[call_id][:thread].kill
         @@info_for_call_id[call_id][:notify][1].puts("hey")
         @@info_for_call_id.delete(call_id)

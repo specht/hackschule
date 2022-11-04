@@ -80,11 +80,11 @@ class Main < Sinatra::Base
         form = request.body.read
         decoded_form = URI.decode_www_form(form)
         data = Hash[decoded_form]
-        STDERR.puts data.to_yaml
+        # STDERR.puts data.to_yaml
         call_id = data['callId']
         event = data['event']
         if event == 'newCall'
-            STDERR.puts "NEW CALL with call id #{call_id}!"
+            STDERR.puts "RECEIVED NEW_CALL from sipgate with call id #{call_id}!"
             @@info_for_call_id[call_id] = self.class.launch_script(call_id, DEFAULT_SCRIPT)
             @@info_for_call_id[call_id][:last_path] = nil
             @@info_for_call_id[call_id][:buffer] = ''
@@ -108,6 +108,7 @@ class Main < Sinatra::Base
             response.body = xml
         elsif event == 'dtmf'
             dtmf = data['dtmf']
+            STDERR.puts "RECEIVED DTMF from sipgate with dtmf = #{dtmf}!"
         end
     end
 end

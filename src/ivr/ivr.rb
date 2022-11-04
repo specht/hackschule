@@ -111,6 +111,25 @@ class Main < Sinatra::Base
         elsif event == 'dtmf'
             dtmf = data['dtmf']
             STDERR.puts "RECEIVED DTMF from sipgate with call_id #{call_id} and dtmf = #{dtmf}!"
+            @@info_for_call_id[call_id][:stdin].puts(dtmf)
+            STDERR.puts "Waiting for response from thread..."
+            sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
+            @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
+            xml = StringIO.open do |io|
+                io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                io.puts "<Response>"
+                io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
+                io.puts "<Play>"
+                io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
+                io.puts "</Play>"
+                io.puts "</Gather>"
+                io.puts "</Response>"
+                io.string
+            end
+            STDERR.puts "Sending XML:\n#{xml}"
+            response.headers['Content-Type'] = 'application/xml'
+            response.headers['Content-Length'] = "#{xml.size}"
+            response.body = xml
         end
     end
 end

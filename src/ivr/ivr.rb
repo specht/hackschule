@@ -93,7 +93,7 @@ class Main < Sinatra::Base
             @@watcher_ping[1].puts("hey")
         elsif event == 'dtmf'
             dtmf = data['dtmf']
-            STDERR.puts "RECEIVED DTMF from sipgate with call_id #{call_id} and dtmf = #{dtmf}!"
+            STDERR.puts "RECEIVED DTMF from sipgate with call_id #{call_id} and dtmf = #{dtmf} (#{dtmf.class})!"
             @@info_for_call_id[call_id][:stdin].puts(dtmf)
         else
             STDERR.puts "RECEIVED #{event.upcase} from sipgate with call_id #{call_id}!"

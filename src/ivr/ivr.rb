@@ -23,6 +23,15 @@ class Main < Sinatra::Base
         {:stdin => stdin, :stdout=> stdout, :stderr => stderr, :thread => thread}
     end
 
+    def handle_buffer_for_call(call_id)
+        while !(@@info_for_call_id[call_id][:buffer].index("\n").nil?)
+            nli = @@info_for_call_id[call_id][:buffer].index("\n")
+            line = @@info_for_call_id[call_id][:buffer][0, nli]
+            @@info_for_call_id[call_id][:buffer] = @@info_for_call_id[call_id][:buffer][nli + 1, @@info_for_call_id[call_id][:buffer].size]
+            STDERR.puts "[#{call_id}] << [#{line}]"
+        end
+    end
+
     configure do
         STDERR.puts "Configuring IVR"
         parts = File.read(Dir['/tasks/**/*telefonspiel.txt'].first).split('-' * 8).map { |x| x.strip }
@@ -50,12 +59,10 @@ class Main < Sinatra::Base
                     call_id = @@call_id_for_stdout_fd[io.fileno]
                     if call_id
                         STDERR.puts "Got a response for #{call_id}!"
-                        s = io.read_nonblock(1024)
-                        STDERR.puts s
+                        @@info_for_call_id[call_id][:buffer] += io.read_nonblock(1024)
+                        handle_buffer_for_call(call_id)
                     else
-                        STDERR.puts "JUST THE WATCHER PING"
                         s = io.read_nonblock(1024)
-                        STDERR.puts s
                     end
                 end
             end
@@ -73,6 +80,7 @@ class Main < Sinatra::Base
             STDERR.puts "NEW CALL with call id #{call_id}!"
             @@info_for_call_id[call_id] = self.class.launch_script(call_id, DEFAULT_SCRIPT)
             @@info_for_call_id[call_id][:last_path] = nil
+            @@info_for_call_id[call_id][:buffer] = ''
             @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id
             @@watcher_ping[1].puts("hey")
             # xml = StringIO.open do |io|

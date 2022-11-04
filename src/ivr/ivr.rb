@@ -7,7 +7,7 @@ require 'open3'
 
 class Main < Sinatra::Base
     def self.launch_script(call_id, script_path)
-        STDERR.puts "Launching script #{tag}..."
+        STDERR.puts "Launching script #{script_path}..."
         path = "/tmp/script-#{call_id}.py"
         File.open(path, 'w') do |f|
             script = File.read(script_path)

@@ -36,7 +36,7 @@ class Main < Sinatra::Base
                 @@info_for_call_id[call_id][:notify][1].puts("hey")
             elsif data['dispatch']
                 STDERR.puts "Dispatching call #{call_id} to code #{data['dispatch']}!"
-                # @@info_for_call_id[call_id][:notify][1].puts("hey")
+                @@info_for_call_id[call_id][:notify][1].puts("hey")
             end
         end
     end

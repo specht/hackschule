@@ -47,7 +47,7 @@ class Main < Sinatra::Base
                 reads = IO.select(read_sockets)
                 STDERR.puts "Got something"
                 reads.each do |io|
-                    call_id = @@call_id_for_stdout_fd[io.fd]
+                    call_id = @@call_id_for_stdout_fd[io.fileno]
                     if call_id
                         STDERR.puts "Got a response for #{call_id}!"
                     end
@@ -69,7 +69,7 @@ class Main < Sinatra::Base
             STDERR.puts "NEW CALL with call id #{call_id}!"
             @@info_for_call_id[call_id] = self.class.launch_script(call_id, DEFAULT_SCRIPT)
             @@info_for_call_id[call_id][:last_path] = nil
-            @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fd] = call_id
+            @@call_id_for_stdout_fd[@@info_for_call_id[call_id][:stdout].fileno] = call_id
             @@watcher_ping[1].puts("hey")
             # xml = StringIO.open do |io|
             #     io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"

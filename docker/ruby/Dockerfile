@@ -1,7 +1,8 @@
 FROM ruby:3-buster
 
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release ffmpeg
+RUN apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release ffmpeg python3 python3-pip
+RUN pip3 install pymysql numpy ansicolors cryptography requests
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 RUN echo \
   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
@@ -16,4 +17,5 @@ RUN bundle install
 RUN useradd -u 1000 michael
 RUN usermod -aG docker michael
 RUN touch /var/run/docker.sock && chmod 666 /var/run/docker.sock
+
 # USER michael

@@ -236,6 +236,7 @@ end
 
 docker_compose[:services][:ruby][:links] ||= []
 docker_compose[:services][:ruby][:links] << 'tts:tts'
+docker_compose[:services][:ruby][:links] << 'tts_helper:tts_helper'
 
 
 if PROFILE.include?(:neo4j)

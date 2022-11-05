@@ -6,6 +6,10 @@ require 'fileutils'
 require 'sinatra'
 require 'yaml'
 
+def split_sentences(s)
+    s.gsub(/\s+/, ' ').strip.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
+end
+
 class Main < Sinatra::Base
     get '/ping' do
         content_type 'text/plain'
@@ -25,10 +29,6 @@ class Main < Sinatra::Base
             end
         end
         path
-    end
-
-    def split_sentences(s)
-        s.gsub(/\s+/, ' ').strip.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
     end
 
     post '/' do

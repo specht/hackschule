@@ -24,6 +24,10 @@ WEEK_DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
 DEVELOPMENT = ENV['DEVELOPMENT']
 
+def split_sentences(s)
+    s.gsub(/\s+/, ' ').strip.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
+end
+
 def update_resolutions(use_tag = nil)
     tags = []
     if use_tag.nil?
@@ -670,7 +674,7 @@ class Main < Sinatra::Base
         @html_entities_coder.encode(s)
     end
 
-    def store_script(script)
+    def store_script(script, slug)
         require_user!
         script = script.rstrip + "\n"
         script_sha1 = RandomTag::to_base31(Digest::SHA1.hexdigest(script).to_i(16))[0, 8]
@@ -680,6 +684,18 @@ class Main < Sinatra::Base
             neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :size => script.size, :lines => script.count("\n") + 1)
                 MERGE (sc:Script {sha1: $sha1, size: $size, lines: $lines})
             END_OF_QUERY
+        end
+        if slug == 'telefonspiel'
+            strings_path = "/raw/code/#{script_sha1}.json"
+            unless File.exists?(strings_path)
+                result = `python3 /app/analyze-ivr.py \"#{script_path}\"`
+                exit_code = $?
+                File.open(strings_path, 'w') do |f|
+                    if exit_code == 0
+                        f.puts result
+                    end
+                end
+            end
         end
         return script_sha1, script
     end
@@ -708,8 +724,12 @@ class Main < Sinatra::Base
                         unless task.nil?
                             fifo = nil
 
-                            script_sha1, submitted_script = store_script(request['script'])
-                            ws.send({:script_sha1 => script_sha1}.to_json)
+                            script_sha1, submitted_script = store_script(request['script'], request['slug'])
+                            data = {:script_sha1 => script_sha1}
+                            if request['slug'] == 'telefonspiel'
+                                data[:analysis] = get_analysis_for_sha1(script_sha1)
+                            end
+                            ws.send(data.to_json)
                             neo4j_query(<<~END_OF_QUERY, :slug => task[:slug], :sha1 => script_sha1)
                                 MERGE (t:Task {slug: $slug})
                             END_OF_QUERY
@@ -1739,12 +1759,35 @@ class Main < Sinatra::Base
         return submission_node_id
     end
 
+    def get_analysis_for_sha1(sha1)
+        begin
+            analysis = JSON.parse(File.read("/raw/code/#{sha1}.json"))
+            new_analysis = {}
+            if analysis['title']
+                new_analysis['title'] = analysis['title']
+            end
+            new_s_set = Set.new()
+            new_analysis['sentences'] = []
+            analysis['sentences'].each do |s|
+                split_sentences(s).each do |s2|
+                    unless new_s_set.include?(s2)
+                        new_analysis['sentences'] << s2
+                    end
+                    new_s_set << s2
+                end
+            end
+            new_analysis
+        rescue
+            nil
+        end
+    end
+
     post '/api/store_script' do
         require_user!
         data = parse_request_data(:required_keys => [:script, :slug],
                                   :max_body_length => 1024 * 1024,
                                   :max_string_length => 1024 * 1024)
-        sha1, script = store_script(data[:script])
+        sha1, script = store_script(data[:script], data[:slug])
         if data[:slug] == 'easy6502'
             store_or_update_submission(data[:slug], sha1, DateTime.now.new_offset(0).to_s)
         end
@@ -1759,7 +1802,12 @@ class Main < Sinatra::Base
         if result.size > 0
             name = result.first['name']
         end
-        respond(:sha1 => sha1, :name => name)
+        result = {:sha1 => sha1, :name => name}
+        if request['slug'] == 'telefonspiel'
+            result[:analysis] = get_analysis_for_sha1(sha1)
+        end
+
+        respond(result)
     end
 
     post '/api/save_script_as' do
@@ -2613,6 +2661,30 @@ class Main < Sinatra::Base
         respond(:code => code)
     end
 
+    post '/api/unpublish_ivr' do
+        require_user!
+        data = parse_request_data(:required_keys => [:sha1])
+        neo4j_query(<<~END_OF_QUERY, {:sha1 => data[:sha1], :email => @session_user[:email]}) do |row|
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script {sha1: $sha1})
+            RETURN i.code AS code;
+        END_OF_QUERY
+            FileUtils.rm_f("/ivr_live/#{row['code']}")
+        end
+        neo4j_query(<<~END_OF_QUERY, {:sha1 => data[:sha1], :email => @session_user[:email]})
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script {sha1: $sha1})
+            DETACH DELETE i;
+        END_OF_QUERY
+        respond(:yay => 'sure')
+    end
+
+    post '/api/say_sentence' do
+        require_user!
+        data = parse_request_data(:required_keys => [:sentence])
+        command = "curl -s -X POST http://tts_helper:9292 -d '#{{:command => 'say', :already_split => true, :s => data[:sentence]}.to_json}'"
+        result = JSON.parse(`#{command}`)
+        respond(result)
+    end
+
     def list_all_lego_icons
         StringIO.open do |io|
             @@lego_icons[:all].sort.each do |k|
@@ -2689,6 +2761,8 @@ class Main < Sinatra::Base
                         if sha1
                             temp = read_script_for_sha1(sha1).strip + "\n"
                             content.gsub!('#{TASK_TEMPLATE}') { |x| temp }
+                            content.gsub!('loaded_with_sha1 = null', "loaded_with_sha1 = '#{sha1}'")
+                            content.gsub!('loaded_with_analysis = null', "loaded_with_analysis = #{get_analysis_for_sha1(sha1).to_json}")
                         else
                             content.gsub!('#{TASK_TEMPLATE}', task[:template].strip + "\n")
                         end

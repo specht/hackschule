@@ -7,12 +7,25 @@ ivr: true
 Programmiere dein eigenes Telefonspiel!
 
 Wenn dein Spiel live geschaltet ist, kannst du es unter der folgenden Telefonnummer spielen:
-<div style='font-size: 150%; border-radius: 8px; border: 1px solid rgba(0,0,0,0.5); padding: 10px; text-align: center;'>
-<i class='fa fa-phone-square' style='color: #4aa03f;'></i>&nbsp;&nbsp;<a href='tel:+493075438953'>030/75438953</a>
-<span style='opacity: 0.7; font-size: 70%;'>(Ortstarif)</span>
-</div>
+<div style='margin-bottom: 15px;'><a href='tel:+493075438953' class='btn btn-success btn-lg'><i class='fa fa-phone'></i>&nbsp;&nbsp;030/75438953</a></div>
+
+<hr />
+
+<div style='margin-bottom: 15px;' id='ivr_div'></div>
 <div id='ivr_div_list'></div>
-<div id='ivr_div'></div>
+
+<hr />
+
+Für das Telefonspiel stehen dir folgende Methoden zur Verfügung:
+
+{:.table.table-striped.table-sm.narrowwrap}
+`say(s)`       | Text sprechen
+`bg_play(url)` | Musik im Hintergrund abspielen
+`dtmf(n)`      | Telefontasten einlesen (maximal `n` Zeichen), gibt einen String zurück
+`set_title(n)` | Spielnamen setzen (notwendig, wenn du ein Spiel veröffentlichen oder Sätze einsprechen möchtest)
+
+Achtung: Um eine Methode aufzurufen, musst du `self.` davor schreiben, also z. B. `self.say('Hallo!')`.
+
 --------
 [verify]
 false
@@ -20,6 +33,7 @@ false
 [template]
 class Game(AnswerPhone):
     def run(self):
+        self.set_title('Test')
         self.bg_play('https://youtu.be/dQsYLvGhO-k')
         self.sleep(4000)
         self.say("Hallo.")

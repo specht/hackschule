@@ -13,6 +13,7 @@ window.message_to_append_index = 0;
 window.message_to_append_timestamp = 0.0;
 window.audio = new Audio();
 window.audio_queue = [];
+window.ivr_analysis = null;
 
 jQuery.extend({
     getQueryParameters : function(str) {
@@ -261,39 +262,98 @@ function start_audio_queue() {
 function refresh_active_ivr_codes() {
     api_call('/api/get_my_ivr', {}, function(data) {
         $('#ivr_div_list').empty();
+        let all_published_sha1 = [];
         if (data.rows.length === 0) {
-            $('#ivr_div_list').append("Du hast noch keine Spiele veröffentlich.")
+            $('#ivr_div_list').append("<p>Du hast noch keine Spiele veröffentlicht.</p>");
         } else {
-            let table = $(`<table>`);
+            $('#ivr_div_list').append("<p>Hier siehst du eine Liste deiner momentan veröffentlichten Telefonspiele:</p>");
+            let table = $(`<table class='table table-responsive'>`);
+            let row = $("<tr>");
+            row.append($("<th>").text('Code'));
+            row.append($("<th>").text('Programm'));
+            row.append($("<th>").text(''));
+            row.append($("<th>").text(''));
+            table.append(row);
             for (let entry of data.rows) {
+                all_published_sha1.push(entry.sha1);
                 let row = $("<tr>");
-                row.append($("<td>").text(`${entry.code}`));
-                row.append($("<td>").text(`${entry.sha1}`));
-                row.append($("<td>").append($('<a>').attr('href', `tel:+493075438953,${entry.code}`).text(`+493075438953,${entry.code}`)));
+                row.append($("<td>").html(`<b>${entry.code}</b>`));
+                row.append($("<td>").append($('<a>').text(`${entry.sha1}`).attr('href', `/task/telefonspiel/${entry.sha1}`)));
+                row.append($("<td>").append($('<a>').addClass('btn btn-success btn-sm').attr('href', `tel:+493075438953,${entry.code}`).html(`Anrufen`)));
+                let bu_unpublish = $('<button>').addClass('btn btn-danger btn-sm').html(`Löschen`).data('sha1', entry.sha1);
+                bu_unpublish.on('click', function(e) {
+                    let button = $(e.target).closest('button');
+                    let sha1 = button.data('sha1');
+                    api_call('/api/unpublish_ivr', {sha1: sha1}, function(data) {
+                        if (data.success) {
+                            refresh_active_ivr_codes();
+                        }
+                    });
+                });
+                row.append($("<td>").append(bu_unpublish));
                 table.append(row);
             }
             $('#ivr_div_list').append(table);
         }
-        console.log(data);
+
+        $('#ivr_div').empty();
+        if (window.ivr_sha1 !== null) {
+            if (all_published_sha1.indexOf(window.ivr_sha1) < 0) {
+                let button = $(`<button class='btn btn-success' style='margin-right: 10px;'>Spiel veröffentlichen</button>`);
+                $('#ivr_div').append(button);
+                button.on('click', function(e) {
+                    api_call('/api/publish_ivr', {sha1: window.ivr_sha1}, function(data) {
+                        if (data.success) {
+                            refresh_active_ivr_codes();
+                        }
+                    });
+                });
+            } else {
+                $('#ivr_div').append($('<p>').text('Diese Version des Spiels ist bereits veröffentlicht.'))
+            }
+            if (window.ivr_analysis !== null) {
+                let button = $(`<button class='btn btn-secondary' style='margin-right: 10px;'>Texte einsprechen</button>`);
+                $('#ivr_div').append(button);
+                button.on('click', function(e) {
+                    $('#ivrSentencesModalGameTitle').text(window.ivr_analysis.title);
+                    $('#sentences-tbody').empty();
+                    for (let sentence of window.ivr_analysis.sentences) {
+                        let has_var = sentence.indexOf('[[[') >= 0;
+                        let row = $('<tr>');
+                        row.append($('<td>').text(sentence).css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
+                        let bu_speak = $(`<button class='btn btn-xs btn-success'>Vorlesen</button>`).data('text', sentence);
+                        row.append($('<td>').append(bu_speak));
+                        bu_speak.on('click', function(e) {
+                            let button = $(e.target).closest('button');
+                            api_call('/api/say_sentence', {sentence: button.data('text')}, function(data) {
+                                if (data.success) {
+                                    window.audio_queue = [];
+                                    window.audio.pause();
+                                    window.audio_queue.push({path: data.path_hd});
+                                    start_audio_queue();
+                                }
+                            })
+                        });
+                        $('#sentences-tbody').append(row);
+                    }
+                    $('#ivrSentencesModal').modal('show');
+                });
+
+            }
+        } else {
+        }
     });
 }
 
-function fixUri(slug, sha1) {
+function fixUri(slug, sha1, analysis) {
+    if (typeof(analysis) !== 'undefined') {
+        window.ivr_analysis = analysis;
+    }
     history.replaceState({}, null, '/task/' + slug + '/' + sha1);
     if (window.got_ivr) {
         console.log(`have ivr for ${sha1}`);
-        refresh_active_ivr_codes();
         window.ivr_sha1 = sha1;
-        $('#ivr_div').empty();
-        let button = $(`<button class='btn btn-success'>Live schalten</button>`);
-        $('#ivr_div').append(button);
-        button.on('click', function(e) {
-            api_call('/api/publish_ivr', {sha1: window.ivr_sha1}, function(data) {
-                if (data.success) {
-                    refresh_active_ivr_codes();
-                }
-            });
-        });
+        refresh_active_ivr_codes();
     }
 }
 
@@ -370,7 +430,7 @@ function setup_ws(ws)
         }
         else if (typeof(data.script_sha1) !== 'undefined')
         {
-            fixUri(window.slug, data.script_sha1);
+            fixUri(window.slug, data.script_sha1, data.analysis);
         }
         else if (typeof(data.zpl_png) !== 'undefined')
         {
@@ -415,7 +475,7 @@ function store_script(script)
     api_call('/api/store_script', {
         slug: window.slug,
         script: script}, function(data) {
-            fixUri(window.slug, data.sha1);
+            fixUri(window.slug, data.sha1, data.analysis);
         });
 }
 

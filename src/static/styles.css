@@ -890,3 +890,9 @@ tr.open-script-row:hover {
     background-color: #eee;
 }
 
+.btn-xs {
+    padding: 0.2rem 0.5rem;
+    font-size: .875rem;
+    line-height: 1.0;
+    border-radius: 0.2rem;
+}

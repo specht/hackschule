@@ -86,13 +86,13 @@
                 <button class='btn btn-sm btn-secondary bu-hide-sidebar'><i class='fa fa-angle-double-left'></i>&nbsp;&nbsp;Seitenleiste ausblenden</button>
             </div>
         </div>
-        <div class='#{task_has_easy6502 ? 'col-md-3' : 'col-md-4'} container-editor'>
+        <div class='#{task_has_easy6502 ? 'col-md-3' : 'col-md-5'} container-editor'>
             <pre id="editor">#{TASK_TEMPLATE}</pre>
             <div class='show-task-sidebar'>
                 <button class='btn btn-secondary bu-show-sidebar'><i class='fa fa-angle-double-right'></i></button>
             </div>
         </div>
-        <div class='col-md-5 container-terminal'>
+        <div class='col-md-4 container-terminal'>
             <div id='screen' style="#{task_has_screen ? '' : 'display: none;'}">
                 <div id='sprite_container'>
                 </div>
@@ -252,7 +252,29 @@
   </div>
 </div>
 
-<div class="modal fade" id="printLabelModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="ivrSentencesModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLongTitle">Texte einsprechen: <span id="ivrSentencesModalGameTitle"></span></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" style='overflow-x: auto;'>
+        <table class='table table-sm table-no-textwrap'>
+          <tbody id='sentences-tbody'>
+          </tbody>
+        </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Schließen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="printLabelModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
         <div class="modal-body">
@@ -279,6 +301,8 @@ Du bist momentan nicht angemeldet. Bitte <a href='/login'>melde dich an</a>, um 
 var session_user_email = '#{(@session_user || {})[:email]}';
 var no_user_logged_in = ('#{@session_user.nil?}' === 'true');
 var got_ivr = false;
+var loaded_with_sha1 = null;
+var loaded_with_analysis = null;
 
 function load_latest_draft() {
     api_call('/api/load_latest_draft', {slug: window.slug}, function(data) {
@@ -388,7 +412,7 @@ function name_script_modal() {
     api_call('/api/store_script', {script: editor.getValue(), slug: window.slug}, function(data) {
         if (data.success)
         {
-            fixUri(window.slug, data.sha1);
+            fixUri(window.slug, data.sha1, data.analysis);
             $('#name_this_script').val(data.name);
             let store_name_data = {};
             store_name_data.slug = window.slug;
@@ -405,7 +429,7 @@ function share_script_modal() {
         if (data.success)
         {
             $('#share_this_link').val('#{WEB_ROOT}/task/#{TASK_SLUG}/' + data.sha1);
-            fixUri(window.slug, data.sha1);
+            fixUri(window.slug, data.sha1, data.analysis);
             $('#shareModal').modal('show');
         }
     });
@@ -607,6 +631,9 @@ window.addEventListener('load', function () {
     window.got_ivr = ($('#ivr_div').length > 0);
     if (window.got_ivr) {
         refresh_active_ivr_codes();
+        if (loaded_with_sha1 != null) {
+            fixUri(slug, loaded_with_sha1, loaded_with_analysis);
+        }
     }
 });
 window.slug = '#{TASK_SLUG}';

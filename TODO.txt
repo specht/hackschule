@@ -1,0 +1,2 @@
+&curren turns into weird symbol when script gets loaded via URL
+IVR: long running scripts block queue, print statements crash IVR

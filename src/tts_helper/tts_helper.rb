@@ -5,12 +5,18 @@ require 'digest'
 require 'fileutils'
 require 'sinatra'
 require 'yaml'
+require 'neo4j_bolt'
+
+Neo4jBolt.bolt_host = 'neo4j'
+Neo4jBolt.bolt_port = 7687
 
 def split_sentences(s)
     s.gsub(/\s+/, ' ').strip.split(/([^\d][\.\?!]+)/).each_slice(2).map { |x| x.map { |y| y.strip }.join('').strip }
 end
 
 class Main < Sinatra::Base
+    include Neo4jBolt
+
     get '/ping' do
         content_type 'text/plain'
         'hello there'
@@ -46,10 +52,21 @@ class Main < Sinatra::Base
                 response[:remaining] = remaining
             end
             STDERR.puts "[#{sentence}]"
-            response[:path] = render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
+            if data['title'] && data['email']
+                sentence_sha1 = Digest::SHA1.hexdigest(sentence)[0, 12]
+                rows = neo4j_query(<<~END_OF_QUERY, {:email => data['email'], :sentence_sha1 => sentence_sha1, :title => data['title']}) do |row|
+                    MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[:FOR]->(s:Sentence {sha1: $sentence_sha1})-[:FOR]->(t:Title {title: $title})
+                    RETURN r.sha1 AS sha1 LIMIT 1;
+                END_OF_QUERY
+                    response[:path] = "/tts/#{row['sha1'][0, 2]}/#{row['sha1'][2, row['sha1'].size - 2]}.wav"
+                end
+            end
+            response[:path] ||= render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
         elsif data['command'] == 'sleep'
             ms = data['ms']
             # TODO: assert that ms is an int within a range
+            ms = 0 if ms < 0
+            ms = 60 * 1000 if ms > 60 * 1000
             response[:path] = render_sound("sox -n -r 22050 -b 16 \"__OUT_PATH__\" synth #{ms/1000.0} brownnoise vol -60dB")
         elsif data['command'] == 'mix'
             voice_path = render_sound("sox #{data['voice_queue'].map { |x| '"' + x + '"'}.join(' ')} \"__OUT_PATH__\"")
@@ -58,7 +75,10 @@ class Main < Sinatra::Base
                 bg_path = render_sound("cd /tts && yt-dlp -x --audio-format wav -o \"temp.%(ext)s\" \"#{data['bg_tag']}\" && ffmpeg -i \"temp.wav\" -ar 22050 -ac 1 \"__OUT_PATH__\" && rm temp.wav")
                 response[:path] = bg_path
                 duration = `ffprobe -show_entries format=duration -of default=nk=1:nw=1 \"#{voice_path}\" 2>/dev/null`.to_f
-                mix_path = render_sound("ffmpeg -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5.0:makeup=1:level_sc=0.5:release=400:mix=0.95[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
+                ducking = data['bg_ducking'].to_f
+                ducking = 0.0 if ducking < 0.0
+                ducking = 1.0 if ducking > 1.0
+                mix_path = render_sound("ffmpeg -ss #{data['bg_offset'] / 1000.0} -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5:makeup=1:level_sc=0.5:release=400:mix=#{ducking}[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
                 response[:path] = mix_path
             end
         end

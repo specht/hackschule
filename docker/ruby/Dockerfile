@@ -1,7 +1,7 @@
 FROM ruby:3-buster
 
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+RUN apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release ffmpeg
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 RUN echo \
   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \

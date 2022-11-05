@@ -259,6 +259,12 @@ function start_audio_queue() {
     }
 }
 
+function blobToDataURL(blob, callback) {
+    var a = new FileReader();
+    a.onload = function(e) {callback(e.target.result);}
+    a.readAsDataURL(blob);
+}
+
 function refresh_active_ivr_codes() {
     api_call('/api/get_my_ivr', {}, function(data) {
         $('#ivr_div_list').empty();
@@ -316,7 +322,9 @@ function refresh_active_ivr_codes() {
             button.on('click', function(e) {
                 $('#ivrSentencesModalGameTitle').text(window.ivr_analysis.title);
                 $('#sentences-tbody').empty();
-                for (let sentence of window.ivr_analysis.sentences) {
+                for (let i = 0; i < window.ivr_analysis.sentences.length; i++) {
+                    let sentence = window.ivr_analysis.sentences[i];
+                    let sentence_sha1 = window.ivr_analysis.sha1[i];
                     let has_var = sentence.indexOf('[[[') >= 0;
                     let row = $('<tr>');
                     row.append($('<td>').text(sentence).css('white-space', 'break-spaces').css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
@@ -331,7 +339,62 @@ function refresh_active_ivr_codes() {
                                 window.audio_queue.push({path: data.path_hd});
                                 start_audio_queue();
                             }
-                        })
+                        });
+                    });
+                    let bu_record = $(`<button class='btn btn-xs btn-secondary'>Aufnehmen</button>`).data('text', sentence).data('sentence_sha1', sentence_sha1).data('recording', false);
+                    if (has_var) bu_record.prop('disabled', true);
+                    row.append($('<td>').append(bu_record));
+                    bu_record.on('click', function(e) {
+                        let button = $(e.target).closest('button');
+                        if (button.data('recording')) {
+                            button.addClass('btn-secondary').removeClass('btn-danger');
+                            button.text('Aufnehmen');
+                            button.data('recording', false);
+                            window.recorder.stop();
+                        } else {
+                            button.removeClass('btn-secondary').addClass('btn-danger');
+                            button.text('Stop');
+                            button.data('recording', true);
+                            launch_recorder(function(audio) {
+                                blobToDataURL(audio, function(data) {
+                                    api_call('/api/store_recording', {base64: data, title: ivr_analysis.title, sentence_sha1: button.data('sentence_sha1')}, function(data) {
+                                        if (data.success) {
+                                            console.log(data);
+                                            window.ivr_analysis.recording_for_sha1[button.data('sentence_sha1')] = data.sha1;
+                                            $(button).closest('tr').find('.bu_play_recording').prop('disabled', false).data('recording_sha1', data.sha1);
+                                            $(button).closest('tr').find('.bu_delete_recording').prop('disabled', false);
+                                        }
+                                    });
+                                })
+                            });
+                        }
+                    });
+                    let bu_play_recording = $(`<button class='btn btn-xs btn-success'>Wiedergabe</button>`).addClass('bu_play_recording').data('recording_sha1', window.ivr_analysis.recording_for_sha1[sentence_sha1]);
+                    if (!(sentence_sha1 in window.ivr_analysis.recording_for_sha1)) bu_play_recording.prop('disabled', true);
+                    row.append($('<td>').append(bu_play_recording));
+                    bu_play_recording.on('click', function(e) {
+                        let button = $(e.target).closest('button');
+                        let sha1 = button.data('recording_sha1');
+                        console.log('playing')
+                        window.audio_queue = [];
+                        window.audio.pause();
+                        window.audio_queue.push({path: `/tts/${sha1.substr(0, 2)}/${sha1.substr(2)}.wav`});
+                        start_audio_queue();
+                    });
+                    let bu_delete_recording = $(`<button class='btn btn-xs btn-danger'>Löschen</button>`).addClass('bu_delete_recording').data('sentence_sha1', sentence_sha1);
+                    if (!(sentence_sha1 in window.ivr_analysis.recording_for_sha1)) bu_delete_recording.prop('disabled', true);
+                    row.append($('<td>').append(bu_delete_recording));
+                    bu_delete_recording.on('click', function(e) {
+                        let button = $(e.target).closest('button');
+                        let sha1 = button.data('sentence_sha1');
+                        api_call('/api/delete_recording', {title: ivr_analysis.title, sentence_sha1: sha1}, function(data) {
+                            if (data.success) {
+                                console.log(data);
+                                delete window.ivr_analysis.recording_for_sha1[sha1];
+                                $(button).closest('tr').find('.bu_play_recording').prop('disabled', true).data('recording_sha1', null);
+                                $(button).closest('tr').find('.bu_delete_recording').prop('disabled', true).data('recording_sha1', null);
+                            }
+                        });
                     });
                     $('#sentences-tbody').append(row);
                 }

@@ -1,5 +1,6 @@
 require 'sinatra/base'
 require 'faye/websocket'
+require 'base64'
 require 'json'
 require 'date'
 require 'kramdown'
@@ -112,7 +113,11 @@ class SetupDatabase
         'Script/sha1',
         'LabelPrintRequest/tag',
         'IvrCode/code',
+        'Title/title',
+        'Sentence/sha1',
+        'Recording/sha1',
     ]
+
     INDEX_LIST = [
         'Submission/correct',
         'Submission/t0',
@@ -812,7 +817,7 @@ class Main < Sinatra::Base
                                 script_path = File.join(dir, 'main.py')
                                 File.open(script_path, 'w') do |f|
                                     if task[:custom_main_pre]
-                                        f.puts(task[:custom_main_pre])
+                                        f.puts(task[:custom_main_pre].gsub!('__USER_EMAIL__', @session_user[:email]))
                                     end
                                     f.write(script)
                                 end
@@ -1768,12 +1773,24 @@ class Main < Sinatra::Base
             end
             new_s_set = Set.new()
             new_analysis['sentences'] = []
+            new_analysis['sha1'] = []
             analysis['sentences'].each do |s|
                 split_sentences(s).each do |s2|
                     unless new_s_set.include?(s2)
                         new_analysis['sentences'] << s2
+                        new_analysis['sha1'] << Digest::SHA1.hexdigest(s2)[0, 12]
                     end
                     new_s_set << s2
+                end
+            end
+            new_analysis['recording_for_sha1'] = {}
+            if new_analysis['title']
+                neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :title => new_analysis['title'], :sha1_list => new_analysis['sha1']}) do |row|
+                    MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[:FOR]->(s:Sentence)-[:FOR]->(t:Title {title: $title})
+                    WHERE s.sha1 IN $sha1_list
+                    RETURN s.sha1 AS sentence_sha1, r.sha1 AS recording_sha1;
+                END_OF_QUERY
+                    new_analysis['recording_for_sha1'][row['sentence_sha1']] = row['recording_sha1']
                 end
             end
             new_analysis
@@ -2651,7 +2668,8 @@ class Main < Sinatra::Base
         code = all_codes.to_a.sample
         STDERR.puts "Publish #{data[:sha1]} as #{code}"
         File.open("/ivr_live/#{code}", 'w') do |f|
-            f.puts data[:sha1]
+            data = {:sha1 => data[:sha1], :email => @session_user[:email]}
+            f.puts data.to_json
         end
         neo4j_query(<<~END_OF_QUERY, {:sha1 => data[:sha1], :email => @session_user[:email], :code => code})
             MATCH (u:User {email: $email})
@@ -2683,6 +2701,52 @@ class Main < Sinatra::Base
         command = "curl -s -X POST http://tts_helper:9292 -d '#{{:command => 'say', :already_split => true, :s => data[:sentence]}.to_json}'"
         result = JSON.parse(`#{command}`)
         respond(result)
+    end
+
+    post '/api/store_recording' do
+        require_user!
+        data = parse_request_data(:required_keys => [:base64, :title, :sentence_sha1],
+            :max_body_length => 8 * 1024 * 1024,
+            :max_string_length => 8 * 1024 * 1024,
+            :max_value_lengths => {:base64 => 8 * 1024 * 1024})
+        base64 = data[:base64].sub('data:audio/mp3;base64,', '')
+        mp3 = Base64.decode64(base64)
+        sha1 = Digest::SHA1.hexdigest(mp3)[0, 12]
+        path = "/tts-cache/#{sha1[0, 2]}/#{sha1[2, sha1.size - 2]}.mp3"
+        unless File.exists?(path)
+            STDERR.puts path
+            FileUtils::mkpath(File.dirname(path))
+            File.open(path, 'w') do |f|
+                f.write(mp3)
+            end
+            system("ffmpeg -hide_banner -loglevel error -i \"#{path}\" -ar 22050 -ac 1 \"#{path.sub('.mp3', '-temp.wav')}\"")
+            duration = `ffprobe -show_entries format=duration -of default=nk=1:nw=1 \"#{path.sub('.mp3', '-temp.wav')}\" 2>/dev/null`.to_f
+            STDERR.puts "Duration: #{duration}"
+            system("ffmpeg -hide_banner -loglevel error -i \"#{path.sub('.mp3', '-temp.wav')}\" -t #{duration - 0.2} -ar 22050 -ac 1 \"#{path.sub('.mp3', '.wav')}\"")
+            FileUtils.rm(path.sub('.mp3', '-temp.wav'))
+        end
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :title => data[:title], :sentence_sha1 => data[:sentence_sha1], :sha1 => sha1})
+            MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[f:FOR]->(s:Sentence {sha1: $sentence_sha1})-[:FOR]->(t:Title {title: $title})
+            DELETE f;
+        END_OF_QUERY
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :title => data[:title], :sentence_sha1 => data[:sentence_sha1], :sha1 => sha1})
+            MATCH (u:User {email: $email})
+            MERGE (t:Title {title: $title})
+            MERGE (s:Sentence {sha1: $sentence_sha1})
+            MERGE (r:Recording {sha1: $sha1})
+            CREATE (u)-[:RECORDED]->(r)-[:FOR]->(s)-[:FOR]->(t);
+        END_OF_QUERY
+        respond(:path => path.sub('.mp3', '.wav'), :sha1 => sha1)
+    end
+
+    post '/api/delete_recording' do
+        require_user!
+        data = parse_request_data(:required_keys => [:title, :sentence_sha1])
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :title => data[:title], :sentence_sha1 => data[:sentence_sha1]})
+            MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[f:FOR]->(s:Sentence {sha1: $sentence_sha1})-[:FOR]->(t:Title {title: $title})
+            DELETE f;
+        END_OF_QUERY
+        respond(:yay => 'sure')
     end
 
     def list_all_lego_icons

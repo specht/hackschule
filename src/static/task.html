@@ -435,10 +435,37 @@ function share_script_modal() {
     });
 }
 
+window.recorder = null;
+window.recorder_chunks = [];
+window.recorder_callback = null;
+
+function launch_recorder(callback) {
+    window.recorder_callback = callback;
+    if (window.recorder === null) {
+        navigator.mediaDevices.getUserMedia({audio: true}).then(_stream => {
+            stream = _stream;
+            window.recorder_chunks = [];
+            window.recorder = new MediaRecorder(stream);
+            window.recorder.ondataavailable = e => {
+                console.log('got data!');
+                window.recorder_chunks.push(e.data);
+                if(recorder.state == 'inactive') {
+                    let blob = new Blob(window.recorder_chunks, {type: 'audio/mp3' });
+                    window.recorder_callback(blob);
+                }
+            };
+            window.recorder.start();
+        });
+    } else {
+        window.recorder_chunks = [];
+        window.recorder.start();
+    }
+}
+
 window.addEventListener('load', function () {
     if (no_user_logged_in)
         $('body').css('margin-top', '107px');
-    
+
     $('.hint-button').click(function(e) {
         $(e.target).hide();
         $(e.target).next('div').show();

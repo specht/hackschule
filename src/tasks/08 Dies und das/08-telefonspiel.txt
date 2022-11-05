@@ -19,10 +19,12 @@ Wenn dein Spiel live geschaltet ist, kannst du es unter der folgenden Telefonnum
 Für das Telefonspiel stehen dir folgende Methoden zur Verfügung:
 
 {:.table.table-striped.table-sm.narrowwrap}
-`say(s)`       | Text sprechen
-`bg_play(url)` | Musik im Hintergrund abspielen
-`dtmf(n)`      | Telefontasten einlesen (maximal `n` Zeichen), gibt einen String zurück
-`set_title(n)` | Spielnamen setzen (notwendig, wenn du ein Spiel veröffentlichen oder Sätze einsprechen möchtest)
+`say(s)`               | Text sprechen
+`sleep(ms)`            | Pause für `ms` Millsekunden einfügen
+`bg_play(url, offset, ducking)` | Musik von `url` im Hintergrund abspielen, optionale Parameter: `offset`: ab hier abspielen (in Millisekunden), `ducking`: wie sehr soll die Musik leiser werden, wenn gesprochen wird (0.0 bis 1.0)
+`bg_stop()`            | Hintergrundmusik beenden
+`dtmf(n)`              | Telefontasten einlesen (maximal `n` Zeichen), gibt einen String zurück
+`set_title(n)`         | Spielnamen setzen (notwendig, wenn du ein Spiel veröffentlichen oder Sätze einsprechen möchtest)
 
 Achtung: Um eine Methode aufzurufen, musst du `self.` davor schreiben, also z. B. `self.say('Hallo!')`.
 
@@ -36,17 +38,11 @@ class Game(AnswerPhone):
         self.set_title('Test')
         self.bg_play('https://youtu.be/dQsYLvGhO-k')
         self.sleep(4000)
-        self.say("Hallo.")
-        self.sleep(2000)
-        self.say("Hier kannst du dein eigenes Telefonspiel machen.")
+        self.say("Hier kannst du dein eigenes Telefonspiel programmieren.")
         self.sleep(2000)
         self.say("Du kannst dein Programm Texte sprechen lassen und Eingaben von der Tastatur des Telefons einlesen.")
         self.sleep(2000)
         self.say("Machen wir mal ein Beispiel. Drück bitte eine Taste.")
-        # 20 Sekunden warten, damit die Hintergrundgeräusche
-        # nicht sofort aufhören, wenn der gesprochene Text
-        # vorbei ist und nur noch auf die Eingabe gewartet wird.
-        self.sleep(20000)
         taste = self.dtmf(1)
         self.say(f"Danke. Du hast die Taste {taste} gedrückt.")
         self.sleep(2000)
@@ -58,13 +54,20 @@ import subprocess
 import sys
 import os
 import tempfile
+import time
+
+USER_EMAIL = "__USER_EMAIL__"
 
 class AnswerPhone:
     def __init__(self, pipe):
         self.pipe = pipe
+        self.title = None
         self._reset()
         self.bg_tag = None
+        self.bg_offset = 0
+        self.bg_ducking = 5.0
         self.ivr_mode = False
+        self.t0 = None
         if len(sys.argv) > 1 and sys.argv[1] == '--ivr':
             self.ivr_mode = True
 
@@ -80,9 +83,15 @@ class AnswerPhone:
         return response
 
     def _flush(self):
+        t = time.time()
+        if self.t0 == None:
+            self.t0 = t
+        t_offset = (t - self.t0) * 1000.0
         data = {'command': 'mix', 'voice_queue': []}
         if self.bg_tag != None:
             data['bg_tag'] = self.bg_tag
+            data['bg_offset'] = self.bg_offset + t_offset
+            data['bg_ducking'] = self.bg_ducking
         for path in self.voice_queue:
             data['voice_queue'].append(path)
         response = self._api_call(data)
@@ -95,21 +104,23 @@ class AnswerPhone:
 
     def _dispatch(self, code):
         with open(f'/ivr/live/{code}', 'r') as f:
-            sha1 = f.readline().strip()
-            _global_dispatch(sha1)
+            data = json.loads(f.read())
+            _global_dispatch(data['sha1'], data['email'])
 
     def set_title(self, title):
         self.title = title
 
-    def bg_play(self, tag):
+    def bg_play(self, tag, offset = 0, ducking = 0.95):
         self.bg_tag = tag
+        self.bg_offset = offset
+        self.bg_ducking = ducking
 
     def bg_stop(self):
         self.bg_tag = None
 
     def say(self, text):
         first = True
-        response = self._api_call({'command': 'say', 's': text})
+        response = self._api_call({'command': 'say', 's': text, 'title': self.title, 'email': USER_EMAIL})
         remaining = response['remaining']
         self.voice_queue.append(response['path_hd'])
         for sentence in remaining:
@@ -121,6 +132,7 @@ class AnswerPhone:
         self.voice_queue.append(response['path_hd'])
 
     def dtmf(self, max_digits):
+        self.sleep(30000)
         self._flush()
         if self.ivr_mode:
             self.pipe.write(json.dumps({'get_dtmf': max_digits}) + "\n")
@@ -145,11 +157,11 @@ class AnswerPhone:
             while True:
                 pass
 
-def _global_dispatch(code):
+def _global_dispatch(code, email):
     print("_global_dispatch:", code, file = sys.stderr)
     with tempfile.NamedTemporaryFile() as temp:
         with open(f'/ivr/header.py') as f:
-            temp.write(f.read().encode('utf-8'))
+            temp.write(f.read().encode('utf-8').replace('__USER_EMAIL__', email))
         temp.write("\n".encode('utf-8'))
         with open(f'/code/{code}.py') as f:
             temp.write(f.read().encode('utf-8'))

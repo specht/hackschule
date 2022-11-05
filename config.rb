@@ -160,6 +160,7 @@ if PROFILE.include?(:dynamic)
                      "#{RAW_FILES_PATH}:/raw",
                      "#{GEN_FILES_PATH}:/gen",
                      "#{IVR_CODES_PATH}:/ivr_live",
+                     "#{TTS_CACHE_FILES_PATH}:/tts-cache",
                      "/var/run/docker.sock:/var/run/docker.sock"],
         :environment => env,
         :privileged => true,
@@ -206,7 +207,7 @@ if PROFILE.include?(:dynamic)
         :entrypoint =>  DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
             'rackup --quiet --host 0.0.0.0',
-        :links => ['tts:tts'],
+        :links => ['tts:tts', 'neo4j:neo4j'],
     }
     docker_compose[:services][:canvas] = {
         :build => './docker/canvas',

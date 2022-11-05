@@ -817,7 +817,7 @@ class Main < Sinatra::Base
                                 script_path = File.join(dir, 'main.py')
                                 File.open(script_path, 'w') do |f|
                                     if task[:custom_main_pre]
-                                        f.puts(task[:custom_main_pre].gsub!('__USER_EMAIL__', @session_user[:email]))
+                                        f.puts(task[:custom_main_pre].gsub('__USER_EMAIL__', @session_user[:email]))
                                     end
                                     f.write(script)
                                 end

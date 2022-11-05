@@ -34,7 +34,7 @@ class Game(AnswerPhone):
                     self.say('für:')
                     self.say(title)
 
-            code = self.dtmf(4)
+            code = self.dtmf(len(str(present_games[-1])))
             if len(available_codes) > 0 and code == '0':
                 code = random.choice(available_codes)
             if code in available_codes:

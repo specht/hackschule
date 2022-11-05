@@ -78,7 +78,7 @@ class Main < Sinatra::Base
                 ducking = data['bg_ducking'].to_f
                 ducking = 0.0 if ducking < 0.0
                 ducking = 1.0 if ducking > 1.0
-                mix_path = render_sound("ffmpeg -ss #{data['bg_offset'] / 1000.0} -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5:makeup=1:level_sc=0.5:release=400:mix=#{ducking}[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
+                mix_path = render_sound("ffmpeg -ss #{data['bg_offset'] / 1000.0} -i \"#{bg_path}\" -i \"#{voice_path}\" -filter_complex \"[1]asplit=2[sc][id]; [0][sc]sidechaincompress=threshold=0.00098:ratio=5:makeup=1:level_sc=0.5:release=400:mix=#{ducking},afade=t=in:ss=0:d=0.5[compr]; [compr][id]amix=inputs=2:duration=first,afade=t=out:st=#{duration-1.0}:d=1\" \"__OUT_PATH__\"")
                 response[:path] = mix_path
             end
         end

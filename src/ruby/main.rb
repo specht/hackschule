@@ -2650,7 +2650,7 @@ class Main < Sinatra::Base
         require_user!
         rows = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script)
-            RETURN i.code AS code, s.sha1 AS sha1;
+            RETURN i.code AS code, s.sha1 AS sha1, i.title AS title;
         END_OF_QUERY
         respond(:rows => rows)
     end
@@ -2662,19 +2662,21 @@ class Main < Sinatra::Base
     post '/api/publish_ivr' do
         require_user!
         data = parse_request_data(:required_keys => [:sha1])
-        all_codes = Set.new((0..9999).to_a.map { |x| sprintf('%04d', x)} )
-        all_codes -= Set.new(all_used_ivr_codes())
-        srand()
-        code = all_codes.to_a.sample
-        STDERR.puts "Publish #{data[:sha1]} as #{code}"
+        sha1 = data[:sha1]
+        all_codes = Set.new(1..9999)
+        all_codes -= Set.new(all_used_ivr_codes().map { |x| x.to_i } )
+        code = all_codes.to_a.first.to_s
+        STDERR.puts "Publish #{sha1} as #{code}"
+        script_data = JSON.parse(File.read("/raw/code/#{sha1}.json"))
+        title = script_data['title']
         File.open("/ivr_live/#{code}", 'w') do |f|
-            data = {:sha1 => data[:sha1], :email => @session_user[:email]}
+            data = {:sha1 => sha1, :email => @session_user[:email], :title => title}
             f.puts data.to_json
         end
-        neo4j_query(<<~END_OF_QUERY, {:sha1 => data[:sha1], :email => @session_user[:email], :code => code})
+        neo4j_query(<<~END_OF_QUERY, {:sha1 => sha1, :email => @session_user[:email], :code => code, :title => title})
             MATCH (u:User {email: $email})
             MATCH (s:Script {sha1: $sha1})
-            CREATE (u)<-[:BY]-(i:IvrCode {code: $code})-[:WHICH]->(s);
+            CREATE (u)<-[:BY]-(i:IvrCode {code: $code, title: $title})-[:WHICH]->(s);
         END_OF_QUERY
         respond(:code => code)
     end

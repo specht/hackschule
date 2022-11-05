@@ -273,20 +273,21 @@ function refresh_active_ivr_codes() {
             $('#ivr_div_list').append("<p>Du hast noch keine Spiele veröffentlicht.</p>");
         } else {
             $('#ivr_div_list').append("<p>Hier siehst du eine Liste deiner momentan veröffentlichten Telefonspiele:</p>");
-            let table = $(`<table class='table table-responsive'>`);
+            let table = $(`<table class='table table-responsive''>`);
             let row = $("<tr>");
             row.append($("<th>").text('Code'));
             row.append($("<th>").text('Programm'));
             row.append($("<th>").text(''));
             row.append($("<th>").text(''));
             table.append(row);
+            console.log(data);
             for (let entry of data.rows) {
                 all_published_sha1.push(entry.sha1);
                 let row = $("<tr>");
                 row.append($("<td>").html(`<b>${entry.code}</b>`));
-                row.append($("<td>").append($('<a>').text(`${entry.sha1}`).attr('href', `/task/telefonspiel/${entry.sha1}`)));
-                row.append($("<td>").append($('<a>').addClass('btn btn-success btn-sm').attr('href', `tel:+493075438953,${entry.code}`).html(`Anrufen`)));
-                let bu_unpublish = $('<button>').addClass('btn btn-danger btn-sm').html(`Löschen`).data('sha1', entry.sha1);
+                row.append($("<td>").append($('<a>').text(`${entry.title}`).attr('href', `/task/telefonspiel/${entry.sha1}`)));
+                row.append($("<td>").append($('<a>').addClass('btn btn-success btn-sm').attr('href', `tel:+493075438953,${entry.code}`).html(`<i class='fa fa-phone'></i>`)));
+                let bu_unpublish = $('<button>').addClass('btn btn-danger btn-sm').html(`<i class='fa fa-trash'></i>`).data('sha1', entry.sha1);
                 bu_unpublish.on('click', function(e) {
                     let button = $(e.target).closest('button');
                     let sha1 = button.data('sha1');

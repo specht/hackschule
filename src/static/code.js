@@ -320,7 +320,7 @@ function refresh_active_ivr_codes() {
                     for (let sentence of window.ivr_analysis.sentences) {
                         let has_var = sentence.indexOf('[[[') >= 0;
                         let row = $('<tr>');
-                        row.append($('<td>').text(sentence).css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
+                        row.append($('<td>').text(sentence).css('white-space', 'break-spaces').css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
                         let bu_speak = $(`<button class='btn btn-xs btn-success'>Vorlesen</button>`).data('text', sentence);
                         row.append($('<td>').append(bu_speak));
                         bu_speak.on('click', function(e) {
@@ -346,8 +346,14 @@ function refresh_active_ivr_codes() {
 }
 
 function fixUri(slug, sha1, analysis) {
+    console.log('fixUri', slug, sha1, analysis);
     if (typeof(analysis) !== 'undefined') {
+        if (analysis.title === null || typeof(analysis.title) === 'undefined')
+            analysis = null;
         window.ivr_analysis = analysis;
+        
+    } else {
+        window.ivr_analysis = null;
     }
     history.replaceState({}, null, '/task/' + slug + '/' + sha1);
     if (window.got_ivr) {

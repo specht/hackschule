@@ -297,7 +297,7 @@ function refresh_active_ivr_codes() {
         }
 
         $('#ivr_div').empty();
-        if (window.ivr_sha1 !== null) {
+        if (window.ivr_sha1 !== null && window.ivr_analysis !== null) {
             if (all_published_sha1.indexOf(window.ivr_sha1) < 0) {
                 let button = $(`<button class='btn btn-success' style='margin-right: 10px;'>Spiel veröffentlichen</button>`);
                 $('#ivr_div').append(button);
@@ -311,36 +311,34 @@ function refresh_active_ivr_codes() {
             } else {
                 $('#ivr_div').append($('<p>').text('Diese Version des Spiels ist bereits veröffentlicht.'))
             }
-            if (window.ivr_analysis !== null) {
-                let button = $(`<button class='btn btn-secondary' style='margin-right: 10px;'>Texte einsprechen</button>`);
-                $('#ivr_div').append(button);
-                button.on('click', function(e) {
-                    $('#ivrSentencesModalGameTitle').text(window.ivr_analysis.title);
-                    $('#sentences-tbody').empty();
-                    for (let sentence of window.ivr_analysis.sentences) {
-                        let has_var = sentence.indexOf('[[[') >= 0;
-                        let row = $('<tr>');
-                        row.append($('<td>').text(sentence).css('white-space', 'break-spaces').css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
-                        let bu_speak = $(`<button class='btn btn-xs btn-success'>Vorlesen</button>`).data('text', sentence);
-                        row.append($('<td>').append(bu_speak));
-                        bu_speak.on('click', function(e) {
-                            let button = $(e.target).closest('button');
-                            api_call('/api/say_sentence', {sentence: button.data('text')}, function(data) {
-                                if (data.success) {
-                                    window.audio_queue = [];
-                                    window.audio.pause();
-                                    window.audio_queue.push({path: data.path_hd});
-                                    start_audio_queue();
-                                }
-                            })
-                        });
-                        $('#sentences-tbody').append(row);
-                    }
-                    $('#ivrSentencesModal').modal('show');
-                });
-
-            }
+            let button = $(`<button class='btn btn-secondary' style='margin-right: 10px;'>Texte einsprechen</button>`);
+            $('#ivr_div').append(button);
+            button.on('click', function(e) {
+                $('#ivrSentencesModalGameTitle').text(window.ivr_analysis.title);
+                $('#sentences-tbody').empty();
+                for (let sentence of window.ivr_analysis.sentences) {
+                    let has_var = sentence.indexOf('[[[') >= 0;
+                    let row = $('<tr>');
+                    row.append($('<td>').text(sentence).css('white-space', 'break-spaces').css('font-family', 'Roboto Condensed').css('color', has_var ? '#888' : 'unset'));
+                    let bu_speak = $(`<button class='btn btn-xs btn-success'>Vorlesen</button>`).data('text', sentence);
+                    row.append($('<td>').append(bu_speak));
+                    bu_speak.on('click', function(e) {
+                        let button = $(e.target).closest('button');
+                        api_call('/api/say_sentence', {sentence: button.data('text')}, function(data) {
+                            if (data.success) {
+                                window.audio_queue = [];
+                                window.audio.pause();
+                                window.audio_queue.push({path: data.path_hd});
+                                start_audio_queue();
+                            }
+                        })
+                    });
+                    $('#sentences-tbody').append(row);
+                }
+                $('#ivrSentencesModal').modal('show');
+            });
         } else {
+            $('#ivr_div').append($(`<p>Wenn du dein Spiel veröffentlichen möchtest, musst du ihm einen Namen geben. Verwende dafür die Methode <code>set_title</code>.</p>`))
         }
     });
 }

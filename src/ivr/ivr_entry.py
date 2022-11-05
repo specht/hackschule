@@ -24,13 +24,15 @@ class Game(AnswerPhone):
                 self.sleep(2000)
                 self.say("Falls du keinen Code hast, kannst du auch ein zufälliges Spiel starten. Drücke dafür bitte einfach die 0.")
             present_games = sorted([int(os.path.basename(x)) for x in glob.glob('/ivr/live/*')])
+            self.sleep(2000)
             self.say("Du kannst zwischen den folgenden Spielen wählen:")
             for code in present_games:
                 codes = f'{code}'
                 with open(f'/ivr/live/{codes}') as f:
                     title = (json.loads(f.read()))['title']
-                    self.say(f"Drücke die {codes} für")
+                    self.say(f"Drücke die {codes} für:")
                     self.say(title)
+                    self.sleep(2000)
 
             code = self.dtmf(len(str(present_games[-1])))
             if len(available_codes) > 0 and code == '0':

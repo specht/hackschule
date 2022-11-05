@@ -121,6 +121,9 @@ class Main < Sinatra::Base
         else
             STDERR.puts "RECEIVED #{event.upcase} from sipgate with call_id #{call_id}!"
         end
+        STDERR.puts "Sleep begin"
+        sleep 10.0
+        STDERR.puts "Sleep end"
         return unless @@info_for_call_id[call_id]
         Timeout::timeout(30) do
             STDERR.puts "Waiting for answer from thread for #{call_id}..."

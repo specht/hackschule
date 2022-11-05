@@ -2650,7 +2650,8 @@ class Main < Sinatra::Base
         require_user!
         rows = neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script)
-            RETURN i.code AS code, s.sha1 AS sha1, i.title AS title;
+            RETURN i.code AS code, s.sha1 AS sha1, i.title AS title
+            ORDER BY i.code;
         END_OF_QUERY
         respond(:rows => rows)
     end

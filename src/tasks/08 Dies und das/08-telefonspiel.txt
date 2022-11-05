@@ -166,7 +166,9 @@ def _global_dispatch(code, email):
         with open(f'/code/{code}.py') as f:
             temp.write(f.read().encode('utf-8'))
         temp.write("\n".encode('utf-8'))
-        temp.write("game = Game(sys.stdout)\n".encode('utf-8'))
+        temp.write("_stdout = sys.stdout\n".encode('utf-8'))
+        temp.write("f = open('/dev/null', 'w')\nsys.stdout = f\n".encode('utf-8'))
+        temp.write("game = Game(_stdout)\n".encode('utf-8'))
         temp.write("game.run()\n".encode('utf-8'))
         temp.write("game.hangup()\n".encode('utf-8'))
         temp.flush()

@@ -4,6 +4,7 @@ require 'sinatra'
 require 'json'
 require 'yaml'
 require 'open3'
+require 'timeout'
 
 class Main < Sinatra::Base
     def self.launch_script(call_id, script_path)
@@ -121,25 +122,27 @@ class Main < Sinatra::Base
             STDERR.puts "RECEIVED #{event.upcase} from sipgate with call_id #{call_id}!"
         end
         return unless @@info_for_call_id[call_id]
-        STDERR.puts "Waiting for answer from thread for #{call_id}..."
-        sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
-        return unless @@info_for_call_id[call_id]
-        STDERR.puts "Got answer from thread for #{call_id}..."
-        @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
-        xml = StringIO.open do |io|
-            io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-            io.puts "<Response>"
-            io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
-            io.puts "<Play>"
-            io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
-            io.puts "</Play>"
-            io.puts "</Gather>"
-            io.puts "</Response>"
-            io.string
+        Timeout::timeout(30) do
+            STDERR.puts "Waiting for answer from thread for #{call_id}..."
+            sockets = IO.select([@@info_for_call_id[call_id][:notify][0]])
+            return unless @@info_for_call_id[call_id]
+            STDERR.puts "Got answer from thread for #{call_id}..."
+            @@info_for_call_id[call_id][:notify][0].read_nonblock(1024)
+            xml = StringIO.open do |io|
+                io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                io.puts "<Response>"
+                io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
+                io.puts "<Play>"
+                io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
+                io.puts "</Play>"
+                io.puts "</Gather>"
+                io.puts "</Response>"
+                io.string
+            end
+            response.headers['Content-Type'] = 'application/xml'
+            response.headers['Content-Length'] = "#{xml.size}"
+            response.body = xml
         end
-        response.headers['Content-Type'] = 'application/xml'
-        response.headers['Content-Length'] = "#{xml.size}"
-        response.body = xml
     end
 end
 

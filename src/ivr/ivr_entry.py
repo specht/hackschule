@@ -29,9 +29,7 @@ class Game(AnswerPhone):
                 codes = f'{code}'
                 with open(f'/ivr/live/{codes}') as f:
                     title = (json.loads(f.read()))['title']
-                    self.say("Drücke die")
-                    self.say(codes)
-                    self.say('für:')
+                    self.say(f"Drücke die {codes} für")
                     self.say(title)
 
             code = self.dtmf(len(str(present_games[-1])))

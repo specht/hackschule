@@ -100,7 +100,7 @@ class Main < Sinatra::Base
         form = request.body.read
         decoded_form = URI.decode_www_form(form)
         data = Hash[decoded_form]
-        # STDERR.puts data.to_yaml
+        STDERR.puts data.to_yaml
         call_id = data['callId']
         event = data['event']
         if event == 'newCall'

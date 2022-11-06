@@ -1817,6 +1817,8 @@ class Main < Sinatra::Base
                     new_analysis['recording_for_sha1'][row['sentence_sha1']] = row['recording_sha1']
                 end
             end
+            STDERR.puts "ANALYSIS FOR SHA1 #{sha1}:"
+            STDERR.puts new_analysis.to_yaml
             new_analysis
         rescue
             nil

@@ -43,6 +43,7 @@ class Main < Sinatra::Base
         response = {}
 
         if data['command'] == 'say'
+            STDERR.puts ">>> SAY: #{data.to_json}"
             sentence = data['s'].strip
             remaining = []
             unless data['already_split'] == true
@@ -54,6 +55,7 @@ class Main < Sinatra::Base
             STDERR.puts "[#{sentence}]"
             if data['title'] && data['email']
                 sentence_sha1 = Digest::SHA1.hexdigest(sentence)[0, 12]
+                STDERR.puts ">>> SENTENCE SHA1: #{sentence_sha1}"
                 rows = neo4j_query(<<~END_OF_QUERY, {:email => data['email'], :sentence_sha1 => sentence_sha1, :title => data['title']}) do |row|
                     MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[:FOR]->(s:Sentence {sha1: $sentence_sha1})-[:FOR]->(t:Title {title: $title})
                     RETURN r.sha1 AS sha1 LIMIT 1;

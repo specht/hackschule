@@ -15,6 +15,8 @@ class Game(AnswerPhone):
             self.say("Normalerweise solltest du hier Spiele spielen können. Momentan sind aber leider keine Spiele verfügbar.")
             self.sleep(2000)
             self.say("Wenn du das ändern möchtest, schreib dein eigenes Spiel unter www hackschule punkt de eh und veröffentliche es dann.")
+            self.sleep(2000)
+            self.say("Falls du dich nicht in der Hackschule anmelden kannst, weil du noch kein Benutzerkonto hast, schreib einfach eine Ih-Mail an info ät hackschule Punkt deh eh.")
             self.sleep(20000)
             return
         while True:
@@ -33,6 +35,10 @@ class Game(AnswerPhone):
                     self.say(f"Drücke die {codes} für:")
                     self.say(title)
                     self.sleep(2000)
+            self.say("Oder schreibe einfach dein eigenes Spiel unter www hackschule punkt de eh und veröffentliche es dann.")
+            self.sleep(2000)
+            self.say("Falls du dich nicht in der Hackschule anmelden kannst, weil du noch kein Benutzerkonto hast, schreib einfach eine Ih-Mail an info ät hackschule Punkt deh eh.")
+            self.sleep(20000)
 
             code = self.dtmf(len(str(present_games[-1])))
             if len(available_codes) > 0 and code == '0':

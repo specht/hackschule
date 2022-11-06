@@ -7,7 +7,7 @@ ivr: true
 Programmiere dein eigenes Telefonspiel!
 
 Wenn dein Spiel live geschaltet ist, kannst du es unter der folgenden Telefonnummer spielen:
-<div style='margin-bottom: 15px;'><a href='tel:+493075438953' class='btn btn-success btn-lg'><i class='fa fa-phone'></i>&nbsp;&nbsp;030/75438953</a></div>
+<div style='margin-bottom: 15px;'><a href='tel:+493075438933' class='btn btn-success btn-lg'><i class='fa fa-phone'></i>&nbsp;&nbsp;030/75438933</a></div>
 
 <hr />
 
@@ -123,7 +123,7 @@ class AnswerPhone:
         remaining = response['remaining']
         self.voice_queue.append(response['path_hd'])
         for sentence in remaining:
-            response = self._api_call({'command': 'say', 's': sentence, 'already_split': True})
+            response = self._api_call({'command': 'say', 's': sentence, 'already_split': True, 'title': self.title, 'email': USER_EMAIL})
             self.voice_queue.append(response['path_hd'])
 
     def play(self, url, offset = 0, length = 1000):

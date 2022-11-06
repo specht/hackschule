@@ -125,7 +125,7 @@ class Main < Sinatra::Base
             xml = StringIO.open do |io|
                 io.puts "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                 io.puts "<Response>"
-                io.puts "<Gather maxDigits=\"4\" timeout=\"3000\" onData=\"https://hackschule.de/ivr/\">"
+                io.puts "<Gather maxDigits=\"4\" timeout=\"1500\" onData=\"https://hackschule.de/ivr/\">"
                 io.puts "<Play>"
                 io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
                 io.puts "</Play>"

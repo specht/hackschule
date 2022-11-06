@@ -40,7 +40,8 @@ class Game(AnswerPhone):
         self.sleep(4000)
         self.say("Hier kannst du dein eigenes Telefonspiel programmieren.")
         self.sleep(2000)
-        self.say("Du kannst dein Programm Texte sprechen lassen und Eingaben von der Tastatur des Telefons einlesen.")
+        self.say("""Du kannst dein Programm Texte sprechen lassen und
+                 Eingaben von der Tastatur des Telefons einlesen.""")
         self.sleep(2000)
         self.say("Machen wir mal ein Beispiel. Drück bitte eine Taste.")
         taste = self.dtmf(1)

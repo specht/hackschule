@@ -924,22 +924,24 @@ class Main < Sinatra::Base
                                         File.mkfifo(File.join(dir, 'fifo'))
                                         FileUtils.chmod(0x666, File.join(dir, 'fifo'))
                                         analysis = get_analysis_for_sha1(script_sha1)
-                                        const_sentences = analysis['sentences'].reject do |x|
-                                            x.include?('[[[')
-                                        end
-                                        command = "curl -s -X POST http://tts_helper:9292 -d '#{{:command => 'say_get_missing_sha1', :sentences => const_sentences}.to_json}'"
-                                        STDERR.puts command
-                                        response = JSON.parse(`#{command}`)
-                                        f.puts "ivr_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
-                                        unless response['missing_sentences'].empty?
-                                            f.puts "print('Generiere Sprachausgabe:')"
-                                        end
-                                        response['missing_sentences'].each.with_index do |s, i|
-                                            f.puts "print(\"[#{i + 1}/#{response['missing_sentences'].size}] #{s.gsub('"', '\"')}\")"
-                                            f.puts "proc = subprocess.Popen(['curl', '-s', '-X', 'POST', 'http://tts_helper:9292/', '--data-binary', '@-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)"
-                                            f.puts "proc.stdin.write(json.dumps({'command': 'say', 's': '#{s.gsub("'", "\'")}', 'already_split': True}).encode('utf-8'))"
-                                            f.puts "proc.stdin.close()"
-                                            f.puts "response = proc.stdout.read()"
+                                        if analysis && analysis['sentences']
+                                            const_sentences = analysis['sentences'].reject do |x|
+                                                x.include?('[[[')
+                                            end
+                                            command = "curl -s -X POST http://tts_helper:9292 -d '#{{:command => 'say_get_missing_sha1', :sentences => const_sentences}.to_json}'"
+                                            STDERR.puts command
+                                            response = JSON.parse(`#{command}`)
+                                            f.puts "ivr_out = open('/sandbox/#{@session_user[:email]}/fifo', 'w')"
+                                            unless response['missing_sentences'].empty?
+                                                f.puts "print('Generiere Sprachausgabe:')"
+                                            end
+                                            response['missing_sentences'].each.with_index do |s, i|
+                                                f.puts "print(\"[#{i + 1}/#{response['missing_sentences'].size}] #{s.gsub('"', '\"')}\")"
+                                                f.puts "proc = subprocess.Popen(['curl', '-s', '-X', 'POST', 'http://tts_helper:9292/', '--data-binary', '@-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)"
+                                                f.puts "proc.stdin.write(json.dumps({'command': 'say', 's': '#{s.gsub("'", "\'")}', 'already_split': True}).encode('utf-8'))"
+                                                f.puts "proc.stdin.close()"
+                                                f.puts "response = proc.stdout.read()"
+                                            end
                                         end
                                         f.puts "game = Game(ivr_out)"
                                         f.puts "game.run()"

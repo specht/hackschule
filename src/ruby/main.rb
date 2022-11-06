@@ -2724,6 +2724,38 @@ class Main < Sinatra::Base
         respond(:yay => 'sure')
     end
 
+    post '/api/update_ivr' do
+        require_user!
+        data = parse_request_data(:required_keys => [:sha1, :code])
+        STDERR.puts data.to_yaml
+        sha1 = data[:sha1]
+        code = data[:code]
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email], :code => code})
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode {code: $code})
+            RETURN i.code AS code;
+        END_OF_QUERY
+        script_data = JSON.parse(File.read("/raw/code/#{sha1}.json"))
+        title = script_data['title']
+        File.open("/ivr_live/#{code}", 'w') do |f|
+            data = {:sha1 => sha1, :email => @session_user[:email], :title => title}
+            f.puts data.to_json
+        end
+        neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :code => code, :title => title}) do
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode {code: $code})-[r:WHICH]->(s:Script)
+            DELETE r
+            RETURN 1;
+        END_OF_QUERY
+            STDERR.puts "111111111111"
+        end
+        neo4j_query(<<~END_OF_QUERY, {:sha1 => sha1, :email => @session_user[:email], :code => code, :title => title})
+            MATCH (u:User {email: $email})<-[:BY]-(i:IvrCode {code: $code})
+            MATCH (s:Script {sha1: $sha1})
+            CREATE (i)-[:WHICH]->(s)
+            SET i.title = $title;
+        END_OF_QUERY
+        respond(:code => data[:code])
+    end
+
     post '/api/say_sentence' do
         require_user!
         data = parse_request_data(:required_keys => [:sentence])

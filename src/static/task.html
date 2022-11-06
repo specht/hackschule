@@ -480,6 +480,8 @@ window.addEventListener('load', function () {
     editor.on('change', function() {
         let script = editor.getValue().trim();
         $('#run').prop('disabled', (script.length === 0) || no_user_logged_in);
+        $('#ivr_div button').prop('disabled', true);
+        $('.bu-update-ivr').prop('disabled', true);
     });
    
     term = new Terminal({fontFamily: 'Inconsolata, monospace', fontSize: 16, convertEol: true, scrollback: 9999999});

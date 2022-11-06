@@ -278,7 +278,6 @@ function refresh_active_ivr_codes() {
             row.append($("<th>").text('Code'));
             row.append($("<th>").text('Programm'));
             row.append($("<th>").text(''));
-            row.append($("<th>").text(''));
             table.append(row);
             console.log(data);
             for (let entry of data.rows) {
@@ -286,8 +285,9 @@ function refresh_active_ivr_codes() {
                 let row = $("<tr>");
                 row.append($("<td>").html(`<b>${entry.code}</b>`));
                 row.append($("<td>").append($('<a>').text(`${entry.title}`).attr('href', `/task/telefonspiel/${entry.sha1}`)));
-                row.append($("<td>").append($('<a>').addClass('btn btn-success btn-sm').attr('href', `tel:+493075438953,${entry.code}`).html(`<i class='fa fa-phone'></i>`)));
-                let bu_unpublish = $('<button>').addClass('btn btn-danger btn-sm').html(`<i class='fa fa-trash'></i>`).data('sha1', entry.sha1);
+                let cell = $('<td>');
+                cell.append($('<a>').addClass('btn btn-success btn-sm').attr('href', `tel:+493075438953,${entry.code}`).html(`<i class='fa fa-phone'></i>`).css('margin-right', '0.5em').attr('title', 'Spiel anrufen'));
+                let bu_unpublish = $('<button>').addClass('btn btn-danger btn-sm').html(`<i class='fa fa-trash'></i>`).data('sha1', entry.sha1).css('margin-right', '0.5em').attr('title', 'Veröffentlichung zurückziehen');
                 bu_unpublish.on('click', function(e) {
                     let button = $(e.target).closest('button');
                     let sha1 = button.data('sha1');
@@ -297,7 +297,19 @@ function refresh_active_ivr_codes() {
                         }
                     });
                 });
-                row.append($("<td>").append(bu_unpublish));
+                cell.append(bu_unpublish);
+                let bu_update = $('<button>').addClass('bu-update-ivr btn btn-warning btn-sm').html(`<i class='fa fa-sync-alt'></i>`).data('code', entry.code).css('margin-right', '0.5em').attr('title', 'Spiel aktualisieren');
+                bu_update.on('click', function(e) {
+                    let button = $(e.target).closest('button');
+                    let code = button.data('code');
+                    api_call('/api/update_ivr', {sha1: window.current_sha1, code: code}, function(data) {
+                        if (data.success) {
+                            refresh_active_ivr_codes();
+                        }
+                    });
+                });
+                cell.append(bu_update);
+                row.append(cell);
                 table.append(row);
             }
             $('#ivr_div_list').append(table);
@@ -408,6 +420,7 @@ function refresh_active_ivr_codes() {
 }
 
 function fixUri(slug, sha1, analysis) {
+    window.current_sha1 = sha1;
     console.log('fixUri', slug, sha1, analysis);
     if (typeof(analysis) !== 'undefined') {
         if (analysis.title === null || typeof(analysis.title) === 'undefined')

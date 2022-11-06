@@ -58,11 +58,24 @@ class Main < Sinatra::Base
                     MATCH (u:User {email: $email})-[:RECORDED]->(r:Recording)-[:FOR]->(s:Sentence {sha1: $sentence_sha1})-[:FOR]->(t:Title {title: $title})
                     RETURN r.sha1 AS sha1 LIMIT 1;
                 END_OF_QUERY
-                    response[:path] = "/tts/#{row['sha1'][0, 2]}/#{row['sha1'][2, row['sha1'].size - 2]}.wav"
+                    temp_path = "/tts/#{row['sha1'][0, 2]}/#{row['sha1'][2, row['sha1'].size - 2]}.wav"
+                    if File.exists?(temp_path)
+                        response[:path] = temp_path
+                    end
                 end
             end
             response[:path] ||= render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
-            # response[:path] = render_sound("ffmpeg -i \"#{response[:path]}\" -af \"silenceremove=stop_periods=1:stop_duration=0:stop_threshold=-90dB\" \"__OUT_PATH__\"")
+        elsif data['command'] == 'say_get_missing_sha1'
+            result = []
+            data['sentences'].each do |sentence|
+                command = "curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}"
+                sha1 = Digest::SHA1.hexdigest(command)[0, 16]
+                path = "/tts/#{sha1[0, 2]}/#{sha1[2, sha1.size - 2]}.wav"
+                unless File.exists?(path)
+                    result << sentence
+                end
+            end
+            response[:missing_sentences] = result
         elsif data['command'] == 'sleep'
             ms = data['ms']
             # TODO: assert that ms is an int within a range
@@ -83,10 +96,11 @@ class Main < Sinatra::Base
                 response[:path] = mix_path
             end
         end
-
-        response[:path_hd] = response[:path]
-        low_khz_path = render_sound("sox \"#{response[:path]}\" -r 8000 -c 1 \"__OUT_PATH__\"")
-        response[:path] = low_khz_path
+        if response[:path]
+            response[:path_hd] = response[:path]
+            low_khz_path = render_sound("sox \"#{response[:path]}\" -r 8000 -c 1 \"__OUT_PATH__\"")
+            response[:path] = low_khz_path
+        end
         content_type = 'application/json'
         response.to_json
     end

@@ -16,9 +16,6 @@ class Analyzer(ast.NodeVisitor):
             return ''.join([self._parse_arg(y) for y in x.values])
         elif type(x) == ast.FormattedValue:
             return self._parse_arg(x.value)
-        elif type(x) == ast.Name:
-            # raise NonConstSentenceError()
-            return f"[[[{x.id}]]]"
         elif type(x) == ast.BinOp:
             l = self._parse_arg(x.left)
             r = self._parse_arg(x.right)
@@ -30,10 +27,8 @@ class Analyzer(ast.NodeVisitor):
                 return f"{self._parse_arg(x.left)}{x.op.__str__()}{self._parse_arg(x.right)}"
         elif type(x) == ast.Str:
             return x.s
-        elif type(x) == ast.Call:
-            return f"[[[{self._parse_arg(x.func)}({', '.join([self._parse_arg(y) for y in x.args])})]]]"
         else:
-            return f"{type(x)}"
+            return f"[[[]]]"
 
     def visit_Call(self, node):
         if isinstance(node.func, ast.Attribute):

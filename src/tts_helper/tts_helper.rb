@@ -62,7 +62,7 @@ class Main < Sinatra::Base
                 end
             end
             response[:path] ||= render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
-            response[:path] = render_sound("ffmpeg -i \"#{response[:path]}\" -af \"silenceremove=stop_periods=1:stop_duration=0:stop_threshold=-90dB\" \"__OUT_PATH__\"")
+            # response[:path] = render_sound("ffmpeg -i \"#{response[:path]}\" -af \"silenceremove=stop_periods=1:stop_duration=0:stop_threshold=-90dB\" \"__OUT_PATH__\"")
         elsif data['command'] == 'sleep'
             ms = data['ms']
             # TODO: assert that ms is an int within a range

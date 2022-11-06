@@ -65,6 +65,9 @@ class Main < Sinatra::Base
                 end
             end
             response[:path] ||= render_sound("curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}")
+        elsif data['command'] == 'play'
+            temp_path = render_sound("cd /tts && yt-dlp -x --audio-format wav -o \"temp.%(ext)s\" \"#{data['url']}\" && ffmpeg -i \"temp.wav\" -ar 22050 -ac 1 \"__OUT_PATH__\" && rm temp.wav")
+            response[:path] = render_sound("ffmpeg -ss #{data['offset'] / 1000.0} -t #{data['length'] / 1000} -i \"#{temp_path}\" \"__OUT_PATH__\"")
         elsif data['command'] == 'say_get_missing_sha1'
             result = []
             data['sentences'].each do |sentence|

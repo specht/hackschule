@@ -129,9 +129,6 @@ class Main < Sinatra::Base
                 io.puts "<Play>"
                 io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
                 io.puts "</Play>"
-                io.puts "<Play>"
-                io.puts "<Url>https://hackschule.de#{@@info_for_call_id[call_id][:last_path]}</Url>"
-                io.puts "</Play>"
                 io.puts "</Gather>"
                 io.puts "</Response>"
                 io.string

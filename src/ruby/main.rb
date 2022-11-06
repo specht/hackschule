@@ -475,6 +475,12 @@ class Main < Sinatra::Base
                     end
                 end
             # end
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].each do |s|
+                command = "curl -s -X POST http://tts_helper:9292 -d '#{{:command => 'say', :already_split => true, :s => s}.to_json}'"
+                STDERR.puts command
+                system(command)
+            end
+
             STDERR.puts "Server is up and running!"
         end
         @@labelary_last_time = 0
@@ -2827,7 +2833,7 @@ class Main < Sinatra::Base
                         content.gsub!('#{TASK_CONFIG}', task.to_json)
                         if sha1
                             temp = read_script_for_sha1(sha1).strip + "\n"
-                            content.gsub!('#{TASK_TEMPLATE}') { |x| temp }
+                            content.gsub!('#{TASK_TEMPLATE}') { |x| CGI.escapeHTML(temp) }
                             content.gsub!('loaded_with_sha1 = null', "loaded_with_sha1 = '#{sha1}'")
                             content.gsub!('loaded_with_analysis = null', "loaded_with_analysis = #{get_analysis_for_sha1(sha1).to_json}")
                         else

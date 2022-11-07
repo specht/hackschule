@@ -7,7 +7,7 @@ ivr: true
 Programmiere dein eigenes Telefonspiel!
 
 Wenn dein Spiel live geschaltet ist, kannst du es unter der folgenden Telefonnummer spielen:
-<div style='margin-bottom: 15px;'><a href='tel:+493075438933' class='btn btn-success btn-lg'><i class='fa fa-phone'></i>&nbsp;&nbsp;030 / 754 389 33</a></div>
+<div style='margin-bottom: 15px;'><a href='tel:+493075438933' class='btn btn-success btn-lg'><i class='fa fa-phone'></i>&nbsp;&nbsp;030&#x2009;/&#x2009;754&#x2009;389&#x2009;33</a></div>
 
 <hr />
 

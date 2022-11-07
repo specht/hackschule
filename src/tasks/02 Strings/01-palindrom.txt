@@ -2,7 +2,7 @@ title: Palindrom
 enabled: true
 difficulty: easy
 --------
-Ein <a href='https://de.wikipedia.org/wiki/Palindrom'>Palindrom</a> ist ein Wort, welches sich nicht verändert, wenn rückwärts gelesen wird. Dabei spielt die Groß- und Kleinschreibung keine Rolle.
+Ein <a href='https://de.wikipedia.org/wiki/Palindrom'>Palindrom</a> ist ein Wort, welches sich nicht verändert, wenn es rückwärts gelesen wird. Dabei spielt die Groß- und Kleinschreibung keine Rolle.
 
 Schreibe eine Methode, die ermittelt, ob ein gegebenes Wort ein Palindrom ist oder nicht.
 

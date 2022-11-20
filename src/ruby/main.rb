@@ -1910,6 +1910,7 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/camera'><div class='icon'><i class='fa fa-camera'></i></div><span class='label'>Dokumentenkamera</span></a>"
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/label_queue'><div class='icon'><i class='fa fa-print'></i></div><span class='label'>Label-Warteschlange</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/phone_games'><div class='icon'><i class='fa fa-phone'></i></div><span class='label'>Telefonspiele</span></a>"
                     end
                     io.puts "<div class='dropdown-divider'></div>"
                     io.puts "<a class='dropdown-item nav-icon' href='#' onclick='perform_logout();'><div class='icon'><i class='fa fa-sign-out-alt'></i></div><span class='label'>Abmelden</span></a>"
@@ -2670,6 +2671,18 @@ class Main < Sinatra::Base
             row
         end
         respond(:queue => rows, :new_from => Time.now.to_i)
+    end
+
+    post '/api/get_all_ivr' do
+        require_teacher!
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (u:User)<-[:BY]-(i:IvrCode)-[:WHICH]->(s:Script) RETURN u, i, s;
+        END_OF_QUERY
+        rows.map! do |x|
+            x[:script_data] = JSON.parse(File.read("/raw/code/#{x['s'][:sha1]}.json"))
+            x
+        end
+        respond(:games => rows)
     end
 
     post '/api/get_my_ivr' do

@@ -1,0 +1,79 @@
+#{this_is_a_page_for_logged_in_teachers}
+<style>
+@media (max-width: 440px) {
+    .brand-brand {
+        display: none;
+    }
+}
+
+#queue_here img.preview {
+    float: left;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-right: 1em;
+    width: 100%;
+}
+#queue_here .btn {
+    margin-top: 0.5em;
+    width: 100%;
+}
+#queue_here textarea {
+    height: 132px;
+    border: 1px solid #ddd;
+    width: 100%;
+}
+#queue_here p {
+    margin: 0;
+}
+</style>
+
+<div class='container'>
+    <div class='row' style='padding-top: 30px;'>
+        <div class='col-md-12'>
+            <h2>Veröffentlichte Telefonspiele</h2>
+            <table class='table'>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th colspan="2">Nutzer</th>
+                        <th>Skript</th>
+                        <th>Titel</th>
+                        <th>Sätze</th>
+                    </tr>
+                </thead>
+                <tbody id='games_here'>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type='text/javascript'>
+
+var queue_from = 0;
+
+function refresh_queue() {
+    api_call('/api/get_all_ivr', {from: queue_from}, function(data) {
+        if (data.success) {
+            $('#games_here').empty();
+            for (let entry of data.games) {
+                console.log(entry);
+                let row = $('<tr>');
+                row.append($('<td>').text(`${entry.i.code}`));
+                row.append($('<td>').text(`${entry.u.name}`));
+                row.append($('<td>').text(`${entry.u.email}`));
+                row.append($('<td>').append($('<a>').text(`${entry.s.sha1}`).attr('href', `/task/telefonspiel/${entry.s.sha1}`)));
+                row.append($('<td>').text(`${entry.i.title}`));
+                row.append($('<td>').text(`${entry.script_data.sentences.join(" ")}`));
+                $('#games_here').append(row);
+            }
+            console.log(data);
+        }
+    });
+}
+
+window.addEventListener('load', function () {
+    refresh_queue();
+});
+</script>

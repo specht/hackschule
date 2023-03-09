@@ -1,10 +1,10 @@
 body {
-    background-color: #123;
+    background-color: #{mix(THEMES[@session_theme.to_sym][:bg], '#000000', 0.3)};
     color: #eee;
 }
 
 .bg-light {
-    background-color: #123!important;
+    background-color: #{mix(THEMES[@session_theme.to_sym][:bg], '#000000', 0.5)}!important;
 }
 
 .navbar-light .navbar-brand {

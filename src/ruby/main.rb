@@ -2854,6 +2854,45 @@ class Main < Sinatra::Base
         end
     end
 
+    def mix(a, b, f)
+        ar = a[1, 2].to_i(16)
+        ag = a[3, 2].to_i(16)
+        ab = a[5, 2].to_i(16)
+        br = b[1, 2].to_i(16)
+        bg = b[3, 2].to_i(16)
+        bb = b[5, 2].to_i(16)
+        cr = (ar * (1.0 - f) + br * f).to_i
+        cg = (ag * (1.0 - f) + bg * f).to_i
+        cb = (ab * (1.0 - f) + bb * f).to_i
+        sprintf('#%02x%02x%02x', cr, cg, cb)
+    end
+
+    get '/api/dark.css' do
+        return '' if THEMES[@session_theme.to_sym][:ld] == 'l'
+        s = File.read('/static/dark.css')
+        while true
+            index = s.index('#{')
+            break if index.nil?
+            length = 2
+            balance = 1
+            while index + length < s.size && balance > 0
+                c = s[index + length]
+                balance -= 1 if c == '}'
+                balance += 1 if c == '{'
+                length += 1
+            end
+            code = s[index + 2, length - 3]
+            begin
+                s[index, length] = eval(code).to_s || ''
+            rescue
+                STDERR.puts "Error while evaluating:"
+                STDERR.puts code
+                raise
+            end
+        end
+        respond_raw_with_mimetype(s, 'text/css')
+    end
+
     get '/*' do
         path = request.env['REQUEST_PATH']
         assert(path[0] == '/')

@@ -6,7 +6,7 @@ THEMES = {
     :clouds   => {:ace => 'Clouds'  , :bg => '#ffffff', :fg => '#444444', :ld => 'l'},
     :github   => {:ace => 'GitHub'  , :bg => '#ffffff', :fg => '#444444', :ld => 'l'},
     :tomorrow => {:ace => 'Tomorrow', :bg => '#ffffff', :fg => '#444444', :ld => 'd'},
-    :ambiance => {:ace => 'Ambiance', :bg => '#112233', :fg => '#eeeeee', :ld => 'd'},
+    :ambiance => {:ace => 'Ambiance', :bg => '#301020', :fg => '#eeeeee', :ld => 'd'},
     :dracula  => {:ace => 'Dracula' , :bg => '#112233', :fg => '#eeeeee', :ld => 'd'},
     :gruvbox  => {:ace => 'Gruvbox' , :bg => '#112233', :fg => '#eeeeee', :ld => 'd'},
     :monokai  => {:ace => 'Monokai' , :bg => '#112233', :fg => '#eeeeee', :ld => 'd'},

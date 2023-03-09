@@ -8,6 +8,7 @@
     <title><!--PAGE_TITLE--></title>
     #{meta_tags || ''}
     <link href="/api/compiled.css?#{compiled_css_sha1}" rel="stylesheet" />
+    <link href="/dark#{THEMES[@session_theme.to_sym][:ld] == 'd' ? '' : '_nono'}.css" rel="stylesheet" />
     <script defer src="/api/compiled.js?#{compiled_js_sha1}"></script>
     <script src="/ace/src-min-noconflict/ace.js"></script>
     #{PAGE_CSS_HERE}

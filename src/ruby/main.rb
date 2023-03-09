@@ -17,6 +17,7 @@ require '/credentials.rb'
 require 'mysql2'
 require 'digest/sha2'
 require 'neo4j_bolt'
+require './themes.rb'
 
 Neo4jBolt.bolt_host = 'neo4j'
 Neo4jBolt.bolt_port = 7687
@@ -627,6 +628,7 @@ class Main < Sinatra::Base
     end
 
     before '*' do
+        @session_theme = 'eclipse'
         if DEVELOPMENT
             self.class.load_tasks
         end
@@ -648,6 +650,8 @@ class Main < Sinatra::Base
                         session_expiry = results.first['s'][:expires]
                         if DateTime.parse(session_expiry) > DateTime.now
                             @session_user = results.first['u'].reject {|k, v| k == :password }
+                            @session_user[:theme] ||= 'eclipse'
+                            @session_theme = @session_user[:theme]
                             email = @session_user[:email]
                             [:mysql_user, :mysql_password].each do |k|
                                 @session_user[k] = @@invitations[email][k]
@@ -1220,6 +1224,16 @@ class Main < Sinatra::Base
         result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :name => data[:name].strip, :avatar=> data[:avatar])
             MATCH (u:User {email: $email})
             SET u.name = $name, u.avatar = $avatar
+            RETURN u;
+        END_OF_QUERY
+    end
+
+    post '/api/set_theme' do
+        require_user!
+        data = parse_request_data(:required_keys => [:theme])
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :theme => data[:theme])
+            MATCH (u:User {email: $email})
+            SET u.theme = $theme
             RETURN u;
         END_OF_QUERY
     end

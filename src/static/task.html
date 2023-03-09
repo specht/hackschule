@@ -471,7 +471,8 @@ window.addEventListener('load', function () {
         $(e.target).next('div').show();
     });
     editor = ace.edit("editor");
-    editor.setTheme("ace/theme/eclipse");
+    editor.setTheme(`ace/theme/#{@session_user[:theme] || 'eclipse'}`);
+    // editor.setTheme("ace/theme/gruvbox");
     editor.session.setMode("ace/mode/python");
     editor.setOption('fontSize', 16);
     editor.setOption('enableBasicAutocompletion', true);

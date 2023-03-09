@@ -1,7 +1,24 @@
 #{this_is_a_page_for_logged_in_users}
+<style>
+    .editor-sample div {
+        height: 200px;
+    }
+    .editor-sample {
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.5);
+        margin-bottom: 15px;
+        cursor: pointer;
+    }
+    .editor-sample:hover {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    .editor-sample.active {
+        outline: 2px solid red;
+    }
+</style>
 <div class='container' style='padding-top: 30px;'>
     <div class='row'>
-        <div class='col-md-8 offset-md-2'>
+        <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Profil</h2>
                 <div class='row'>
                     <div class='col-md-8 col-lg-9'>
@@ -26,6 +43,19 @@
                     </div>
                 </div>
                 <button type="submit" id='save' class="btn btn-primary" disabled>Speichern</button>
+                <hr />
+                <h4 style='margin-bottom: 30px;'>Farbschema</h4>
+                <div class="row">
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                    <div class='col-md-4'><div class="editor-sample"></div></div>
+                </div>
                 <hr />
                 <h4 style='margin-bottom: 30px;'>MySQL-Datenbank</h4>
                 <div class='alert alert-warning'>
@@ -86,6 +116,7 @@
 
 <script type='text/javascript'>
 
+var THEME_ORDER = #{THEME_ORDER.to_json};
 var user_name = #{@session_user[:name].to_json};
 var user_avatar = #{@session_user[:avatar].to_json};
 var unsaved_changes = false;
@@ -111,6 +142,34 @@ function update_save_button()
 }
 
 window.addEventListener('load', function () {
+    let i = 0;
+    for (x of $('.editor-sample')) {
+        let div = $('<div>').appendTo($(x));
+        div.attr('id', `es${i}`);
+        let e = ace.edit(`es${i}`, {readOnly: true, fontSize: 16});
+        e.setValue(`def gcd(x, y):
+    while y != 0:
+        (x, y) = (y, x % y)
+    return x
+
+print(f"GCD(96, 84): {gcd(96, 84)}")`);
+        e.clearSelection();
+        e.setTheme(`ace/theme/${THEME_ORDER[i]}`);
+        e.session.setMode("ace/mode/python");
+        if ('#{@session_user[:theme]}' === THEME_ORDER[i])
+            $(x).addClass('active');
+        $(x).data('theme', THEME_ORDER[i]);
+        // $(x).append($('<div>').text(THEME_ORDER[i]));
+        $(x).click(function(e) {
+            let theme = $(e.target).closest('.editor-sample').data('theme');
+            api_call('/api/set_theme', {theme: theme}, function(data) {
+                if (data.success) {
+                    window.location.reload();
+                }
+            });
+        });
+        i += 1;
+    }
     $("#avatar").change(function(){
         $("#avatar").closest('form').submit();
 //         readURL(this);

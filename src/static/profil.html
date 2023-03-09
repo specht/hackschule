@@ -1,7 +1,7 @@
 #{this_is_a_page_for_logged_in_users}
 <style>
     .editor-sample div {
-        height: 120px;
+        height: 150px;
     }
     .editor-sample {
         border-radius: 4px;
@@ -147,7 +147,9 @@ window.addEventListener('load', function () {
         let div = $('<div>').appendTo($(x));
         div.attr('id', `es${i}`);
         let e = ace.edit(`es${i}`, {readOnly: true, fontSize: 16});
-        e.setValue(`def gcd(x, y):
+        e.setValue(`# >>> ${THEME_ORDER[i].toUpperCase()} <<<
+
+def gcd(x, y):
     while y != 0:
         (x, y) = (y, x % y)
     return x

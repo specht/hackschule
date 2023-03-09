@@ -10,5 +10,5 @@ THEMES = {
     :dracula  => {:ace => 'Dracula' , :bg => '#301030', :fg => '#eeeeee', :ld => 'd'},
     :gruvbox  => {:ace => 'Gruvbox' , :bg => '#103018', :fg => '#eeeeee', :ld => 'd'},
     :monokai  => {:ace => 'Monokai' , :bg => '#380808', :fg => '#eeeeee', :ld => 'd'},
-    :twilight => {:ace => 'Twilight', :bg => '#111111', :fg => '#eeeeee', :ld => 'd'},
+    :twilight => {:ace => 'Twilight', :bg => '#202020', :fg => '#eeeeee', :ld => 'd'},
 }

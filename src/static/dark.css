@@ -1,0 +1,64 @@
+body {
+    background-color: #123;
+    color: #eee;
+}
+
+.bg-light {
+    background-color: #123!important;
+}
+
+.navbar-light .navbar-brand {
+    color: rgba(255,255,255,.9);
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: rgba(255,255,255,.9);
+}
+
+.navbar-light .navbar-nav .nav-link:focus, .navbar-light .navbar-nav .nav-link:hover {
+    color: rgba(255,255,255,.9);
+}
+
+.card {
+    background-color: #345;
+}
+
+.progress {
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.dropdown-menu {
+    background-color: #123!important;
+}
+
+.dropdown-item {
+    color: rgba(255,255,255,.9);
+}
+
+.navbar {
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item {
+    border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+.dropdown-divider {
+    border-top-color: rgba(255, 255, 255, 0.6);
+}
+
+.dropdown-item:focus, .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.table {
+    color: #fff;
+}
+
+code {
+    text-shadow: 0 0 10px #000;
+}
+
+.navbar-light .navbar-brand:focus, .navbar-light .navbar-brand:hover {
+    color: rgba(255, 255, 255,.9);
+}

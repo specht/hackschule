@@ -1,0 +1,24 @@
+<style>
+    .navbar, .foot {
+        display: none;
+    }
+    body {
+        margin-top: 0;
+        background-color: #000;
+        overflow: hidden;
+    }
+    img {
+        height: 100vh;
+        width: 100vw;
+        object-fit: contain;
+        image-rendering: pixelated;
+    }
+</style>
+<script>
+    window.addEventListener('load', function() {
+        setInterval(function() {
+            window.location.reload();
+        }, 500)
+    });
+</script>
+<img src="/pixelflut/">

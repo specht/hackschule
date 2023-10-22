@@ -25,12 +25,12 @@ class Main < Sinatra::Base
     def render_sound(command)
         sha1 = Digest::SHA1.hexdigest(command)[0, 16]
         path = "/tts/#{sha1[0, 2]}/#{sha1[2, sha1.size - 2]}.wav"
-        unless File.exists?(path)
+        unless File.exist?(path)
             FileUtils::mkpath(File.dirname(path))
             patched_command = command.gsub('__OUT_PATH__', path)
             STDERR.puts patched_command
             system(patched_command)
-            unless File.exists?(path)
+            unless File.exist?(path)
                 raise "command failed!"
             end
         end
@@ -61,7 +61,7 @@ class Main < Sinatra::Base
                     RETURN r.sha1 AS sha1 LIMIT 1;
                 END_OF_QUERY
                     temp_path = "/tts/#{row['sha1'][0, 2]}/#{row['sha1'][2, row['sha1'].size - 2]}.wav"
-                    if File.exists?(temp_path)
+                    if File.exist?(temp_path)
                         response[:path] = temp_path
                     end
                 end
@@ -76,7 +76,7 @@ class Main < Sinatra::Base
                 command = "curl -s -o \"__OUT_PATH__\" http://tts:5002/api/tts?text=#{CGI.escape(sentence)}"
                 sha1 = Digest::SHA1.hexdigest(command)[0, 16]
                 path = "/tts/#{sha1[0, 2]}/#{sha1[2, sha1.size - 2]}.wav"
-                unless File.exists?(path)
+                unless File.exist?(path)
                     result << sentence
                 end
             end

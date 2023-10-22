@@ -42,7 +42,7 @@ def update_resolutions(use_tag = nil)
         original_path = "/raw/uploads/#{tag}.png"
         [300, 150, 128, 64, 48, 24].each do |width|
             png_path = File.join("/gen/#{tag}-#{width}.png")
-            unless File.exists?(png_path)
+            unless File.exist?(png_path)
                 STDERR.puts png_path
                 system("convert \"#{original_path}\" -resize #{width}x#{width}^\\> -strip \"#{png_path}\"")
             end
@@ -694,7 +694,7 @@ class Main < Sinatra::Base
         script = script.rstrip + "\n"
         script_sha1 = RandomTag::to_base31(Digest::SHA1.hexdigest(script).to_i(16))[0, 8]
         script_path = "/raw/code/#{script_sha1}.py"
-        unless File.exists?(script_path)
+        unless File.exist?(script_path)
             File.open(script_path, 'w') { |f| f.write(script) }
             neo4j_query(<<~END_OF_QUERY, :sha1 => script_sha1, :size => script.size, :lines => script.count("\n") + 1)
                 MERGE (sc:Script {sha1: $sha1, size: $size, lines: $lines})
@@ -702,7 +702,7 @@ class Main < Sinatra::Base
         end
         if slug == 'telefonspiel'
             strings_path = "/raw/code/#{script_sha1}.json"
-            unless File.exists?(strings_path)
+            unless File.exist?(strings_path)
                 result = `python3 /app/analyze-ivr.py \"#{script_path}\"`
                 exit_code = $?
                 File.open(strings_path, 'w') do |f|
@@ -764,7 +764,7 @@ class Main < Sinatra::Base
                                 lint_path = "/raw/zpl/#{script_sha1}.txt"
                                 ws.send({:status => 'started'}.to_json)
                                 zpl = request['script'].gsub(/^\s*#.*$/, '')
-                                unless File.exists?(png_path)
+                                unless File.exist?(png_path)
                                     # use labelary to render the label
                                     ws.send({:stderr => "Sending ZPL to http://api.labelary.com...\n"}.to_json)
 
@@ -793,11 +793,11 @@ class Main < Sinatra::Base
                                         ws.send({:stderr => response.to_s}.to_json)
                                     end
                                 end
-                                if (File.exists?(png_path))
+                                if (File.exist?(png_path))
                                     ws.send({:stderr => "Rendering finished.\n"}.to_json)
                                     ws.send({:zpl_png => png_path}.to_json)
                                 end
-                                if (File.exists?(lint_path))
+                                if (File.exist?(lint_path))
                                     ws.send({:stderr => "ZPL Linter warnings:\n"}.to_json)
                                     lint = File.read(lint_path).split('|')
                                     lint.each_slice(5) do |parts|
@@ -2809,7 +2809,7 @@ class Main < Sinatra::Base
         mp3 = Base64.decode64(base64)
         sha1 = Digest::SHA1.hexdigest(mp3)[0, 12]
         path = "/tts-cache/#{sha1[0, 2]}/#{sha1[2, sha1.size - 2]}.mp3"
-        unless File.exists?(path)
+        unless File.exist?(path)
             STDERR.puts path
             FileUtils::mkpath(File.dirname(path))
             File.open(path, 'w') do |f|
@@ -2940,7 +2940,7 @@ class Main < Sinatra::Base
                 show_offer = {}
 
                 path = File::join('/static', path) + '.html'
-                if File::exists?(path)
+                if File::exist?(path)
                     content = File::read(path, :encoding => 'utf-8')
 
                     @original_path = original_path

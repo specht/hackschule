@@ -10,7 +10,7 @@ PROFILE = [:static, :dynamic, :neo4j, :mysql]
 # This runs in development mode by default. To switch to production,
 # place a file called deployment.production in this directory.
 
-is_production = File.exists?('deployment.production')
+is_production = File.exist?('deployment.production')
 DEVELOPMENT    = !is_production
 PROJECT_NAME = 'code' + (DEVELOPMENT ? 'dev' : '')
 DEV_NGINX_PORT = 8025
@@ -349,7 +349,7 @@ if PROFILE.include?(:mysql)
     FileUtils::mkpath(MYSQL_DATA_PATH)
 end
 
-unless File.exists?('src/ruby/invitations.txt')
+unless File.exist?('src/ruby/invitations.txt')
     File.open('src/ruby/invitations.txt', 'w') do |f|
         f.puts "m Mallory <mallory>"
     end

@@ -23,10 +23,10 @@ NEO4J_LOGS_PATH = File::join(LOGS_PATH, 'neo4j')
 MYSQL_DATA_PATH = File::join(DATA_PATH, 'mysql')
 RAW_FILES_PATH = File::join(DATA_PATH, 'raw')
 GEN_FILES_PATH = File::join(DATA_PATH, 'gen')
-TTS_FILES_PATH = File::join(DATA_PATH, 'tts')
+# TTS_FILES_PATH = File::join(DATA_PATH, 'tts')
 IVR_PATH = File::join(DATA_PATH, 'ivr')
 IVR_CODES_PATH = File::join(DATA_PATH, 'ivr', 'live')
-TTS_CACHE_FILES_PATH = File::join(DATA_PATH, 'tts-cache')
+# TTS_CACHE_FILES_PATH = File::join(DATA_PATH, 'tts-cache')
 
 docker_compose = {
     :version => '3',
@@ -40,17 +40,17 @@ if PROFILE.include?(:static)
             './src/static:/usr/share/nginx/html:ro',
             "#{RAW_FILES_PATH}:/raw:ro",
             "#{GEN_FILES_PATH}:/gen:ro",
-            "#{TTS_CACHE_FILES_PATH}:/tts:ro",
+            # "#{TTS_CACHE_FILES_PATH}:/tts:ro",
             "#{LOGS_PATH}:/var/log/nginx",
         ]
     }
-    docker_compose[:services][:tts] = {
-        :build => './docker/tts',
-        :volumes => [
-            "#{TTS_FILES_PATH}:/root/.local/share/tts",
-        ],
-        :expose => ['5002'],
-    }
+    # docker_compose[:services][:tts] = {
+    #     :build => './docker/tts',
+    #     :volumes => [
+    #         "#{TTS_FILES_PATH}:/root/.local/share/tts",
+    #     ],
+    #     :expose => ['5002'],
+    # }
     if !DEVELOPMENT
         docker_compose[:services][:nginx][:environment] = {
             "VIRTUAL_HOST" => "#{WEBSITE_HOST}",
@@ -160,7 +160,7 @@ if PROFILE.include?(:dynamic)
                      "#{RAW_FILES_PATH}:/raw",
                      "#{GEN_FILES_PATH}:/gen",
                      "#{IVR_CODES_PATH}:/ivr_live",
-                     "#{TTS_CACHE_FILES_PATH}:/tts-cache",
+                    #  "#{TTS_CACHE_FILES_PATH}:/tts-cache",
                      "/var/run/docker.sock:/var/run/docker.sock"],
         :environment => env,
         :privileged => true,
@@ -180,13 +180,18 @@ if PROFILE.include?(:dynamic)
         :entrypoint =>  DEVELOPMENT ?
             'rerun -b --dir /app -s SIGKILL \'rackup --host 0.0.0.0\'' :
             'rackup --host 0.0.0.0',
-        :links => ['tts_helper:tts_helper'],
+        # :links => ['tts_helper:tts_helper'],
     }
     docker_compose[:services][:pysandbox] = {
         :build => './docker/pysandbox',
         :entrypoint =>  '/usr/bin/tail -f /dev/null',
         :volumes => ["#{RAW_FILES_PATH}/sandbox:/sandbox"],
-        :links => ['pixelflut:pixelflut', 'canvas:canvas', 'mysql:mysql', 'tts_helper:tts_helper']
+        :links => [
+            'pixelflut:pixelflut',
+            'canvas:canvas',
+            'mysql:mysql',
+            # 'tts_helper:tts_helper',
+        ]
     }
     docker_compose[:services][:pixelflut] = {
         :build => './docker/pixelflut',
@@ -198,17 +203,17 @@ if PROFILE.include?(:dynamic)
             'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
             'rackup --quiet --host 0.0.0.0'
     }
-    docker_compose[:services][:tts_helper] = {
-        :build => './docker/tts_helper',
-        :volumes => ['./src/tts_helper:/app:ro',
-                     "#{TTS_CACHE_FILES_PATH}:/tts"],
-        :environment => env,
-        :working_dir => '/app',
-        :entrypoint =>  DEVELOPMENT ?
-            'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
-            'rackup --quiet --host 0.0.0.0',
-        :links => ['tts:tts', 'neo4j:neo4j'],
-    }
+    # docker_compose[:services][:tts_helper] = {
+    #     :build => './docker/tts_helper',
+    #     :volumes => ['./src/tts_helper:/app:ro',
+    #                  "#{TTS_CACHE_FILES_PATH}:/tts"],
+    #     :environment => env,
+    #     :working_dir => '/app',
+    #     :entrypoint =>  DEVELOPMENT ?
+    #         'rerun -b --dir /app -s SIGKILL \'rackup --quiet --host 0.0.0.0\'' :
+    #         'rackup --quiet --host 0.0.0.0',
+    #     :links => ['tts:tts', 'neo4j:neo4j'],
+    # }
     docker_compose[:services][:canvas] = {
         :build => './docker/canvas',
         :volumes => ['./src/canvas:/app:ro',
@@ -235,9 +240,9 @@ if PROFILE.include?(:dynamic)
     docker_compose[:services][:ruby][:depends_on] << :pysandbox
 end
 
-docker_compose[:services][:ruby][:links] ||= []
-docker_compose[:services][:ruby][:links] << 'tts:tts'
-docker_compose[:services][:ruby][:links] << 'tts_helper:tts_helper'
+# docker_compose[:services][:ruby][:links] ||= []
+# docker_compose[:services][:ruby][:links] << 'tts:tts'
+# docker_compose[:services][:ruby][:links] << 'tts_helper:tts_helper'
 
 
 if PROFILE.include?(:neo4j)
@@ -320,10 +325,10 @@ if PROFILE.include?(:dynamic)
     FileUtils::cp('src/ruby/Gemfile', 'docker/ruby/')
     FileUtils::cp('credentials.rb', 'docker/ruby/')
     FileUtils::cp('src/pixelflut/Gemfile', 'docker/pixelflut/')
-    FileUtils::cp('src/tts_helper/Gemfile', 'docker/tts_helper/')
+    # FileUtils::cp('src/tts_helper/Gemfile', 'docker/tts_helper/')
     FileUtils::cp('src/canvas/Gemfile', 'docker/canvas/')
     FileUtils::mkpath(RAW_FILES_PATH)
-    FileUtils::mkpath(TTS_FILES_PATH)
+    # FileUtils::mkpath(TTS_FILES_PATH)
     FileUtils::mkpath(File::join(RAW_FILES_PATH, 'uploads'))
     Dir['src/static/avatars/*'].each do |path|
         destination = File::join(RAW_FILES_PATH, 'uploads', File.basename(path))

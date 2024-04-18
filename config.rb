@@ -360,4 +360,6 @@ unless File.exist?('src/ruby/invitations.txt')
     end
 end
 
-system("docker-compose --project-name #{PROJECT_NAME} #{ARGV.join(' ')}")
+`docker compose 2> /dev/null`
+DOCKER_COMPOSE = ($? == 0) ? 'docker compose' : 'docker-compose'
+system("#{DOCKER_COMPOSE} --project-name #{PROJECT_NAME} #{ARGV.join(' ')}")

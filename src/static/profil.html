@@ -158,7 +158,7 @@ print(f"GCD(96, 84): {gcd(96, 84)}")`);
         e.clearSelection();
         e.setTheme(`ace/theme/${THEME_ORDER[i]}`);
         e.session.setMode("ace/mode/python");
-        if ('#{@session_user[:theme]}' === THEME_ORDER[i])
+        if ('#{(@session_user || {})[:theme]}' === THEME_ORDER[i])
             $(x).addClass('active');
         $(x).data('theme', THEME_ORDER[i]);
         // $(x).append($('<div>').text(THEME_ORDER[i]));

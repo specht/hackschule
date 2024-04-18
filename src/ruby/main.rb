@@ -2007,9 +2007,9 @@ class Main < Sinatra::Base
 
             @@task_keys_sorted.each do |k|
                 task = @@tasks[k]
-                unless teacher_logged_in?
-                    next unless task[:enabled]
-                end
+                # unless teacher_logged_in?
+                next unless task[:enabled]
+                # end
                 unless show_cat_slug.nil?
                     next unless task[:cat_slug] == show_cat_slug
                 end

@@ -1,5 +1,5 @@
 title: Telefonspiel
-enabled: true
+enabled: false
 count_score: no
 difficulty: easy
 ivr: true

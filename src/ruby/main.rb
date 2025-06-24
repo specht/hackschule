@@ -1322,7 +1322,7 @@ class Main < Sinatra::Base
                     io.puts "<p>Hallo!</p>"
                     io.puts "<p>Dein Anmeldecode lautet: #{random_code}. Der Code ist eine Stunde lang gültig.</p>"
                     io.puts "<p>Falls du diese E-Mail nicht angefordert hast, hat jemand deine E-Mail-Adresse auf <a href='https://hackschule.de/login'>https://hackschule.de/login</a> eingegeben. In diesem Fall musst du nichts weiter tun.</p>"
-                    io.puts "<p>Viel Spaß beim programmieren!</p>"
+                    io.puts "<p>Viel Spaß beim Programmieren!</p>"
                     io.puts "<p>Michael Specht</p>"
                     io.string
                 end
